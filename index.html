@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MAVI GUEST Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Exo+2:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+    <div class="stars-background"></div>
+    <div class="container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo-section">
+                <!-- Using the existing logo file -->
+                <img src="mavi-logo-De2JrLse.jpg" alt="MAVI GUEST" class="logo-img">
+            </div>
+
+            <nav class="nav-menu">
+                <a href="#" class="nav-item active" data-view="dashboard">
+                    <i class="fa-solid fa-gauge-high"></i>
+                    <span>Дашборд</span>
+                </a>
+                <a href="#" class="nav-item" data-view="employees">
+                    <i class="fa-solid fa-users"></i>
+                    <span>Сотрудники</span>
+                </a>
+                <a href="#" class="nav-item" data-view="tasks">
+                    <i class="fa-solid fa-list-check"></i>
+                    <span>Задачи</span>
+                </a>
+                <a href="#" class="nav-item" data-view="reports">
+                    <i class="fa-solid fa-file-contract"></i>
+                    <span>Отчеты</span>
+                </a>
+                <a href="#" class="nav-item" data-view="payments">
+                    <i class="fa-solid fa-wallet"></i>
+                    <span>Платежи</span>
+                </a>
+                <a href="#" class="nav-item" data-view="apartments">
+                    <i class="fa-solid fa-building"></i>
+                    <span>Апартаменты</span>
+                </a>
+                <a href="#" class="nav-item" data-view="contracts">
+                    <i class="fa-solid fa-file-signature"></i>
+                    <span>Договора</span>
+                </a>
+                <a href="#" class="nav-item" data-view="kb">
+                    <i class="fa-solid fa-database"></i>
+                    <span>База Знаний</span>
+                </a>
+            </nav>
+
+
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="top-header">
+                <div class="search-bar">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" placeholder="Type here to search...">
+                </div>
+
+                <div class="header-actions">
+                    <div class="icon-group">
+                        <div class="icon-btn"><i class="fa-solid fa-bell"></i></div>
+                        <div class="icon-btn"><i class="fa-solid fa-envelope"></i></div>
+                        <div class="icon-btn"><i class="fa-solid fa-earth-americas"></i></div>
+                        <div class="icon-btn"><i class="fa-solid fa-gear"></i></div>
+                    </div>
+
+                    <div class="user-profile">
+                        <img src="https://ui-avatars.com/api/?name=Admin+User&background=random" alt="User">
+                    </div>
+                </div>
+            </header>
+
+            <!-- Dashboard Content -->
+            <div class="dashboard-content">
+                <!-- View: Dashboard -->
+                <section class="view active" data-view="dashboard">
+                    <div class="content-header">
+                        <h2>Дашборд Обзор</h2>
+                        <div class="date-filter">
+                            <button class="date-btn" type="button"><i class="fa-regular fa-clock"></i> <span
+                                    class="js-current-date">--</span> <i class="fa-solid fa-chevron-down"></i></button>
+                            <button class="filter-btn" type="button"><i class="fa-solid fa-filter"></i></button>
+                            <button class="action-btn" type="button">Add Property</button>
+                        </div>
+                    </div>
+
+                    <!-- Stats Row -->
+                    <div class="stats-row">
+                        <!-- Reserved -->
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <div class="stat-value">42</div>
+                                <div class="stat-icon"><i class="fa-solid fa-bed"></i></div>
+                            </div>
+                            <div class="stat-label">Забронировано апартаментов</div>
+                            <div class="stat-chart-mini">
+                                <div class="mini-chart-container">
+                                    <canvas id="chartReserved"></canvas>
+                                </div>
+                                <div class="stat-delta positive">11.00% <span>↗</span></div>
+                            </div>
+                        </div>
+
+                        <!-- Total Bookings -->
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <div class="stat-value">156</div>
+                                <div class="stat-icon"><i class="fa-solid fa-check"></i></div>
+                            </div>
+                            <div class="stat-label">Всего бронирований</div>
+                            <div class="stat-chart-mini">
+                                <div class="mini-chart-container">
+                                    <canvas id="chartTotal"></canvas>
+                                </div>
+                                <div class="stat-delta positive">17.05% <span>↗</span></div>
+                            </div>
+                        </div>
+
+                        <!-- Revenue -->
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <div class="stat-value">450,000 GEL</div>
+                                <div class="stat-icon"><i class="fa-solid fa-coins"></i></div>
+                            </div>
+                            <div class="stat-label">Доход (GEL)</div>
+                            <div class="stat-chart-mini">
+                                <div class="mini-chart-container">
+                                    <canvas id="chartRevenue"></canvas>
+                                </div>
+                                <div class="stat-delta positive">55.0% <span>↗</span></div>
+                            </div>
+                        </div>
+
+                        <!-- New Apartments -->
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <div class="stat-value">8</div>
+                                <div class="stat-icon"><i class="fa-solid fa-house-chimney"></i></div>
+                            </div>
+                            <div class="stat-label">Новых апартаментов</div>
+                            <div class="stat-chart-mini">
+                                <div class="mini-chart-container">
+                                    <canvas id="chartNew"></canvas>
+                                </div>
+                                <div class="stat-delta negative">17.00% <span>↘</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Main Charts Row -->
+                    <div class="charts-row">
+                        <!-- Application Status -->
+                        <div class="chart-card pie-section">
+                            <div class="card-header">
+                                <h3>Исполнение задач <i class="fa-solid fa-chevron-down"></i></h3>
+                                <button class="dots-btn"><i class="fa-solid fa-ellipsis"></i></button>
+                            </div>
+                            <div class="pie-chart-wrapper">
+                                <canvas id="statusChart"></canvas>
+                                <div class="chart-center-text">
+                                    <span class="js-task-percent">--%</span>
+                                </div>
+                            </div>
+                            <div class="chart-legend">
+                                <div class="legend-item"><span class="dot yellow"></span> <span
+                                        class="js-task-legend-wait">В ожидании (--%)</span></div>
+                                <div class="legend-item"><span class="dot orange"></span> <span
+                                        class="js-task-legend-doing">В работе (--%)</span></div>
+                                <div class="legend-item"><span class="dot green"></span> <span
+                                        class="js-task-legend-done">Готово (--%)</span></div>
+                            </div>
+                            <div class="task-team">
+                                <div class="task-team-title">Сотрудники (выполнение)</div>
+                                <div class="task-team-list js-task-team-list">
+                                    <!-- filled by JS -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Financial Report -->
+                        <div class="chart-card bar-section">
+                            <div class="card-header">
+                                <h3>Финансовый Отчет (GEL) <i class="fa-solid fa-chevron-down"></i></h3>
+                                <div class="chart-legend-top">
+                                    <span><span class="dot blue"></span> Доход</span>
+                                    <span><span class="dot yellow"></span> Опер. доход</span>
+                                    <span><span class="dot orange"></span> Чистая прибыль</span>
+                                </div>
+                            </div>
+                            <div class="fin-summary" aria-label="Сводка финансового отчета">
+                                <div class="fin-chip">
+                                    <div class="k">Доход</div>
+                                    <div class="v js-fin-rev">--</div>
+                                </div>
+                                <div class="fin-chip">
+                                    <div class="k">Опер. доход</div>
+                                    <div class="v js-fin-oprev">--</div>
+                                </div>
+                                <div class="fin-chip">
+                                    <div class="k">Чистая прибыль</div>
+                                    <div class="v js-fin-net">--</div>
+                                </div>
+                                <div class="fin-chip">
+                                    <div class="k">Заполняемость</div>
+                                    <div class="v js-fin-occ">--</div>
+                                </div>
+                            </div>
+                            <div class="bar-chart-wrapper">
+                                <canvas id="financialChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Apartments Row -->
+                    <div class="apartments-section">
+                        <div class="section-header">
+                            <h3>Апартаменты в управлении (Батуми) <i class="fa-solid fa-chevron-down"></i></h3>
+                            <div class="section-actions">
+                                <div class="search-sm">
+                                    <i class="fa-solid fa-magnifying-glass"></i>
+                                    <input type="text" placeholder="Search...">
+                                </div>
+                                <button class="filter-sm">Filter</button>
+                            </div>
+                        </div>
+
+                        <div class="apartments-grid">
+                            <!-- Apartment 1 -->
+                            <div class="apartment-card">
+                                <img src="https://images.unsplash.com/photo-1564013799919-ab600027ffc6?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80"
+                                    alt="Apartment">
+                                <div class="apt-details">
+                                    <h4>Уютные апартаменты в Батуми</h4>
+                                    <p>23 этаж, вид на море</p>
+                                    <div class="apt-actions">
+                                        <button>Детали</button>
+                                        <button>Фото</button>
+                                        <button>Договор</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Apartment 2 -->
+                            <div class="apartment-card">
+                                <img src="https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80"
+                                    alt="Apartment">
+                                <div class="apt-details">
+                                    <h4>Современные апартаменты</h4>
+                                    <p>15 этаж, центр города</p>
+                                    <div class="apt-actions">
+                                        <button>Детали</button>
+                                        <button>Фото</button>
+                                        <button>Договор</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Apartment 3 -->
+                            <div class="apartment-card">
+                                <img src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80"
+                                    alt="Apartment">
+                                <div class="apt-details">
+                                    <h4>Вилла с бассейном</h4>
+                                    <p>Пригород, 3 спальни</p>
+                                    <div class="apt-actions">
+                                        <button>Детали</button>
+                                        <button>Фото</button>
+                                        <button>Договор</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Apartment 4 -->
+                            <div class="apartment-card">
+                                <img src="https://images.unsplash.com/photo-1481437156560-3205f6a55735?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80"
+                                    alt="Apartment">
+                                <div class="apt-details">
+                                    <h4>Студия в новостройке</h4>
+                                    <p>5 этаж, рядом с парком</p>
+                                    <div class="apt-actions">
+                                        <button>Детали</button>
+                                        <button>Фото</button>
+                                        <button>Договор</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </section>
+
+                <!-- View: Employees -->
+                <section class="view" data-view="employees">
+                    <div class="content-header">
+                        <h2>Сотрудники</h2>
+                        <div class="date-filter">
+                            <button class="action-btn" type="button" data-action="add-employee">Добавить
+                                сотрудника</button>
+                        </div>
+                    </div>
+                    <div class="chart-card" style="padding: 18px;">
+                        <div class="card-header">
+                            <h3>Список</h3>
+                            <button class="dots-btn" type="button"><i class="fa-solid fa-ellipsis"></i></button>
+                        </div>
+                        <div class="simple-table">
+                            <div class="row head">
+                                <div>Имя</div>
+                                <div>Роль</div>
+                                <div>Статус</div>
+                                <div>Действия</div>
+                            </div>
+                            <div class="row">
+                                <div>Дарья</div>
+                                <div>Менеджер</div>
+                                <div><span class="pill ok">Активен</span></div>
+                                <div><button class="mini-btn" type="button"
+                                        data-action="employee-card">Карточка</button></div>
+                            </div>
+                            <div class="row">
+                                <div>Юлия</div>
+                                <div>Бухгалтер</div>
+                                <div><span class="pill warn">Отпуск</span></div>
+                                <div><button class="mini-btn" type="button"
+                                        data-action="employee-card">Карточка</button></div>
+                            </div>
+                            <div class="row">
+                                <div>Светлана</div>
+                                <div>Оператор</div>
+                                <div><span class="pill ok">Активен</span></div>
+                                <div><button class="mini-btn" type="button"
+                                        data-action="employee-card">Карточка</button></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- View: Tasks -->
+                <section class="view" data-view="tasks">
+                    <div class="content-header">
+                        <h2>Задачи</h2>
+                        <div class="date-filter">
+                            <button class="action-btn" type="button" data-action="new-task">Новая задача</button>
+                        </div>
+                    </div>
+                    <div class="kanban">
+                        <div class="kanban-col">
+                            <div class="kanban-title">В ожидании</div>
+                            <button class="kanban-card" type="button" data-action="task-open" data-status="wait"
+                                data-assignee="Дарья">
+                                Проверить оплату по брони #1241
+                                <span class="meta">исп.: Дарья, срок: сегодня</span>
+                            </button>
+                            <button class="kanban-card" type="button" data-action="task-open" data-status="wait"
+                                data-assignee="Юлия">
+                                Ответить гостю (апарт. 23 этаж)
+                                <span class="meta">исп.: Юлия, срок: завтра</span>
+                            </button>
+                        </div>
+                        <div class="kanban-col">
+                            <div class="kanban-title">В работе</div>
+                            <button class="kanban-card" type="button" data-action="task-open" data-status="doing"
+                                data-assignee="Светлана">
+                                Согласовать договор (вилла с бассейном)
+                                <span class="meta">исп.: Светлана</span>
+                            </button>
+                        </div>
+                        <div class="kanban-col">
+                            <div class="kanban-title">Готово</div>
+                            <button class="kanban-card done" type="button" data-action="task-open" data-status="done"
+                                data-assignee="Дарья">
+                                Добавить фото для студии в новостройке
+                                <span class="meta">исп.: Дарья, выполнено</span>
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- View: Reports -->
+                <section class="view" data-view="reports">
+                    <div class="content-header">
+                        <h2>Отчеты</h2>
+                        <div class="date-filter">
+                            <button class="date-btn" type="button" data-action="report-period"><i
+                                    class="fa-regular fa-calendar"></i> Период <i
+                                    class="fa-solid fa-chevron-down"></i></button>
+                            <button class="action-btn" type="button" data-action="export-report">Экспорт PDF</button>
+                        </div>
+                    </div>
+                    <div class="chart-card" style="padding: 18px;">
+                        <div class="card-header">
+                            <h3>Сводка</h3>
+                            <button class="dots-btn" type="button"><i class="fa-solid fa-ellipsis"></i></button>
+                        </div>
+                        <p class="muted">Здесь отображается интерактивный отчет. Используйте “Экспорт PDF” для выгрузки
+                            данных.</p>
+                        <div class="report-preview">
+                            <div class="report-sheet">
+                                <div class="report-line"></div>
+                                <div class="report-line"></div>
+                                <div class="report-line short"></div>
+                            </div>
+                            <div class="report-sheet">
+                                <div class="report-line"></div>
+                                <div class="report-line short"></div>
+                                <div class="report-line"></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- View: Payments -->
+                <section class="view" data-view="payments">
+                    <div class="content-header">
+                        <h2>Платежи</h2>
+                        <div class="date-filter">
+                            <button class="action-btn" type="button" data-action="new-payment">Добавить платеж</button>
+                        </div>
+                    </div>
+                    <div class="chart-card" style="padding: 18px;">
+                        <div class="card-header">
+                            <h3>Последние операции</h3>
+                            <button class="dots-btn" type="button"><i class="fa-solid fa-ellipsis"></i></button>
+                        </div>
+                        <div class="simple-table">
+                            <div class="row head">
+                                <div>Дата</div>
+                                <div>Описание</div>
+                                <div>Сумма</div>
+                                <div>Статус</div>
+                            </div>
+                            <div class="row">
+                                <div class="js-pay-date-0">--</div>
+                                <div>Аренда (апарт. 23 этаж)</div>
+                                <div>1,250 GEL</div>
+                                <div><span class="pill ok">Оплачен</span></div>
+                            </div>
+                            <div class="row">
+                                <div class="js-pay-date-1">--</div>
+                                <div>Комиссия</div>
+                                <div>120 GEL</div>
+                                <div><span class="pill wait">Ожидает</span></div>
+                            </div>
+                            <div class="row">
+                                <div class="js-pay-date-2">--</div>
+                                <div>Продажа (депозит)</div>
+                                <div>900 GEL</div>
+                                <div><span class="pill warn">Спор</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- View: Apartments -->
+                <section class="view" data-view="apartments">
+                    <div class="content-header">
+                        <h2>Апартаменты</h2>
+                        <div class="date-filter">
+                            <button class="action-btn" type="button" data-action="add-apartment">Добавить
+                                объект</button>
+                        </div>
+                    </div>
+                    <div class="chart-card" style="padding: 18px;">
+                        <div class="card-header">
+                            <h3>Быстрые действия</h3>
+                            <button class="dots-btn" type="button"><i class="fa-solid fa-ellipsis"></i></button>
+                        </div>
+                        <div class="quick-actions">
+                            <button class="qa" type="button" data-action="apartment-search"><i
+                                    class="fa-solid fa-magnifying-glass"></i> Поиск</button>
+                            <button class="qa" type="button" data-action="apartment-import"><i
+                                    class="fa-solid fa-file-import"></i> Импорт</button>
+                            <button class="qa" type="button" data-action="apartment-map"><i class="fa-solid fa-map"></i>
+                                Карта</button>
+                        </div>
+                        <p class="muted" style="margin-top: 12px;">Кликайте по карточкам апартаментов в “Дашборд” или
+                            открывайте “Карта”.</p>
+                    </div>
+                </section>
+
+                <!-- View: Contracts -->
+                <section class="view" data-view="contracts">
+                    <div class="content-header">
+                        <h2>Договора</h2>
+                        <div class="date-filter">
+                            <button class="action-btn" type="button" data-action="new-contract">Создать договор</button>
+                        </div>
+                    </div>
+                    <div class="chart-card" style="padding: 18px;">
+                        <div class="card-header">
+                            <h3>Шаблоны</h3>
+                            <button class="dots-btn" type="button"><i class="fa-solid fa-ellipsis"></i></button>
+                        </div>
+                        <div class="template-grid">
+                            <button class="template-card" type="button" data-action="contract-template">Аренда
+                                (кратк.)</button>
+                            <button class="template-card" type="button" data-action="contract-template">Аренда
+                                (полный)</button>
+                            <button class="template-card" type="button"
+                                data-action="contract-template">Управление</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- View: Knowledge Base -->
+                <section class="view" data-view="kb">
+                    <div class="content-header">
+                        <h2>База Знаний</h2>
+                        <div class="date-filter">
+                            <button class="action-btn" type="button" data-action="new-article">Новая статья</button>
+                        </div>
+                    </div>
+                    <div class="chart-card" style="padding: 18px;">
+                        <div class="card-header">
+                            <h3>Разделы</h3>
+                            <button class="dots-btn" type="button"><i class="fa-solid fa-ellipsis"></i></button>
+                        </div>
+                        <div class="kb-grid">
+                            <button class="kb-card" type="button" data-action="kb-open">Заселение</button>
+                            <button class="kb-card" type="button" data-action="kb-open">Уборка</button>
+                            <button class="kb-card" type="button" data-action="kb-open">Оплаты</button>
+                            <button class="kb-card" type="button" data-action="kb-open">Частые вопросы</button>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- Toasts + Modal (for interactivity) -->
+    <div class="toast-container" aria-live="polite" aria-atomic="true"></div>
+    <div class="modal-backdrop" hidden>
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+            <div class="modal-header">
+                <h3 id="modalTitle">Modal</h3>
+                <button class="modal-close" type="button" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body"></div>
+            <div class="modal-footer">
+                <button class="modal-secondary" type="button" data-action="modal-cancel">Закрыть</button>
+                <button class="modal-primary" type="button" data-action="modal-ok">Ок</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="finance-data.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>
