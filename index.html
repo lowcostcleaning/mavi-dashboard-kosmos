@@ -1865,10 +1865,22 @@
             if (cached) return cached;
         }
 
-        // Helper: fetch one candidate URL and resolve with text if valid iCal, else reject
+        // 1) Our own Vercel serverless proxy (fastest, most reliable)
+        try {
+            const resp = await fetch(`/api/ical?url=${encodeURIComponent(icalUrl)}`);
+            if (resp.ok) {
+                const text = await resp.text();
+                if (text.includes('BEGIN:VCALENDAR')) {
+                    bkWriteCache(icalUrl, text);
+                    return text;
+                }
+            }
+        } catch(_) {}
+
+        // 2) Fallback: race public CORS proxies
         const tryFetch = async (fetchUrl, isJson) => {
             const controller = new AbortController();
-            const timer = setTimeout(() => controller.abort(), 8000); // 8s timeout per attempt
+            const timer = setTimeout(() => controller.abort(), 8000);
             try {
                 const resp = await fetch(fetchUrl, { cache: 'no-store', signal: controller.signal });
                 clearTimeout(timer);
@@ -1878,8 +1890,7 @@
                     const j = await resp.json();
                     text = j.contents || j.data || '';
                 } else {
-                    const ct = resp.headers.get('content-type') || '';
-                    text = ct.includes('json') ? ((await resp.json()).contents || '') : await resp.text();
+                    text = await resp.text();
                 }
                 if (!text.includes('BEGIN:VCALENDAR')) throw new Error('not ical');
                 return text;
@@ -1890,24 +1901,16 @@
         };
 
         const ts = Date.now();
-        const candidates = [
-            // Direct (works if source supports CORS)
-            tryFetch(icalUrl, false),
-            // All proxies in parallel — first to succeed wins
-            tryFetch(`https://corsproxy.io/?url=${encodeURIComponent(icalUrl)}&_=${ts}`, false),
-            tryFetch(`https://api.allorigins.win/get?url=${encodeURIComponent(icalUrl)}&_=${ts}`, true),
-            tryFetch(`https://corsproxy.org/?${encodeURIComponent(icalUrl)}&_=${ts}`, false),
-            tryFetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(icalUrl)}&_=${ts}`, false),
-        ];
-
         try {
-            // Promise.any — resolves as soon as the first candidate succeeds
-            const text = await Promise.any(candidates);
+            const text = await Promise.any([
+                tryFetch(`https://corsproxy.io/?url=${encodeURIComponent(icalUrl)}&_=${ts}`, false),
+                tryFetch(`https://api.allorigins.win/get?url=${encodeURIComponent(icalUrl)}&_=${ts}`, true),
+            ]);
             bkWriteCache(icalUrl, text);
             return text;
-        } catch(_) {
-            return null;
-        }
+        } catch(_) {}
+
+        return null;
     }
 
     async function _doFetchBookings() {
