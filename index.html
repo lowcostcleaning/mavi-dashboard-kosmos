@@ -1806,62 +1806,11 @@
     const BK_DAYS = ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
 
     let bkBaseDate  = new Date();
-    let bkAllEvents = [];   // {aptId, aptName, start, end, summary}
+    let bkAllEvents = [];   // {aptId, aptName, start, end, summary, blocked}
     let bkApts      = [];   // apartments with hostify_link
     let bkSearch    = '';
     let bkLoaded    = false;
     let bkFetchPromise = null;  // single shared promise for ongoing fetch
-    let bkLastError = '';
-
-    const BK_CACHE_TTL = 30 * 60 * 1000; // 30 minutes
-
-    function bkCacheKey(url) {
-        return 'ical_' + btoa(unescape(encodeURIComponent(url))).slice(0, 40);
-    }
-    function bkReadCache(url, { allowStale = false } = {}) {
-        try {
-            const raw = localStorage.getItem(bkCacheKey(url));
-            if (!raw) return null;
-            const { text, ts } = JSON.parse(raw);
-            if (Date.now() - ts < BK_CACHE_TTL) return text;
-            if (allowStale) return text;
-        } catch(_) {}
-        return null;
-    }
-    function bkWriteCache(url, text) {
-        try { localStorage.setItem(bkCacheKey(url), JSON.stringify({ text, ts: Date.now() })); } catch(_) {}
-    }
-    function bkShowError(message) {
-        bkLastError = message || 'Не удалось загрузить календари';
-        const errEl = document.getElementById('bk-error');
-        if (!errEl) return;
-        errEl.textContent = bkLastError;
-        errEl.style.display = '';
-    }
-    function bkHideError() {
-        bkLastError = '';
-        const errEl = document.getElementById('bk-error');
-        if (!errEl) return;
-        errEl.style.display = 'none';
-        errEl.textContent = '';
-    }
-    function bkFirstFulfilled(tasks) {
-        return new Promise((resolve, reject) => {
-            let rejected = 0;
-            const errors = [];
-            if (!tasks.length) {
-                reject(new Error('No tasks to resolve'));
-                return;
-            }
-            tasks.forEach(task => {
-                Promise.resolve(task).then(resolve).catch(err => {
-                    errors.push(err);
-                    rejected++;
-                    if (rejected === tasks.length) reject(errors[0] || new Error('All tasks failed'));
-                });
-            });
-        });
-    }
 
     // ── iCal parsing ────────────────────────────────────────────────
     const BK_BLOCKED_KEYWORDS = ['not available', 'unavailable', 'blocked', 'not-available', 'airbnb (not available)'];
@@ -1898,87 +1847,47 @@
         return events;
     }
 
-    async function fetchIcal(url, { forceRefresh = false } = {}) {
+    async function fetchIcal(url) {
         let icalUrl = url.startsWith('webcal://') ? 'https://' + url.slice(9) : url;
-        const isCalendarText = text => typeof text === 'string' && text.includes('BEGIN:VCALENDAR');
-        const knownProxyBases = [
+
+        // Proxy list — same approach as финкабинет
+        const proxies = [
             '/api/ical',
-            'https://mavi-dashboard-kosmos.vercel.app/api/ical',
+            'https://corsproxy.io/?url=',
+            'https://api.allorigins.win/get?url='
         ];
-        const proxyBases = [...new Set(knownProxyBases.filter(Boolean))];
 
-        // Return from cache if fresh
-        if (!forceRefresh) {
-            const cached = bkReadCache(icalUrl);
-            if (cached) return cached;
-        }
-
-        const tryFetch = async (fetchUrl, isJson) => {
-            const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-            let timer = null;
+        for (const proxy of proxies) {
             try {
-                const fetchPromise = fetch(fetchUrl, {
-                    cache: 'no-store',
-                    signal: controller ? controller.signal : undefined
-                });
-                const timeoutPromise = new Promise((_, reject) => {
-                    timer = setTimeout(() => {
-                        if (controller) controller.abort();
-                        reject(new Error('timeout'));
-                    }, 8000);
-                });
-                const resp = await Promise.race([fetchPromise, timeoutPromise]);
-                clearTimeout(timer);
-                if (!resp.ok) throw new Error('not ok');
-                let text;
-                if (isJson) {
-                    const j = await resp.json();
-                    text = j.contents || j.data || '';
+                const isInternal = proxy.startsWith('/');
+                const isAllOrigins = proxy.includes('allorigins.win');
+
+                let requestUrl;
+                if (isInternal) {
+                    const u = new URL(proxy, window.location.origin);
+                    u.searchParams.set('url', icalUrl);
+                    u.searchParams.set('_', String(Date.now()));
+                    requestUrl = u.toString();
                 } else {
-                    text = await resp.text();
+                    requestUrl = proxy + encodeURIComponent(icalUrl);
                 }
-                if (!isCalendarText(text)) throw new Error('not ical');
-                return text;
-            } catch(e) {
-                clearTimeout(timer);
-                throw e;
-            }
-        };
 
-        // 1) Direct source fetch (works for providers with permissive CORS)
-        try {
-            const text = await tryFetch(icalUrl, false);
-            bkWriteCache(icalUrl, text);
-            return text;
-        } catch(_) {}
+                const resp = await fetch(requestUrl, { cache: 'no-store' });
+                if (!resp.ok) continue;
 
-        // 2) Internal/remote serverless proxies
-        for (const base of proxyBases) {
-            try {
-                const text = await tryFetch(`${base}?url=${encodeURIComponent(icalUrl)}`, false);
-                bkWriteCache(icalUrl, text);
-                return text;
+                let icalText = '';
+                if (isAllOrigins) {
+                    const json = await resp.json();
+                    icalText = json.contents || '';
+                } else {
+                    icalText = await resp.text();
+                }
+
+                if (icalText && icalText.includes('BEGIN:VCALENDAR')) {
+                    return icalText;
+                }
             } catch(_) {}
         }
-
-        // 3) Fallback: race public CORS proxies
-        const ts = Date.now();
-        const icalUrlNoProto = icalUrl.replace(/^https?:\/\//i, '');
-        try {
-            const text = await bkFirstFulfilled([
-                tryFetch(`https://corsproxy.io/?url=${encodeURIComponent(icalUrl)}&_=${ts}`, false),
-                tryFetch(`https://api.allorigins.win/get?url=${encodeURIComponent(icalUrl)}&_=${ts}`, true),
-                tryFetch(`https://r.jina.ai/http://${icalUrlNoProto}?_=${ts}`, false),
-                tryFetch(`https://r.jina.ai/https://${icalUrlNoProto}?_=${ts}`, false),
-            ]);
-            bkWriteCache(icalUrl, text);
-            return text;
-        } catch(_) {}
-
-        // Last fallback: return stale cache so bookings still render offline/when provider blocks
-        const stale = bkReadCache(icalUrl, { allowStale: true });
-        if (stale && isCalendarText(stale)) return stale;
-
         return null;
     }
 
@@ -1998,74 +1907,44 @@
 
         bkApts = apts;
 
-        // Fetch in batches of 6 to avoid overwhelming serverless function
-        const BATCH = 6;
-        const results = [];
-        for (let i = 0; i < bkApts.length; i += BATCH) {
-            const batch = bkApts.slice(i, i + BATCH);
-            const batchResults = await Promise.allSettled(batch.map(async apt => {
+        // Fetch ALL apartments in parallel (same as финкабинет)
+        const results = await Promise.all(bkApts.map(async apt => {
+            try {
                 const text = await fetchIcal(apt.hostify_link);
                 if (!text) return [];
                 return parseIcalText(text, apt.id, apt.name);
-            }));
-            results.push(...batchResults);
-        }
+            } catch(_) { return []; }
+        }));
 
-        bkAllEvents = results.reduce((acc, r) => {
-            if (r.status === 'fulfilled' && Array.isArray(r.value)) acc = acc.concat(r.value);
-            return acc;
-        }, []);
-
-        const loadedCalendars = results.filter(r => r.status === 'fulfilled' && Array.isArray(r.value) && r.value.length >= 0).length;
-        if (bkApts.length && !loadedCalendars) {
-            bkShowError('Не удалось получить данные iCal. Проверьте доступность Vercel /api/ical или CORS у источника.');
-        }
+        bkAllEvents = results.flat();
         bkLoaded = true;
     }
 
     async function loadBookings({ background = false } = {}) {
         // Already loaded — just render
         if (bkLoaded) {
-            if (!background) {
-                document.getElementById('bk-stat-apts').textContent = bkApts.length;
-                document.getElementById('bk-loading').style.display = 'none';
-                renderBookings();
-            }
+            if (!background) renderBookings();
             return;
         }
 
-        // Show spinner if user navigated to tab
+        // Show spinner if user is on the tab
         if (!background) {
-            bkHideError();
             document.getElementById('bk-loading').style.display = '';
             document.getElementById('bk-table-wrap').style.display = 'none';
         }
 
-        // Share single fetch promise — background and foreground wait on same request
+        // Share single fetch promise
         if (!bkFetchPromise) {
-            bkFetchPromise = _doFetchBookings()
-                .catch(err => {
-                    console.error('Bookings load failed:', err);
-                    bkLoaded = false;
-                    throw err;
-                })
-                .finally(() => {
-                    bkFetchPromise = null;
-                });
+            bkFetchPromise = _doFetchBookings().finally(() => { bkFetchPromise = null; });
         }
 
         try {
             await bkFetchPromise;
         } catch (err) {
-            if (!background) {
-                bkShowError(err?.message || 'Не удалось загрузить календари');
-                document.getElementById('bk-loading').style.display = 'none';
-                document.getElementById('bk-table-wrap').style.display = 'none';
-            }
-            return;
+            console.error('Bookings load failed:', err);
         }
 
-        // Render if on bookings tab (background prefetch) or called directly
+        // Render
         const isOnTab = document.querySelector('.view[data-view="bookings"]')?.classList.contains('active');
         if (!background || isOnTab) {
             document.getElementById('bk-stat-apts').textContent = bkApts.length;
