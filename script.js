@@ -145,7 +145,10 @@ document.addEventListener('DOMContentLoaded', function () {
         const iRevenue = findIndex(k => k.includes('revenue / доход'));
         const iOccDays = findIndex(k => k.includes('количество занятых дней'));
         const iOpRevenue = findIndex(k => k.includes('operation revenue'));
-        const iNet = findIndex(k => k.includes('net profit'));
+        const iNet = findIndex(k =>
+            k.includes('net profit') ||
+            k.includes('результат периода') ||
+            (k.includes('чистый') && k.includes('доход')));
 
         const groups = new Map(); // key -> agg
 
@@ -417,31 +420,152 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     charts.push(financialChart);
 
-    // Hydrate financial chart + summary from CSV
-    const series = buildFinanceSeriesFromCsv(FINANCE_CSV);
-    if (series) {
-        if (finRevEl) finRevEl.textContent = formatGel(series.latest.revenue);
-        if (finOpRevEl) finOpRevEl.textContent = formatGel(series.latest.opRevenue);
-        if (finNetEl) finNetEl.textContent = formatGel(series.latest.net);
-        if (finOccEl) finOccEl.textContent = `${series.occPercent.toFixed(0)}%`;
+    // ── Live hydration from Google Sheets ───────────────────────────
+    function applyFinSeries(series) {
+        if (!series) return;
 
+        // Dashboard section fin-summary chips (финансовый отчёт)
+        if (finRevEl)   finRevEl.textContent   = formatGel(series.latest.revenue);
+        if (finOpRevEl) finOpRevEl.textContent = formatGel(series.latest.opRevenue);
+        if (finNetEl)   finNetEl.textContent   = formatGel(series.latest.net);
+        if (finOccEl)   finOccEl.textContent   = `${series.occPercent.toFixed(0)}%`;
+
+        // Dashboard stat cards
+        const totalRev = series.revenue.reduce((s, v) => s + v, 0);
+        const totalNet = series.net.reduce((s, v) => s + v, 0);
+        const avgOcc   = series.occPercent;
+        const numApts  = series.aptCount || 0;
+
+        const fmt = n => new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 0 }).format(n);
+
+        const dbRev  = document.getElementById('db-stat-revenue');
+        const dbNet  = document.getElementById('db-stat-net');
+        const dbOcc  = document.getElementById('db-stat-occ');
+        const dbApts = document.getElementById('db-stat-apts');
+
+        if (dbRev)  dbRev.textContent  = fmt(totalRev);
+        if (dbNet)  dbNet.textContent  = fmt(totalNet);
+        if (dbOcc)  dbOcc.textContent  = `${avgOcc.toFixed(0)}%`;
+        if (dbApts) dbApts.textContent = numApts || '—';
+
+        // Delta badges: compare last 2 months
+        function setDelta(id, arr) {
+            const el = document.getElementById(id);
+            if (!el || arr.length < 2) return;
+            const prev = arr[arr.length - 2], cur = arr[arr.length - 1];
+            if (!prev) return;
+            const pct = Math.round((cur - prev) / Math.abs(prev) * 100);
+            el.textContent = (pct >= 0 ? '+' : '') + pct + '%';
+            el.className = 'stat-delta ' + (pct >= 0 ? 'positive' : 'negative');
+        }
+        setDelta('db-delta-revenue', series.revenue);
+        setDelta('db-delta-net', series.net);
+        setDelta('db-delta-apts', series.aptCounts || []);
+
+        // Mini sparklines (last N months of revenue)
+        const sparkRev = series.revenue.slice(-6);
+        const sparkNet = series.net.slice(-6);
+        const sparkOcc = series.occRates ? series.occRates.slice(-6) : sparkRev.map(() => 0);
+
+        function updateMiniBar(chartId, data, color) {
+            const chart = Chart.getChart(chartId);
+            if (!chart) return;
+            chart.data.labels = data.map((_, i) => i);
+            chart.data.datasets[0].data = data;
+            chart.data.datasets[0].backgroundColor = color;
+            chart.update('none');
+        }
+        updateMiniBar('chartRevenue', sparkRev, 'rgba(99,102,241,0.7)');
+        updateMiniBar('chartTotal',   sparkNet, 'rgba(16,185,129,0.7)');
+        updateMiniBar('chartReserved', sparkOcc, 'rgba(245,158,11,0.7)');
+
+        // Main bar chart
         financialChart.data.labels = series.labels;
         financialChart.data.datasets = [
-            { label: 'Доход', data: series.revenue, backgroundColor: 'rgba(0, 242, 255, 0.7)', borderRadius: 6 },
-            { label: 'Опер. доход', data: series.opRevenue, backgroundColor: 'rgba(112, 0, 255, 0.7)', borderRadius: 6 },
-            { label: 'Чистая прибыль', data: series.net, backgroundColor: 'rgba(255, 204, 51, 0.7)', borderRadius: 6 }
+            { label: 'Доход',          data: series.revenue,   backgroundColor: 'rgba(0,242,255,0.7)',   borderRadius: 6 },
+            { label: 'Опер. доход',    data: series.opRevenue, backgroundColor: 'rgba(112,0,255,0.7)',   borderRadius: 6 },
+            { label: 'Чистая прибыль', data: series.net,       backgroundColor: 'rgba(255,204,51,0.7)',  borderRadius: 6 }
         ];
         financialChart.update();
-    } else {
-        if (finOccEl) finOccEl.textContent = '--';
     }
+
+    // Extend buildFinanceSeriesFromCsv to also track aptCount & occRates per month
+    function buildFinSeriesLive(csvText) {
+        const base = buildFinanceSeriesFromCsv(csvText);
+        if (!base) return null;
+
+        // Also count unique apartments and per-month occ rates
+        const lines = String(csvText || '').replace(/\r\n/g, '\n').split('\n').filter(l => l.trim());
+        const header = parseCsvLine(lines[0]);
+        const idx = {};
+        header.forEach((h, i) => { idx[h.toLowerCase().trim()] = i; });
+
+        const iListing = Object.entries(idx).find(([k]) => k.includes('listing nickname') || k.includes('название апартамента'))?.[1] ?? -1;
+        const iOccRate = Object.entries(idx).find(([k]) => k.includes('уровень заполняемости') || k.includes('occupancy rate /') && k.includes('уровень'))?.[1] ?? -1;
+        const iMonth   = Object.entries(idx).find(([k]) => k === 'месяц' || k.includes('month'))?.[1] ?? -1;
+
+        const allApts = new Set();
+        const occByMonth = {};
+
+        for (let li = 1; li < lines.length; li++) {
+            const row = parseCsvLine(lines[li]);
+            if (row.length < 3) continue;
+            const apt = iListing >= 0 ? row[iListing]?.trim() : '';
+            if (apt) allApts.add(apt);
+
+            const monthNum = iMonth >= 0 ? parseInt(row[iMonth]) : 0;
+            const occRaw   = iOccRate >= 0 ? row[iOccRate] : '';
+            if (monthNum && occRaw) {
+                const occ = parseFloat(String(occRaw).replace('%', '').replace(',', '.')) || 0;
+                if (!occByMonth[monthNum]) occByMonth[monthNum] = [];
+                occByMonth[monthNum].push(occ);
+            }
+        }
+
+        // Rebuild per-month occ rates aligned with base.labels
+        const occRates = base.labels.map((lbl, i) => {
+            const pts = base.revenue;
+            // Find the month index from the original groups
+            return null; // will use avgOcc from series
+        });
+
+        return {
+            ...base,
+            aptCount:  allApts.size,
+            aptCounts: base.labels.map(() => allApts.size), // flat line for sparkline
+            occRates:  base.labels.map(() => base.occPercent),
+        };
+    }
+
+    // Try static CSV first, then live fetch
+    const staticSeries = buildFinSeriesLive(FINANCE_CSV);
+    if (staticSeries) {
+        applyFinSeries(staticSeries);
+    }
+
+    // Always fetch live data
+    (async () => {
+        try {
+            const SHEET_ID = '1qmfEGEzq55Miu9ICDhpCdihk_TE402mpIao5KNbaYlA';
+            const GID = '1090503967';
+            const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID}`;
+            const resp = await fetch(url);
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            const csv = await resp.text();
+            const liveSeries = buildFinSeriesLive(csv);
+            if (liveSeries) applyFinSeries(liveSeries);
+        } catch (e) {
+            console.warn('Dashboard: could not load live finance data:', e.message);
+        }
+    })();
 
 
     // -- Interaction Logic --
 
-    // Toasts
-    const toastContainer = document.querySelector('.toast-container');
+    // Toasts — disabled
+    const toastContainer = null;
     function toast(title, desc, timeoutMs = 2500) {
+        return; // notifications disabled
         if (!toastContainer) return;
         const el = document.createElement('div');
         el.className = 'toast';
