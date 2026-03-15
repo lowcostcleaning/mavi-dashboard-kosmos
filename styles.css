@@ -1862,14 +1862,21 @@ textarea.mavi-input {
    ═══════════════════════════════════════════ */
 .bk-table-wrap {
     overflow-x: auto;
-    overflow-y: auto;
-    max-height: calc(100vh - 340px);
-    min-height: 300px;
+    overflow-y: visible;
 }
 .bk-table {
     border-collapse: collapse;
     min-width: 100%;
     font-size: 12px;
+}
+.bk-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 8;
+    background: rgba(12, 12, 28, 0.98);
+}
+.bk-table thead .bk-corner {
+    z-index: 12;
 }
 
 /* Sticky corner */
