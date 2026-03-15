@@ -1975,12 +1975,17 @@ textarea.mavi-input {
 .bk-cell.bk-inside {
     background: rgba(99, 186, 100, 0.15);
 }
+.bk-cell.bk-inside-blocked {
+    background: rgba(255, 255, 255, 0.03);
+}
 
 /* Booked cell */
-.bk-cell.bk-booked {
+.bk-cell.bk-booked,
+.bk-cell.bk-blocked {
     padding: 3px 0;
     cursor: pointer;
 }
+/* Real booking — green */
 .bk-bar {
     height: 26px;
     background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
@@ -1990,6 +1995,15 @@ textarea.mavi-input {
     align-items: center;
     padding: 0 6px;
     box-shadow: 0 0 8px rgba(74,222,128,0.3);
+}
+/* Blocked / Not available — muted gray */
+.bk-bar-blocked {
+    background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.04) 100%);
+    box-shadow: none;
+    border: 1px dashed rgba(255,255,255,0.15);
+    font-size: 10px;
+    color: var(--text-secondary);
+    opacity: 0.6;
 }
 .bk-bar-text {
     font-size: 10px;
@@ -2004,7 +2018,7 @@ textarea.mavi-input {
 .bk-table tbody tr:hover .bk-apt-name {
     color: var(--accent-cyan);
 }
-.bk-table tbody tr:hover .bk-cell:not(.bk-booked):not(.bk-inside) {
+.bk-table tbody tr:hover .bk-cell:not(.bk-booked):not(.bk-blocked):not(.bk-inside):not(.bk-inside-blocked) {
     background: rgba(255,255,255,0.03);
 }
 

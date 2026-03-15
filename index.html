@@ -1864,6 +1864,13 @@
     }
 
     // ── iCal parsing ────────────────────────────────────────────────
+    const BK_BLOCKED_KEYWORDS = ['not available', 'unavailable', 'blocked', 'not-available', 'airbnb (not available)'];
+
+    function bkIsBlocked(summary) {
+        const s = (summary || '').toLowerCase();
+        return BK_BLOCKED_KEYWORDS.some(kw => s.includes(kw));
+    }
+
     function parseIcalText(text, aptId, aptName) {
         const events = [];
         const blocks = text.split('BEGIN:VEVENT');
@@ -1884,7 +1891,9 @@
             const start = parseDate(dtstart);
             const end   = dtend ? parseDate(dtend) : new Date(start.getTime() + 86400000);
             if (isNaN(start.getTime())) continue;
-            events.push({ aptId, aptName, start, end, summary: get('SUMMARY') || 'Бронь' });
+            const summary = get('SUMMARY') || 'Бронь';
+            const blocked = bkIsBlocked(summary);
+            events.push({ aptId, aptName, start, end, summary, blocked });
         }
         return events;
     }
@@ -1988,11 +1997,19 @@
         }
 
         bkApts = apts;
-        const results = await Promise.allSettled(bkApts.map(async apt => {
-            const text = await fetchIcal(apt.hostify_link);
-            if (!text) return [];
-            return parseIcalText(text, apt.id, apt.name);
-        }));
+
+        // Fetch in batches of 6 to avoid overwhelming serverless function
+        const BATCH = 6;
+        const results = [];
+        for (let i = 0; i < bkApts.length; i += BATCH) {
+            const batch = bkApts.slice(i, i + BATCH);
+            const batchResults = await Promise.allSettled(batch.map(async apt => {
+                const text = await fetchIcal(apt.hostify_link);
+                if (!text) return [];
+                return parseIcalText(text, apt.id, apt.name);
+            }));
+            results.push(...batchResults);
+        }
 
         bkAllEvents = results.reduce((acc, r) => {
             if (r.status === 'fulfilled' && Array.isArray(r.value)) acc = acc.concat(r.value);
@@ -2118,12 +2135,13 @@
         thead += '</tr>';
         document.getElementById('bk-thead').innerHTML = thead;
 
-        // TBODY — compute stats as we go
+        // TBODY — compute stats (only real bookings, not blocked dates)
         let activeCnt = 0, checkinToday = 0, checkoutToday = 0;
 
-        const eventsInPeriod = bkAllEvents.filter(ev => ev.start < days[days.length-1] && ev.end > days[0]);
-        activeCnt = eventsInPeriod.length;
-        bkAllEvents.forEach(ev => {
+        const realBookings = bkAllEvents.filter(ev => !ev.blocked);
+        const realInPeriod = realBookings.filter(ev => ev.start < days[days.length-1] && ev.end > days[0]);
+        activeCnt = realInPeriod.length;
+        realBookings.forEach(ev => {
             if (bkDateKey(ev.start) === todayKey) checkinToday++;
             const dayBefore = new Date(ev.end.getTime() - 86400000);
             if (bkDateKey(dayBefore) === todayKey) checkoutToday++;
@@ -2166,14 +2184,18 @@
                     const fmtD = dd => `${dd.getDate()} ${BK_MONTHS_SHORT[dd.getMonth()]}`;
                     const endDisplay = new Date(ev.end.getTime() - 86400000);
                     const tipText = encodeURIComponent(`${ev.summary}||${fmtD(ev.start)} — ${fmtD(endDisplay)}`);
-                    cells.push(`<td class="bk-cell bk-booked" colspan="${span}" data-bk-tip="${tipText}" data-bk-apt="${apt.name}">
-                        <div class="bk-bar">${span > 3 ? `<span class="bk-bar-text">${ev.summary}</span>` : ''}</div>
+                    const barClass = ev.blocked ? 'bk-bar bk-bar-blocked' : 'bk-bar';
+                    const cellClass = ev.blocked ? 'bk-cell bk-blocked' : 'bk-cell bk-booked';
+                    const label = ev.blocked ? (span > 5 ? 'Недоступно' : '') : (span > 3 ? `<span class="bk-bar-text">${ev.summary}</span>` : '');
+                    cells.push(`<td class="${cellClass}" colspan="${span}" data-bk-tip="${tipText}" data-bk-apt="${apt.name}">
+                        <div class="${barClass}">${label}</div>
                     </td>`);
                     skip = span - 1;
                 } else {
                     // Check if we're INSIDE an event (not start)
                     const inside = aptEvents.find(ev => dStart >= ev.start.getTime() && dStart < ev.end.getTime());
-                    const cls = inside ? 'bk-inside' : (isToday ? 'bk-today-cell' : (isWe ? 'bk-we-cell' : ''));
+                    const insideCls = inside ? (inside.blocked ? 'bk-inside-blocked' : 'bk-inside') : '';
+                    const cls = insideCls || (isToday ? 'bk-today-cell' : (isWe ? 'bk-we-cell' : ''));
                     cells.push(`<td class="bk-cell ${cls}"></td>`);
                 }
             }
