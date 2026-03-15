@@ -3828,15 +3828,20 @@
         });
 
         // Mobile: hamburger opens sidebar overlay
+        let savedScrollY = 0;
         function openMobSidebar() {
+            savedScrollY = window.scrollY;
             sidebar.classList.add('mob-open');
             overlay.classList.add('active');
-            document.body.style.overflow = 'hidden';
+            document.body.classList.add('mob-sidebar-open');
+            document.body.style.top = `-${savedScrollY}px`;
         }
         function closeMobSidebar() {
             sidebar.classList.remove('mob-open');
             overlay.classList.remove('active');
-            document.body.style.overflow = '';
+            document.body.classList.remove('mob-sidebar-open');
+            document.body.style.top = '';
+            window.scrollTo(0, savedScrollY);
         }
         mobMenuBtn?.addEventListener('click', openMobSidebar);
         overlay?.addEventListener('click', closeMobSidebar);

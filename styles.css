@@ -91,6 +91,8 @@ body {
     flex-direction: column;
     border-right: var(--glass-border);
     box-shadow: 10px 0 30px rgba(0, 0, 0, 0.5);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 .logo-section {
@@ -2997,6 +2999,13 @@ textarea.mavi-input {
     justify-content: center;
     font-size: 16px;
     flex-shrink: 0;
+}
+
+/* ── Lock body scroll when mobile sidebar open ─────────────────── */
+body.mob-sidebar-open {
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
 }
 
 /* ── Sidebar overlay (mobile) ───────────────────────────────────── */
