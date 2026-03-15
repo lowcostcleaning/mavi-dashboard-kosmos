@@ -2014,13 +2014,12 @@
         thead += '</tr>';
         document.getElementById('bk-thead').innerHTML = thead;
 
-        // TBODY — compute stats (only real bookings, not blocked dates)
+        // TBODY — compute stats (all bookings including other-source)
         let activeCnt = 0, checkinToday = 0, checkoutToday = 0;
 
-        const realBookings = bkAllEvents.filter(ev => !ev.blocked);
-        const realInPeriod = realBookings.filter(ev => ev.start < days[days.length-1] && ev.end > days[0]);
-        activeCnt = realInPeriod.length;
-        realBookings.forEach(ev => {
+        const allInPeriod = bkAllEvents.filter(ev => ev.start < days[days.length-1] && ev.end > days[0]);
+        activeCnt = allInPeriod.length;
+        bkAllEvents.forEach(ev => {
             if (bkDateKey(ev.start) === todayKey) checkinToday++;
             const dayBefore = new Date(ev.end.getTime() - 86400000);
             if (bkDateKey(dayBefore) === todayKey) checkoutToday++;
@@ -2063,9 +2062,11 @@
                     const fmtD = dd => `${dd.getDate()} ${BK_MONTHS_SHORT[dd.getMonth()]}`;
                     const endDisplay = new Date(ev.end.getTime() - 86400000);
                     const tipText = encodeURIComponent(`${ev.summary}||${fmtD(ev.start)} — ${fmtD(endDisplay)}`);
-                    const barClass = ev.blocked ? 'bk-bar bk-bar-blocked' : 'bk-bar';
-                    const cellClass = ev.blocked ? 'bk-cell bk-blocked' : 'bk-cell bk-booked';
-                    const label = ev.blocked ? (span > 5 ? 'Недоступно' : '') : (span > 3 ? `<span class="bk-bar-text">${ev.summary}</span>` : '');
+                    const barClass = ev.blocked ? 'bk-bar bk-bar-other' : 'bk-bar';
+                    const cellClass = 'bk-cell bk-booked';
+                    const label = ev.blocked
+                        ? (span > 5 ? '<span class="bk-bar-text">Бронь из другого источника</span>' : (span > 2 ? '<span class="bk-bar-text">Другой</span>' : ''))
+                        : (span > 3 ? `<span class="bk-bar-text">${ev.summary}</span>` : '');
                     cells.push(`<td class="${cellClass}" colspan="${span}" data-bk-tip="${tipText}" data-bk-apt="${apt.name}">
                         <div class="${barClass}">${label}</div>
                     </td>`);
@@ -2073,7 +2074,7 @@
                 } else {
                     // Check if we're INSIDE an event (not start)
                     const inside = aptEvents.find(ev => dStart >= ev.start.getTime() && dStart < ev.end.getTime());
-                    const insideCls = inside ? (inside.blocked ? 'bk-inside-blocked' : 'bk-inside') : '';
+                    const insideCls = inside ? (inside.blocked ? 'bk-inside-other' : 'bk-inside') : '';
                     const cls = insideCls || (isToday ? 'bk-today-cell' : (isWe ? 'bk-we-cell' : ''));
                     cells.push(`<td class="bk-cell ${cls}"></td>`);
                 }
