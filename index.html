@@ -1920,43 +1920,37 @@
         bkLoaded = true;
     }
 
+    function bkShowTable() {
+        document.getElementById('bk-loading').style.display = 'none';
+        document.getElementById('bk-table-wrap').style.display = '';
+        document.getElementById('bk-stat-apts').textContent = bkApts.length;
+        renderBookings();
+    }
+
     async function loadBookings({ background = false } = {}) {
-        // Already loaded — just render
+        // Already loaded — just show
         if (bkLoaded) {
-            if (!background) {
-                document.getElementById('bk-loading').style.display = 'none';
-                document.getElementById('bk-table-wrap').style.display = '';
-                document.getElementById('bk-stat-apts').textContent = bkApts.length;
-                renderBookings();
-            }
+            if (!background) bkShowTable();
             return;
         }
 
-        // Show spinner if user is on the tab
+        // Show spinner only if user is looking at the tab (not background)
         if (!background) {
             document.getElementById('bk-loading').style.display = '';
             document.getElementById('bk-table-wrap').style.display = 'none';
         }
 
-        // Share single fetch promise
+        // Share single fetch promise — avoid duplicate fetches
         if (!bkFetchPromise) {
-            bkFetchPromise = _doFetchBookings().finally(() => { bkFetchPromise = null; });
+            bkFetchPromise = _doFetchBookings()
+                .catch(err => console.error('Bookings load failed:', err))
+                .finally(() => { bkFetchPromise = null; });
         }
 
-        try {
-            await bkFetchPromise;
-        } catch (err) {
-            console.error('Bookings load failed:', err);
-        }
+        await bkFetchPromise;
 
-        // Render
-        const isOnTab = document.querySelector('.view[data-view="bookings"]')?.classList.contains('active');
-        if (!background || isOnTab) {
-            document.getElementById('bk-stat-apts').textContent = bkApts.length;
-            document.getElementById('bk-loading').style.display = 'none';
-            document.getElementById('bk-table-wrap').style.display = '';
-            renderBookings();
-        }
+        // Always show table after fetch completes (regardless of background)
+        bkShowTable();
     }
 
     // ── Rendering ───────────────────────────────────────────────────
@@ -2149,12 +2143,7 @@
         document.getElementById('bk-tooltip').style.display = 'none';
     });
 
-    // Load when tab activated
-    document.querySelectorAll('.nav-item[data-view="bookings"]').forEach(el => {
-        el.addEventListener('click', () => {
-            if (!bkLoaded) loadBookings();
-        });
-    });
+    // Tab activation handled by main nav handler (loadBookings called there)
 
     // ── Schedule Cleaning Modal ──────────────────────────────────────
     let schedAptId = null;
