@@ -1817,12 +1817,13 @@
     function bkCacheKey(url) {
         return 'ical_' + btoa(unescape(encodeURIComponent(url))).slice(0, 40);
     }
-    function bkReadCache(url) {
+    function bkReadCache(url, { allowStale = false } = {}) {
         try {
             const raw = localStorage.getItem(bkCacheKey(url));
             if (!raw) return null;
             const { text, ts } = JSON.parse(raw);
             if (Date.now() - ts < BK_CACHE_TTL) return text;
+            if (allowStale) return text;
         } catch(_) {}
         return null;
     }
@@ -1858,6 +1859,12 @@
 
     async function fetchIcal(url, { forceRefresh = false } = {}) {
         let icalUrl = url.startsWith('webcal://') ? 'https://' + url.slice(9) : url;
+        const isCalendarText = text => typeof text === 'string' && text.includes('BEGIN:VCALENDAR');
+        const knownProxyBases = [
+            '/api/ical',
+            'https://mavi-dashboard-kosmos.vercel.app/api/ical',
+        ];
+        const proxyBases = [...new Set(knownProxyBases.filter(Boolean))];
 
         // Return from cache if fresh
         if (!forceRefresh) {
@@ -1865,19 +1872,6 @@
             if (cached) return cached;
         }
 
-        // 1) Our own Vercel serverless proxy (fastest, most reliable)
-        try {
-            const resp = await fetch(`/api/ical?url=${encodeURIComponent(icalUrl)}`);
-            if (resp.ok) {
-                const text = await resp.text();
-                if (text.includes('BEGIN:VCALENDAR')) {
-                    bkWriteCache(icalUrl, text);
-                    return text;
-                }
-            }
-        } catch(_) {}
-
-        // 2) Fallback: race public CORS proxies
         const tryFetch = async (fetchUrl, isJson) => {
             const controller = new AbortController();
             const timer = setTimeout(() => controller.abort(), 8000);
@@ -1892,7 +1886,7 @@
                 } else {
                     text = await resp.text();
                 }
-                if (!text.includes('BEGIN:VCALENDAR')) throw new Error('not ical');
+                if (!isCalendarText(text)) throw new Error('not ical');
                 return text;
             } catch(e) {
                 clearTimeout(timer);
@@ -1900,15 +1894,39 @@
             }
         };
 
+        // 1) Direct source fetch (works for providers with permissive CORS)
+        try {
+            const text = await tryFetch(icalUrl, false);
+            bkWriteCache(icalUrl, text);
+            return text;
+        } catch(_) {}
+
+        // 2) Internal/remote serverless proxies
+        for (const base of proxyBases) {
+            try {
+                const text = await tryFetch(`${base}?url=${encodeURIComponent(icalUrl)}`, false);
+                bkWriteCache(icalUrl, text);
+                return text;
+            } catch(_) {}
+        }
+
+        // 3) Fallback: race public CORS proxies
         const ts = Date.now();
+        const icalUrlNoProto = icalUrl.replace(/^https?:\/\//i, '');
         try {
             const text = await Promise.any([
                 tryFetch(`https://corsproxy.io/?url=${encodeURIComponent(icalUrl)}&_=${ts}`, false),
                 tryFetch(`https://api.allorigins.win/get?url=${encodeURIComponent(icalUrl)}&_=${ts}`, true),
+                tryFetch(`https://r.jina.ai/http://${icalUrlNoProto}?_=${ts}`, false),
+                tryFetch(`https://r.jina.ai/https://${icalUrlNoProto}?_=${ts}`, false),
             ]);
             bkWriteCache(icalUrl, text);
             return text;
         } catch(_) {}
+
+        // Last fallback: return stale cache so bookings still render offline/when provider blocks
+        const stale = bkReadCache(icalUrl, { allowStale: true });
+        if (stale && isCalendarText(stale)) return stale;
 
         return null;
     }
@@ -1928,12 +1946,15 @@
         }
 
         bkApts = apts;
-        const results = await Promise.all(bkApts.map(async apt => {
+        const results = await Promise.allSettled(bkApts.map(async apt => {
             const text = await fetchIcal(apt.hostify_link);
             if (!text) return [];
             return parseIcalText(text, apt.id, apt.name);
         }));
-        bkAllEvents = results.flat();
+
+        bkAllEvents = results
+            .filter(r => r.status === 'fulfilled')
+            .flatMap(r => r.value || []);
         bkLoaded = true;
     }
 
