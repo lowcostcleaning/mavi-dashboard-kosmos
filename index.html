@@ -1940,7 +1940,11 @@
     async function loadBookings({ background = false } = {}) {
         // Already loaded — just render
         if (bkLoaded) {
-            if (!background) renderBookings();
+            if (!background) {
+                document.getElementById('bk-stat-apts').textContent = bkApts.length;
+                document.getElementById('bk-loading').style.display = 'none';
+                renderBookings();
+            }
             return;
         }
 
