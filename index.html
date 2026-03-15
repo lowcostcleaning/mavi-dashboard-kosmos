@@ -1810,7 +1810,7 @@
     let bkApts      = [];   // apartments with hostify_link
     let bkSearch    = '';
     let bkLoaded    = false;
-    let bkLoading   = false;  // background fetch in progress
+    let bkFetchPromise = null;  // single shared promise for ongoing fetch
 
     const BK_CACHE_TTL = 30 * 60 * 1000; // 30 minutes
 
@@ -1910,20 +1910,7 @@
         }
     }
 
-    async function loadBookings({ background = false } = {}) {
-        // If already loaded and not a background prefetch — just render
-        if (bkLoaded && !background) { renderBookings(); return; }
-        // Prevent double-loading
-        if (bkLoading && !background) return;
-
-        const isOnBookingsTab = document.querySelector('.view[data-view="bookings"]')?.classList.contains('active');
-
-        if (!background && !bkLoaded) {
-            document.getElementById('bk-loading').style.display = '';
-            document.getElementById('bk-table-wrap').style.display = 'none';
-        }
-
-        // Use apartments already loaded into allApartments if available
+    async function _doFetchBookings() {
         let apts = allApartments.length
             ? allApartments.filter(a => a.hostify_link && a.hostify_link.trim())
             : null;
@@ -1938,21 +1925,39 @@
         }
 
         bkApts = apts;
-        if (isOnBookingsTab) document.getElementById('bk-stat-apts').textContent = bkApts.length;
-
-        bkLoading = true;
-        // Fetch all iCal in parallel (cache-first)
         const results = await Promise.all(bkApts.map(async apt => {
             const text = await fetchIcal(apt.hostify_link);
             if (!text) return [];
             return parseIcalText(text, apt.id, apt.name);
         }));
-        bkLoading = false;
-
         bkAllEvents = results.flat();
         bkLoaded = true;
+    }
 
-        if (isOnBookingsTab || !background) {
+    async function loadBookings({ background = false } = {}) {
+        // Already loaded — just render
+        if (bkLoaded) {
+            if (!background) renderBookings();
+            return;
+        }
+
+        // Show spinner if user navigated to tab
+        if (!background) {
+            document.getElementById('bk-loading').style.display = '';
+            document.getElementById('bk-table-wrap').style.display = 'none';
+        }
+
+        // Share single fetch promise — background and foreground wait on same request
+        if (!bkFetchPromise) {
+            bkFetchPromise = _doFetchBookings();
+        }
+
+        await bkFetchPromise;
+
+        // Render if on bookings tab (background prefetch) or called directly
+        const isOnTab = document.querySelector('.view[data-view="bookings"]')?.classList.contains('active');
+        if (!background || isOnTab) {
+            document.getElementById('bk-stat-apts').textContent = bkApts.length;
             document.getElementById('bk-loading').style.display = 'none';
             renderBookings();
         }
