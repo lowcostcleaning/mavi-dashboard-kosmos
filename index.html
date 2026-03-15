@@ -1795,6 +1795,8 @@
     });
 
     loadCleanings();
+    // Prefetch bookings in background so the tab opens instantly
+    setTimeout(() => loadBookings({ background: true }), 1500);
 
     // ════════════════════════════════════════════════════════════════
     // BOOKINGS CALENDAR (iCal)
@@ -1808,6 +1810,25 @@
     let bkApts      = [];   // apartments with hostify_link
     let bkSearch    = '';
     let bkLoaded    = false;
+    let bkLoading   = false;  // background fetch in progress
+
+    const BK_CACHE_TTL = 30 * 60 * 1000; // 30 minutes
+
+    function bkCacheKey(url) {
+        return 'ical_' + btoa(unescape(encodeURIComponent(url))).slice(0, 40);
+    }
+    function bkReadCache(url) {
+        try {
+            const raw = localStorage.getItem(bkCacheKey(url));
+            if (!raw) return null;
+            const { text, ts } = JSON.parse(raw);
+            if (Date.now() - ts < BK_CACHE_TTL) return text;
+        } catch(_) {}
+        return null;
+    }
+    function bkWriteCache(url, text) {
+        try { localStorage.setItem(bkCacheKey(url), JSON.stringify({ text, ts: Date.now() })); } catch(_) {}
+    }
 
     // ── iCal parsing ────────────────────────────────────────────────
     function parseIcalText(text, aptId, aptName) {
@@ -1835,8 +1856,14 @@
         return events;
     }
 
-    async function fetchIcal(url) {
+    async function fetchIcal(url, { forceRefresh = false } = {}) {
         let icalUrl = url.startsWith('webcal://') ? 'https://' + url.slice(9) : url;
+
+        // Return from cache if fresh
+        if (!forceRefresh) {
+            const cached = bkReadCache(icalUrl);
+            if (cached) return cached;
+        }
 
         // Each entry: { make: url => proxyUrl, json: bool (response is JSON wrapper) }
         const proxies = [
@@ -1868,38 +1895,61 @@
                     const ct = resp.headers.get('content-type') || '';
                     text = ct.includes('json') ? ((await resp.json()).contents || '') : await resp.text();
                 }
-                if (text.includes('BEGIN:VCALENDAR')) return text;
+                if (text.includes('BEGIN:VCALENDAR')) {
+                    bkWriteCache(icalUrl, text);
+                    return text;
+                }
             } catch(_) {}
         }
         return null;
     }
 
-    async function loadBookings() {
-        if (bkLoaded) { renderBookings(); return; }
-        document.getElementById('bk-loading').style.display = '';
-        document.getElementById('bk-table-wrap').style.display = 'none';
+    async function loadBookings({ background = false } = {}) {
+        // If already loaded and not a background prefetch — just render
+        if (bkLoaded && !background) { renderBookings(); return; }
+        // Prevent double-loading
+        if (bkLoading && !background) return;
 
-        const { data: apts } = await supa
-            .from('apartments')
-            .select('id, name, hostify_link')
-            .not('hostify_link', 'is', null)
-            .order('name');
+        const isOnBookingsTab = document.querySelector('.view[data-view="bookings"]')?.classList.contains('active');
 
-        bkApts = (apts || []).filter(a => a.hostify_link && a.hostify_link.trim());
+        if (!background && !bkLoaded) {
+            document.getElementById('bk-loading').style.display = '';
+            document.getElementById('bk-table-wrap').style.display = 'none';
+        }
 
-        document.getElementById('bk-stat-apts').textContent = bkApts.length;
+        // Use apartments already loaded into allApartments if available
+        let apts = allApartments.length
+            ? allApartments.filter(a => a.hostify_link && a.hostify_link.trim())
+            : null;
 
-        // Fetch all iCal in parallel
+        if (!apts) {
+            const { data } = await supa
+                .from('apartments')
+                .select('id, name, hostify_link')
+                .not('hostify_link', 'is', null)
+                .order('name');
+            apts = (data || []).filter(a => a.hostify_link && a.hostify_link.trim());
+        }
+
+        bkApts = apts;
+        if (isOnBookingsTab) document.getElementById('bk-stat-apts').textContent = bkApts.length;
+
+        bkLoading = true;
+        // Fetch all iCal in parallel (cache-first)
         const results = await Promise.all(bkApts.map(async apt => {
             const text = await fetchIcal(apt.hostify_link);
             if (!text) return [];
             return parseIcalText(text, apt.id, apt.name);
         }));
+        bkLoading = false;
 
         bkAllEvents = results.flat();
         bkLoaded = true;
-        document.getElementById('bk-loading').style.display = 'none';
-        renderBookings();
+
+        if (isOnBookingsTab || !background) {
+            document.getElementById('bk-loading').style.display = 'none';
+            renderBookings();
+        }
     }
 
     // ── Rendering ───────────────────────────────────────────────────
