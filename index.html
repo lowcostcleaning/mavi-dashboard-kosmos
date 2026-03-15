@@ -1836,22 +1836,37 @@
     }
 
     async function fetchIcal(url) {
-        const proxies = [
-            u => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
-            u => `https://api.allorigins.win/get?url=${encodeURIComponent(u)}`,
-        ];
         let icalUrl = url.startsWith('webcal://') ? 'https://' + url.slice(9) : url;
-        for (const makeProxy of proxies) {
+
+        // Each entry: { make: url => proxyUrl, json: bool (response is JSON wrapper) }
+        const proxies = [
+            { make: u => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,            json: false },
+            { make: u => `https://api.allorigins.win/get?url=${encodeURIComponent(u)}`,   json: true  },
+            { make: u => `https://corsproxy.org/?${encodeURIComponent(u)}`,               json: false },
+            { make: u => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`, json: false },
+            { make: u => `https://thingproxy.freeboard.io/fetch/${encodeURIComponent(u)}`, json: false },
+        ];
+
+        // Try direct first (some hostify/airbnb URLs support CORS)
+        try {
+            const resp = await fetch(icalUrl, { cache: 'no-store' });
+            if (resp.ok) {
+                const text = await resp.text();
+                if (text.includes('BEGIN:VCALENDAR')) return text;
+            }
+        } catch(_) {}
+
+        for (const proxy of proxies) {
             try {
-                const resp = await fetch(makeProxy(icalUrl) + '&_=' + Date.now(), { cache: 'no-store' });
+                const resp = await fetch(proxy.make(icalUrl) + (proxy.make(icalUrl).includes('?') ? '&' : '?') + '_=' + Date.now(), { cache: 'no-store' });
                 if (!resp.ok) continue;
                 let text = '';
-                const ct = resp.headers.get('content-type') || '';
-                if (ct.includes('json') || makeProxy === proxies[1]) {
+                if (proxy.json) {
                     const j = await resp.json();
-                    text = j.contents || '';
+                    text = j.contents || j.data || '';
                 } else {
-                    text = await resp.text();
+                    const ct = resp.headers.get('content-type') || '';
+                    text = ct.includes('json') ? ((await resp.json()).contents || '') : await resp.text();
                 }
                 if (text.includes('BEGIN:VCALENDAR')) return text;
             } catch(_) {}
