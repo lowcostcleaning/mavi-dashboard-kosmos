@@ -1628,8 +1628,14 @@
     }
     async function saveIcalLink(aptId) {
         const val = document.getElementById('apt-ical-input-' + aptId).value.trim() || null;
-        await supa.from('apartments').update({ hostify_link: val }).eq('id', aptId);
-        await loadApartments();
+        const { error } = await supa.from('apartments').update({ hostify_link: val }).eq('id', aptId);
+        if (error) { console.error('ical update error:', error); alert('Ошибка: ' + error.message); return; }
+        // reload data and reopen profile
+        const { data: fresh } = await supa.from('apartments').select('*').eq('id', aptId).single();
+        if (fresh) {
+            const idx = allApartments.findIndex(x => x.id === aptId);
+            if (idx !== -1) { allApartments[idx] = { ...allApartments[idx], ...fresh }; }
+        }
         openAptProfile(aptId);
     }
 
@@ -2048,16 +2054,22 @@
 
         bkApts = apts;
 
-        // Fetch ALL apartments in parallel (same as финкабинет)
-        const results = await Promise.all(bkApts.map(async apt => {
-            try {
-                const text = await fetchIcal(apt.hostify_link);
-                if (!text) return [];
-                return parseIcalText(text, apt.id, apt.name);
-            } catch(_) { return []; }
-        }));
+        // Fetch apartments in batches of 10 to avoid throttling
+        const BATCH = 10;
+        const allResults = [];
+        for (let i = 0; i < bkApts.length; i += BATCH) {
+            const batch = bkApts.slice(i, i + BATCH);
+            const results = await Promise.all(batch.map(async apt => {
+                try {
+                    const text = await fetchIcal(apt.hostify_link);
+                    if (!text) return [];
+                    return parseIcalText(text, apt.id, apt.name);
+                } catch(_) { return []; }
+            }));
+            allResults.push(...results);
+        }
 
-        bkAllEvents = results.flat();
+        bkAllEvents = allResults.flat();
         bkLoaded = true;
     }
 
