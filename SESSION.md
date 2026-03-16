@@ -69,3 +69,79 @@ https://github.com/lowcostcleaning/mavi-dashboard-kosmos (git email: avtopilot72
 ### Изменённые файлы
 - `index.html` (логика загрузки и fallback iCal)
 - `SESSION.md` (документирование изменений)
+
+---
+
+## 2026-03-15 (сессия 4)
+
+### Сделано
+1. **Полная переработка загрузки iCal по образцу финкабинета**
+   - Убран весь лишний код: localStorage кеш, Promise.any, батчинг по 6, stale cache fallback
+   - `fetchIcal()` — последовательная цепочка прокси: `/api/ical` → `corsproxy.io` → `allorigins.win`
+   - `_doFetchBookings()` — `Promise.all` без батчинга (как в финкабинете)
+   - Shared `bkFetchPromise` — предотвращает дублирование запросов при фоновом prefetch + клике пользователя
+
+2. **Разделение blocked/booked в iCal**
+   - Airbnb отправляет "Not available" / "Unavailable" для заблокированных дат собственником
+   - Добавлен `bkIsBlocked(summary)` — проверка по ключевым словам
+   - Реальные брони — зелёные, blocked — серые пунктирные (`.bk-bar-blocked`)
+   - Статистика считает только реальные брони
+
+3. **Фикс вложенного скролла в таблице броней**
+   - Убран `max-height: calc(100vh - 340px)` и `overflow-y: auto` с `.bk-table-wrap`
+   - Добавлен sticky thead (`position: sticky; top: 0; z-index: 8`)
+   - Corner cell z-index: 12
+
+4. **Все изменения запушены на GitHub** (коммиты af09177, ca52276)
+
+### Текущее состояние
+- Брони загружаются через Vercel `/api/ical.js` прокси — работает стабильно
+- 90+ апартаментов, параллельная загрузка через `Promise.all`
+- Фоновый prefetch при загрузке страницы (`setTimeout 300ms`)
+- Blocked даты визуально отличаются от реальных броней
+- Таблица без вложенного скролла, заголовок sticky
+
+### Ключевые файлы (что менялось)
+- `index.html` — логика iCal (fetchIcal, parseIcalText, bkIsBlocked, loadBookings, renderBookings)
+- `styles.css` — `.bk-bar-blocked`, `.bk-cell.bk-inside-blocked`, `.bk-table-wrap`, sticky thead
+- `api/ical.js` — Vercel serverless прокси (скопирован из финкабинета `/api/proxy.js`)
+- `vercel.json` — конфиг serverless функции (256MB, 15s timeout)
+
+### Эталон для iCal
+- Финкабинет (`~/Проекты/финкабинет/`) — рабочий проект с идентичным подходом к iCal
+- `/api/proxy.js` — серверный прокси
+- `/src/App.jsx` — `useManagerIcalEvents()` хук с `Promise.all`
+
+### Что проверить
+- Визуально на мобилке: sidebar collapse, нижний таббар, bottom sheet модалки
+- Онбординг-трекер CSS: карточки прогресса на дашборде
+
+---
+
+## 2026-03-16 (сессия 5)
+
+### Сделано
+1. **Шрифты в карточках сотрудников** — заменены с Orbitron на Exo 2 (font-body) для читаемости:
+   - `.emp-card-name`, `.emp-card-role` — карточки в гриде
+   - `.emp-profile-name`, `.emp-profile-role`, `.emp-stat-value` — профиль/модалка
+   - Аватар (инициалы) оставлен на Orbitron — там 1-2 буквы, нормально
+
+2. **Уборки: исправлена проблема "не все отражаются"**
+   - **Причина**: n8n воркфлоу "sync Лист1 → Supabase tasks" пропускал строки из Google Sheet если название апартамента не совпадало с базой Supabase (42 уникальных несовпадения: кириллица/латиница WS В→WS B, ORBI D-3902→Orbi D1 3902, BV A 0714 (147)→BV A 147 и т.д.)
+   - **Решение**: n8n теперь вставляет ВСЕ строки, даже без совпадения — `apartment_id: null`, сырое название в `sheet_apt_name`
+   - Добавлена колонка `sheet_apt_name` в таблицу `tasks` (Supabase)
+   - В дашборде: уборки без апартамента показываются с жёлтой меткой и кнопкой "Сопоставить"
+   - Модалка "Сопоставить апартамент" — поиск + клик → PATCH apartment_id в Supabase
+   - Статистика: карточка "Без апартамента" показывается если есть несопоставленные
+   - Скипаются нерелевантные строки: "выходной", "Офис", даты типа "26 мая"
+
+### Ключевые изменения
+- `index.html` — loadCleanings (select sheet_apt_name), renderDayDetail/renderRangeList/renderCleaningCard (кнопка сопоставления), match modal, updateCalStats (счётчик unmatched)
+- `styles.css` — .cal-task-unmatched, .cal-match-btn, .match-apt-item
+- n8n "sync Лист1 → Supabase tasks" — Фильтр строк (не пропускает aptNotFound), Upsert URL (добавлен sheet_apt_name)
+- Supabase: ALTER TABLE tasks ADD COLUMN sheet_apt_name text
+
+### Ожидает проверки
+- n8n воркфлоу перезапустится через ~15 мин и подтянет ранее пропущенные строки
+- Проверить что уборки без апартамента появились и кнопка "Сопоставить" работает
+- Деплой на Vercel

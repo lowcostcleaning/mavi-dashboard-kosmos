@@ -1122,15 +1122,17 @@ button:active,
 
 .emp-card-name {
     font-size: 15px;
-    font-weight: 700;
+    font-weight: 600;
+    font-family: var(--font-body);
     color: var(--text-primary);
     margin-bottom: 3px;
 }
 
 .emp-card-role {
     font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.3px;
+    font-weight: 500;
+    font-family: var(--font-body);
+    letter-spacing: 0.2px;
 }
 
 .emp-card-btns {
@@ -1290,16 +1292,17 @@ button:active,
 
 .emp-profile-name {
     font-size: 22px;
-    font-weight: 700;
-    font-family: var(--font-heading);
+    font-weight: 600;
+    font-family: var(--font-body);
     color: var(--text-primary);
     margin-bottom: 4px;
 }
 
 .emp-profile-role {
     font-size: 13px;
-    font-weight: 600;
-    letter-spacing: 0.3px;
+    font-weight: 500;
+    font-family: var(--font-body);
+    letter-spacing: 0.2px;
     margin-bottom: 6px;
 }
 
@@ -1328,8 +1331,8 @@ button:active,
 
 .emp-stat-value {
     font-size: 16px;
-    font-weight: 700;
-    font-family: var(--font-heading);
+    font-weight: 600;
+    font-family: var(--font-body);
 }
 
 .emp-profile-notes {
@@ -1852,6 +1855,45 @@ select.mavi-input option {
 .cal-task-row[data-clean-id]:hover {
     background: rgba(255,255,255,0.05);
     border-radius: 8px;
+}
+
+/* Unmatched cleaning row */
+.cal-task-unmatched {
+    border-left: 3px solid #f59e0b;
+    padding-left: 10px;
+}
+
+.cal-match-btn {
+    display: inline-flex;
+    align-items: center;
+    margin-top: 5px;
+    padding: 3px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #f59e0b;
+    background: #f59e0b18;
+    border: 1px solid #f59e0b44;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.cal-match-btn:hover {
+    background: #f59e0b30;
+    border-color: #f59e0b88;
+}
+
+/* Match modal apartment list */
+.match-apt-item {
+    padding: 10px 14px;
+    font-size: 13px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+}
+.match-apt-item:last-child { border-bottom: none; }
+.match-apt-item:hover {
+    background: rgba(0, 242, 255, 0.08);
+    color: #00f2ff;
 }
 
 /* Textarea inside mavi-input */

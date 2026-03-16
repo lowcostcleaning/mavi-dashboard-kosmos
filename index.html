@@ -456,6 +456,13 @@
                             </div>
                             <div class="stat-label">Ожидает</div>
                         </div>
+                        <div class="stat-card" id="cal-stat-unmatched-card" style="display:none;">
+                            <div class="stat-header">
+                                <div class="stat-value" id="cal-stat-unmatched" style="color:#f59e0b;">—</div>
+                                <div class="stat-icon" style="color:#f59e0b;"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                            </div>
+                            <div class="stat-label">Без апартамента</div>
+                        </div>
                     </div>
 
                     <!-- Calendar mode -->
@@ -625,6 +632,23 @@
                             <i class="fa-solid fa-calendar-plus" style="margin-right:7px;"></i>Создать уборку
                         </button>
                         <div id="sched-msg" style="text-align:center;font-size:12px;margin-top:8px;min-height:18px;"></div>
+                    </div>
+                </div>
+
+                <!-- Match Apartment Modal -->
+                <div id="match-modal" class="clean-card-overlay" hidden>
+                    <div class="clean-card-modal" style="max-width:400px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+                            <div style="font-size:16px;font-weight:600;">Сопоставить апартамент</div>
+                            <button id="match-close" style="background:none;border:none;color:var(--text-secondary);font-size:18px;cursor:pointer;padding:4px;"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                        <div style="background:#f59e0b15;border:1px solid #f59e0b33;border-radius:10px;padding:10px 14px;margin-bottom:14px;">
+                            <div style="font-size:11px;color:#f59e0b;text-transform:uppercase;letter-spacing:.3px;margin-bottom:3px;">Из таблицы</div>
+                            <div id="match-sheet-name" style="font-size:14px;font-weight:600;color:var(--text-primary);"></div>
+                        </div>
+                        <input type="hidden" id="match-task-id">
+                        <input type="text" id="match-search" class="mavi-input" placeholder="Поиск апартамента..." style="width:100%;margin-bottom:10px;padding:8px 12px;font-size:13px;">
+                        <div id="match-apt-list" style="max-height:280px;overflow-y:auto;border:1px solid var(--border);border-radius:10px;"></div>
                     </div>
                 </div>
 
@@ -1647,7 +1671,7 @@
         // fetch all cleaning tasks (no date filter — filter client-side for flexibility)
         const { data, error } = await supa
             .from('tasks')
-            .select('id, title, status, type, deadline, started_at, completed_at, assigned_to, apartment_id, cost, comment, rating')
+            .select('id, title, status, type, deadline, started_at, completed_at, assigned_to, apartment_id, cost, comment, rating, sheet_apt_name')
             .eq('type', 'cleaning')
             .order('deadline', { ascending: true });
 
@@ -1738,14 +1762,20 @@
             const st  = CLEAN_STATUS[t.status] || { label: t.status || '—', color: '#a0a4cc' };
             const emp = allEmployees.find(e => e.id === t.assigned_to);
             const apt = allApartments.find(a => a.id === t.apartment_id);
+            const unmatched = !t.apartment_id && t.sheet_apt_name;
+            const aptLabel = apt?.name || t.sheet_apt_name || t.title || '—';
             const time = t.started_at
                 ? new Date(t.started_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
                 : '';
             const costStr = t.cost ? `${t.cost} ₾` : '';
-            return `<div class="cal-task-row" data-clean-id="${t.id}" style="cursor:pointer;">
+            const matchBtn = unmatched
+                ? `<button class="cal-match-btn" data-task-id="${t.id}" data-sheet-name="${(t.sheet_apt_name || '').replace(/"/g, '&quot;')}" title="Сопоставить с апартаментом"><i class="fa-solid fa-link" style="margin-right:4px;"></i>Сопоставить</button>`
+                : '';
+            return `<div class="cal-task-row${unmatched ? ' cal-task-unmatched' : ''}" data-clean-id="${t.id}" style="cursor:pointer;">
                 <div>
-                    <div class="cal-task-apt">${apt?.name || t.title || '—'}</div>
+                    <div class="cal-task-apt">${unmatched ? '<i class="fa-solid fa-triangle-exclamation" style="color:#f59e0b;margin-right:5px;font-size:10px;"></i>' : ''}${aptLabel}</div>
                     <div class="cal-task-emp"><i class="fa-solid fa-user" style="margin-right:4px;opacity:.5;font-size:10px;"></i>${emp?.full_name || '—'}${costStr ? ` <span style="color:#ffcc33;margin-left:6px;">${costStr}</span>` : ''}</div>
+                    ${matchBtn}
                 </div>
                 <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
                     ${time ? `<span style="font-size:11px;color:var(--text-secondary);">${time}</span>` : ''}
@@ -1761,6 +1791,13 @@
         document.getElementById('cal-stat-done').textContent     = m.filter(t => t.status === 'done').length;
         document.getElementById('cal-stat-progress').textContent = m.filter(t => t.status === 'in_progress').length;
         document.getElementById('cal-stat-pending').textContent  = m.filter(t => t.status === 'new' || t.status === 'assigned' || t.status === 'confirmed').length;
+
+        const unmatched = m.filter(t => !t.apartment_id && t.sheet_apt_name).length;
+        const card = document.getElementById('cal-stat-unmatched-card');
+        if (card) {
+            card.style.display = unmatched > 0 ? '' : 'none';
+            document.getElementById('cal-stat-unmatched').textContent = unmatched;
+        }
     }
 
     // Calendar nav events
@@ -1792,6 +1829,77 @@
     document.addEventListener('click', e => {
         const cell = e.target.closest('[data-cal-day]');
         if (cell) { renderDayDetail(parseInt(cell.dataset.calDay)); }
+    });
+
+    // ── Match apartment button handler ────────────────────────────
+    document.addEventListener('click', e => {
+        const btn = e.target.closest('.cal-match-btn');
+        if (!btn) return;
+        e.stopPropagation(); // don't open cleaning card
+        const taskId = btn.dataset.taskId;
+        const sheetName = btn.dataset.sheetName || '';
+        openMatchModal(taskId, sheetName);
+    });
+
+    function openMatchModal(taskId, sheetName) {
+        const overlay = document.getElementById('match-modal');
+        if (!overlay) return;
+        overlay.hidden = false;
+        document.getElementById('match-sheet-name').textContent = sheetName;
+        document.getElementById('match-task-id').value = taskId;
+
+        // Populate apartment list with search
+        const listEl = document.getElementById('match-apt-list');
+        const searchEl = document.getElementById('match-search');
+        searchEl.value = '';
+
+        function renderAptList(query) {
+            const q = (query || '').toLowerCase();
+            const filtered = allApartments.filter(a => !q || a.name.toLowerCase().includes(q));
+            listEl.innerHTML = filtered.length
+                ? filtered.map(a => `<div class="match-apt-item" data-apt-id="${a.id}" data-apt-name="${a.name}">${a.name}</div>`).join('')
+                : '<div style="padding:12px;opacity:.4;text-align:center;">Не найдено</div>';
+        }
+        renderAptList('');
+        searchEl.oninput = () => renderAptList(searchEl.value);
+    }
+
+    // Select apartment from match list
+    document.addEventListener('click', async e => {
+        const item = e.target.closest('.match-apt-item');
+        if (!item) return;
+        const aptId = item.dataset.aptId;
+        const aptName = item.dataset.aptName;
+        const taskId = document.getElementById('match-task-id').value;
+        if (!taskId || !aptId) return;
+
+        item.style.opacity = '.5';
+        item.textContent = 'Сохраняем...';
+
+        const { error } = await supa.from('tasks').update({ apartment_id: aptId }).eq('id', taskId);
+        if (error) {
+            item.textContent = 'Ошибка: ' + error.message;
+            item.style.color = '#ef4444';
+            return;
+        }
+
+        // Update local data
+        const task = calData.find(t => t.id === taskId);
+        if (task) task.apartment_id = aptId;
+
+        document.getElementById('match-modal').hidden = true;
+
+        // Re-render
+        if (calSelDay) renderDayDetail(calSelDay);
+        if (calViewMode === 'list') renderRangeList();
+    });
+
+    // Close match modal
+    document.getElementById('match-close')?.addEventListener('click', () => {
+        document.getElementById('match-modal').hidden = true;
+    });
+    document.getElementById('match-modal')?.addEventListener('click', e => {
+        if (e.target === e.currentTarget) document.getElementById('match-modal').hidden = true;
     });
 
     loadCleanings();
@@ -2315,11 +2423,17 @@
                 const st  = CLEAN_STATUS[t.status] || { label: t.status || '—', color: '#a0a4cc' };
                 const emp = allEmployees.find(e => e.id === t.assigned_to);
                 const apt = allApartments.find(a => a.id === t.apartment_id);
+                const unmatched = !t.apartment_id && t.sheet_apt_name;
+                const aptLabel = apt?.name || t.sheet_apt_name || t.title || '—';
                 const costStr = t.cost ? `<span style="color:#ffcc33;margin-left:6px;">${t.cost} ₾</span>` : '';
-                return `<div class="cal-task-row" data-clean-id="${t.id}" style="cursor:pointer;">
+                const matchBtn = unmatched
+                    ? `<button class="cal-match-btn" data-task-id="${t.id}" data-sheet-name="${(t.sheet_apt_name || '').replace(/"/g, '&quot;')}" title="Сопоставить"><i class="fa-solid fa-link" style="margin-right:4px;"></i>Сопоставить</button>`
+                    : '';
+                return `<div class="cal-task-row${unmatched ? ' cal-task-unmatched' : ''}" data-clean-id="${t.id}" style="cursor:pointer;">
                     <div>
-                        <div class="cal-task-apt">${apt?.name || t.title || '—'}</div>
+                        <div class="cal-task-apt">${unmatched ? '<i class="fa-solid fa-triangle-exclamation" style="color:#f59e0b;margin-right:5px;font-size:10px;"></i>' : ''}${aptLabel}</div>
                         <div class="cal-task-emp"><i class="fa-solid fa-user" style="margin-right:4px;opacity:.5;font-size:10px;"></i>${emp?.full_name || '—'}${costStr}</div>
+                        ${matchBtn}
                     </div>
                     <span class="cal-status-badge" style="background:${st.color}22;border-color:${st.color}55;color:${st.color};">${st.label}</span>
                 </div>`;
@@ -2394,12 +2508,16 @@
             `<i class="fa-solid fa-star clean-star" data-star="${i}" style="font-size:22px;cursor:pointer;color:${i <= curRating ? '#ffcc33' : '#ffffff22'};transition:color .15s;"></i>`
         ).join('');
 
+        const unmatchedCard = !t.apartment_id && t.sheet_apt_name;
+        const aptCardLabel = apt?.name || t.sheet_apt_name || t.title || '—';
+
         document.getElementById('clean-card-body').innerHTML = `
             <div class="clean-card-header">
                 <div class="clean-card-apt-icon"><i class="fa-solid fa-broom"></i></div>
                 <div style="flex:1;min-width:0;">
-                    <div class="clean-card-apt-name">${apt?.name || t.title || '—'}</div>
+                    <div class="clean-card-apt-name">${unmatchedCard ? '<i class="fa-solid fa-triangle-exclamation" style="color:#f59e0b;margin-right:5px;font-size:12px;"></i>' : ''}${aptCardLabel}</div>
                     <div class="clean-card-date"><span style="text-transform:capitalize;">${weekday}</span>, ${dateStr}</div>
+                    ${unmatchedCard ? `<button class="cal-match-btn" data-task-id="${t.id}" data-sheet-name="${(t.sheet_apt_name || '').replace(/"/g, '&quot;')}" style="margin-top:6px;"><i class="fa-solid fa-link" style="margin-right:4px;"></i>Сопоставить с апартаментом</button>` : ''}
                 </div>
                 <span class="cal-status-badge" style="background:${st.color}22;border-color:${st.color}55;color:${st.color};flex-shrink:0;">${st.label}</span>
             </div>
