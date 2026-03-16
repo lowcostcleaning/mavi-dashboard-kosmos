@@ -2024,7 +2024,7 @@ textarea.mavi-input {
     background: rgba(255,255,255,0.015);
 }
 .bk-cell.bk-inside {
-    background: rgba(99, 186, 100, 0.15);
+    background: rgba(59, 130, 246, 0.12);
 }
 .bk-cell.bk-inside-other {
     background: rgba(59, 130, 246, 0.12);
@@ -2035,26 +2035,24 @@ textarea.mavi-input {
     padding: 3px 0;
     cursor: pointer;
 }
-/* Real booking — green */
+/* Booking bar — blue */
 .bk-bar {
     height: 26px;
-    background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
     border-radius: 4px;
     margin: 0 1px;
     display: flex;
     align-items: center;
     padding: 0 6px;
-    box-shadow: 0 0 8px rgba(74,222,128,0.3);
-}
-/* Other source booking (Booking.com, direct, etc.) — blue accent */
-.bk-bar-other {
-    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
     box-shadow: 0 0 8px rgba(59,130,246,0.3);
+}
+.bk-bar-other {
+    /* same as base */
 }
 .bk-bar-text {
     font-size: 10px;
     font-weight: 600;
-    color: #052e16;
+    color: #e0f2fe;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
