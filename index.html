@@ -2054,8 +2054,8 @@
 
         bkApts = apts;
 
-        // Fetch apartments in batches of 10 to avoid throttling
-        const BATCH = 10;
+        // Fetch apartments in batches of 20 to avoid throttling
+        const BATCH = 20;
         const allResults = [];
         for (let i = 0; i < bkApts.length; i += BATCH) {
             const batch = bkApts.slice(i, i + BATCH);
@@ -2192,18 +2192,21 @@
                 if (skip > 0) { skip--; continue; }
                 const d = days[i];
                 const dStart = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-                const dEnd   = dStart + 86400000;
                 const isToday = bkDateKey(d) === todayKey;
                 const isWe    = d.getDay() === 0 || d.getDay() === 6;
 
-                // Find event that STARTS on this day
-                const ev = aptEvents.find(ev => {
+                // Find event that STARTS on this day OR started before but first visible day
+                let ev = aptEvents.find(ev => {
                     const evStart = new Date(ev.start.getFullYear(), ev.start.getMonth(), ev.start.getDate()).getTime();
                     return evStart === dStart;
                 });
+                // If no event starts here, check if an event started before the visible range and this is the first day
+                if (!ev && i === 0) {
+                    ev = aptEvents.find(ev => ev.start.getTime() < dStart && ev.end.getTime() > dStart);
+                }
 
                 if (ev) {
-                    // Calculate span
+                    // Calculate span within visible range
                     let span = 0;
                     for (let j = i; j < days.length; j++) {
                         const dd = days[j];
@@ -2225,11 +2228,31 @@
                     </td>`);
                     skip = span - 1;
                 } else {
-                    // Check if we're INSIDE an event (not start)
-                    const inside = aptEvents.find(ev => dStart >= ev.start.getTime() && dStart < ev.end.getTime());
-                    const insideCls = inside ? (inside.blocked ? 'bk-inside-other' : 'bk-inside') : '';
-                    const cls = insideCls || (isToday ? 'bk-today-cell' : (isWe ? 'bk-we-cell' : ''));
-                    cells.push(`<td class="bk-cell ${cls}"></td>`);
+                    // Check if we're INSIDE an event (not start) — render bar from this point
+                    const inside = aptEvents.find(ev => dStart > ev.start.getTime() && dStart < ev.end.getTime());
+                    if (inside) {
+                        let span = 0;
+                        for (let j = i; j < days.length; j++) {
+                            const ddS = new Date(days[j].getFullYear(), days[j].getMonth(), days[j].getDate()).getTime();
+                            if (ddS < inside.end.getTime()) span++;
+                            else break;
+                        }
+                        span = Math.max(1, span);
+                        const fmtD = dd => `${dd.getDate()} ${BK_MONTHS_SHORT[dd.getMonth()]}`;
+                        const endDisplay = new Date(inside.end.getTime() - 86400000);
+                        const tipText = encodeURIComponent(`${inside.summary}||${fmtD(inside.start)} — ${fmtD(endDisplay)}`);
+                        const barClass = inside.blocked ? 'bk-bar bk-bar-other' : 'bk-bar';
+                        const label = inside.blocked
+                            ? (span > 5 ? '<span class="bk-bar-text">Бронь из другого источника</span>' : (span > 2 ? '<span class="bk-bar-text">Другой</span>' : ''))
+                            : (span > 3 ? `<span class="bk-bar-text">${inside.summary}</span>` : '');
+                        cells.push(`<td class="bk-cell bk-booked" colspan="${span}" data-bk-tip="${tipText}" data-bk-apt="${apt.name}">
+                            <div class="${barClass}">${label}</div>
+                        </td>`);
+                        skip = span - 1;
+                    } else {
+                        const cls = isToday ? 'bk-today-cell' : (isWe ? 'bk-we-cell' : '');
+                        cells.push(`<td class="bk-cell ${cls}"></td>`);
+                    }
                 }
             }
 
