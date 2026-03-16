@@ -2217,12 +2217,10 @@
                     span = Math.max(1, span);
                     const fmtD = dd => `${dd.getDate()} ${BK_MONTHS_SHORT[dd.getMonth()]}`;
                     const endDisplay = new Date(ev.end.getTime() - 86400000);
-                    const tipText = encodeURIComponent(`${ev.summary}||${fmtD(ev.start)} — ${fmtD(endDisplay)}`);
-                    const barClass = ev.blocked ? 'bk-bar bk-bar-other' : 'bk-bar';
+                    const tipText = encodeURIComponent(`Бронь||${fmtD(ev.start)} — ${fmtD(endDisplay)}`);
+                    const barClass = 'bk-bar';
                     const cellClass = 'bk-cell bk-booked';
-                    const label = ev.blocked
-                        ? (span > 5 ? '<span class="bk-bar-text">Бронь из другого источника</span>' : (span > 2 ? '<span class="bk-bar-text">Другой</span>' : ''))
-                        : (span > 3 ? `<span class="bk-bar-text">${ev.summary}</span>` : '');
+                    const label = span > 3 ? '<span class="bk-bar-text">Бронь</span>' : '';
                     cells.push(`<td class="${cellClass}" colspan="${span}" data-bk-tip="${tipText}" data-bk-apt="${apt.name}">
                         <div class="${barClass}">${label}</div>
                     </td>`);
@@ -2240,11 +2238,9 @@
                         span = Math.max(1, span);
                         const fmtD = dd => `${dd.getDate()} ${BK_MONTHS_SHORT[dd.getMonth()]}`;
                         const endDisplay = new Date(inside.end.getTime() - 86400000);
-                        const tipText = encodeURIComponent(`${inside.summary}||${fmtD(inside.start)} — ${fmtD(endDisplay)}`);
-                        const barClass = inside.blocked ? 'bk-bar bk-bar-other' : 'bk-bar';
-                        const label = inside.blocked
-                            ? (span > 5 ? '<span class="bk-bar-text">Бронь из другого источника</span>' : (span > 2 ? '<span class="bk-bar-text">Другой</span>' : ''))
-                            : (span > 3 ? `<span class="bk-bar-text">${inside.summary}</span>` : '');
+                        const tipText = encodeURIComponent(`Бронь||${fmtD(inside.start)} — ${fmtD(endDisplay)}`);
+                        const barClass = 'bk-bar';
+                        const label = span > 3 ? '<span class="bk-bar-text">Бронь</span>' : '';
                         cells.push(`<td class="bk-cell bk-booked" colspan="${span}" data-bk-tip="${tipText}" data-bk-apt="${apt.name}">
                             <div class="${barClass}">${label}</div>
                         </td>`);
