@@ -1,0 +1,669 @@
+/* ═══════════════════════════════════════════════════════════════════
+   MAVI GUEST — Promo Carousel
+   ═══════════════════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Exo+2:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+    --bg-dark: #020205;
+    --bg-deep: #050510;
+    --bg-card: rgba(15, 15, 30, 0.7);
+    --text-primary: #e0e0ff;
+    --text-secondary: #a0a4cc;
+    --accent-cyan: #00f2ff;
+    --accent-purple: #7000ff;
+    --accent-gold: #ffcc33;
+    --glass-border: 1px solid rgba(255, 255, 255, 0.1);
+    --font-heading: 'Orbitron', sans-serif;
+    --font-body: 'Exo 2', sans-serif;
+    --carousel-accent: #62B2FE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+    height: 100%;
+    overflow: hidden;
+    font-family: var(--font-body);
+    background: var(--bg-dark);
+    color: var(--text-primary);
+}
+
+/* ─── Stars background ─────────────────────────────────── */
+.stars-bg {
+    position: fixed; inset: 0; z-index: 0;
+    background: radial-gradient(ellipse at bottom, #1B2735 0%, #090A0F 100%);
+}
+.stars-bg::after {
+    content: "";
+    position: absolute; top: 0; left: 0;
+    width: 200%; height: 200%;
+    background-image:
+        radial-gradient(2px 2px at 20px 30px, #eee, transparent),
+        radial-gradient(2px 2px at 40px 70px, #fff, transparent),
+        radial-gradient(2px 2px at 90px 40px, #fff, transparent),
+        radial-gradient(2px 2px at 130px 80px, #fff, transparent),
+        radial-gradient(1px 1px at 160px 120px, #ddd, transparent);
+    background-repeat: repeat;
+    background-size: 200px 200px;
+    opacity: 0.25;
+    animation: starsDrift 120s linear infinite;
+}
+@keyframes starsDrift {
+    from { transform: translateY(0); }
+    to   { transform: translateY(-100px); }
+}
+
+/* ─── Page wrapper ─────────────────────────────────────── */
+.promo-page {
+    position: relative; z-index: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    width: 100%;
+}
+
+/* ─── Header ───────────────────────────────────────────── */
+.promo-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 32px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    flex-shrink: 0;
+    backdrop-filter: blur(16px);
+    background: rgba(5,5,16,0.6);
+}
+.promo-logo {
+    display: flex; align-items: center; gap: 14px;
+}
+.promo-logo img {
+    height: 40px; border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: #0f1014; padding: 4px 6px;
+}
+.promo-logo-text {
+    font-family: var(--font-heading);
+    font-size: 14px; font-weight: 700;
+    letter-spacing: 2px;
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.promo-badge {
+    font-size: 11px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid rgba(0,242,255,0.2);
+    color: var(--accent-cyan);
+    background: rgba(0,242,255,0.06);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    font-family: var(--font-heading);
+    font-weight: 500;
+}
+
+/* ─── Carousel main area ───────────────────────────────── */
+.carousel-container {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+    min-height: 0;
+}
+
+/* ─── Left panel — labels ──────────────────────────────── */
+.carousel-labels {
+    width: 340px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, #0a1628 0%, #0d0f1a 100%);
+    border-right: 1px solid rgba(255,255,255,0.05);
+}
+.carousel-labels::before,
+.carousel-labels::after {
+    content: "";
+    position: absolute; left: 0; right: 0;
+    height: 80px; z-index: 10;
+    pointer-events: none;
+}
+.carousel-labels::before {
+    top: 0;
+    background: linear-gradient(to bottom, #0a1628, transparent);
+}
+.carousel-labels::after {
+    bottom: 0;
+    background: linear-gradient(to top, #0d0f1a, transparent);
+}
+
+.labels-track {
+    position: relative;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.label-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 28px;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+    white-space: nowrap;
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.3);
+    border: 1px solid transparent;
+    position: absolute;
+    user-select: none;
+}
+.label-item:hover {
+    color: rgba(255,255,255,0.6);
+    border-color: rgba(255,255,255,0.1);
+}
+.label-item.active {
+    background: rgba(255,255,255,0.95);
+    color: #0a1628;
+    border-color: rgba(255,255,255,0.9);
+    box-shadow: 0 4px 24px rgba(255,255,255,0.15);
+    font-weight: 700;
+    z-index: 5;
+}
+.label-icon {
+    font-size: 16px;
+    width: 20px;
+    text-align: center;
+    flex-shrink: 0;
+}
+.label-item.active .label-icon {
+    color: var(--accent-purple);
+}
+
+/* ─── Right panel — slide content ──────────────────────── */
+.carousel-viewport {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px;
+}
+
+.slide {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px;
+    opacity: 0;
+    transform: scale(0.92) translateY(30px);
+    transition: all 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+    pointer-events: none;
+}
+.slide.active {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    pointer-events: auto;
+}
+.slide.prev {
+    opacity: 0;
+    transform: scale(0.92) translateY(-30px);
+}
+
+.slide-inner {
+    width: 100%;
+    max-width: 900px;
+    max-height: 100%;
+    overflow-y: auto;
+}
+
+/* ─── Slide title ──────────────────────────────────────── */
+.slide-title {
+    font-family: var(--font-heading);
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    margin-bottom: 20px;
+    color: var(--accent-cyan);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.slide-title i {
+    font-size: 14px;
+}
+.slide-subtitle {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: -12px;
+    margin-bottom: 20px;
+    font-weight: 400;
+}
+
+/* ─── Stat cards (slide 2) ─────────────────────────────── */
+.promo-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+}
+.promo-stat-card {
+    background: var(--bg-card);
+    backdrop-filter: blur(14px);
+    border: var(--glass-border);
+    border-radius: 20px;
+    padding: 24px;
+    transition: all 0.3s ease;
+}
+.promo-stat-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(0,242,255,0.25);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+}
+.promo-stat-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+}
+.promo-stat-value {
+    font-size: 32px;
+    font-weight: 700;
+    font-family: var(--font-heading);
+    line-height: 1.1;
+}
+.promo-stat-icon {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.06);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+}
+.promo-stat-label {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+}
+.promo-stat-spark {
+    height: 36px;
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+}
+.promo-stat-spark .bar {
+    flex: 1;
+    background: rgba(0,242,255,0.5);
+    border-radius: 3px 3px 0 0;
+    min-height: 4px;
+    transition: height 0.4s ease;
+}
+
+/* ─── Apartment cards (slide 3) ────────────────────────── */
+.promo-apt-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 14px;
+}
+.promo-apt-card {
+    background: var(--bg-card);
+    backdrop-filter: blur(14px);
+    border: var(--glass-border);
+    border-radius: 16px;
+    padding: 18px;
+    transition: all 0.3s ease;
+}
+.promo-apt-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(255,204,51,0.25);
+}
+.promo-apt-name {
+    font-weight: 700;
+    font-size: 15px;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.promo-apt-name i {
+    color: var(--accent-gold);
+    font-size: 14px;
+}
+.promo-apt-complex {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 10px;
+}
+.promo-apt-meta {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.promo-apt-tag {
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: var(--text-secondary);
+}
+.promo-apt-tag.status-active {
+    border-color: rgba(16,185,129,0.35);
+    color: #10b981;
+}
+.promo-apt-tag.status-launching {
+    border-color: rgba(245,158,11,0.35);
+    color: #f59e0b;
+}
+.promo-apt-tag.status-onboarding {
+    border-color: rgba(99,102,241,0.35);
+    color: #6366f1;
+}
+
+/* ─── Employee cards (slide 4) ─────────────────────────── */
+.promo-emp-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 14px;
+}
+.promo-emp-card {
+    background: var(--bg-card);
+    backdrop-filter: blur(14px);
+    border: var(--glass-border);
+    border-radius: 16px;
+    padding: 18px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    transition: all 0.3s ease;
+}
+.promo-emp-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(99,102,241,0.25);
+}
+.promo-emp-avatar {
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700;
+    font-size: 16px;
+    color: #fff;
+    flex-shrink: 0;
+    border: 2px solid;
+}
+.promo-emp-info {
+    flex: 1; min-width: 0;
+}
+.promo-emp-name {
+    font-weight: 700;
+    font-size: 14px;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.promo-emp-role {
+    font-size: 12px;
+    font-weight: 600;
+}
+.promo-emp-rating {
+    font-size: 12px;
+    margin-top: 4px;
+    color: var(--accent-gold);
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+.promo-emp-status {
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 20px;
+    border: 1px solid;
+    white-space: nowrap;
+}
+.promo-emp-status.active {
+    border-color: rgba(16,185,129,0.4);
+    color: #10b981;
+    background: rgba(16,185,129,0.08);
+}
+.promo-emp-status.inactive {
+    border-color: rgba(239,68,68,0.3);
+    color: #ef4444;
+    background: rgba(239,68,68,0.06);
+}
+
+/* ─── Chart wrappers ───────────────────────────────────── */
+.promo-chart-wrap {
+    background: var(--bg-card);
+    backdrop-filter: blur(14px);
+    border: var(--glass-border);
+    border-radius: 20px;
+    padding: 24px;
+    position: relative;
+}
+.promo-chart-canvas {
+    width: 100% !important;
+    max-height: 320px;
+}
+.promo-chart-legend {
+    display: flex;
+    gap: 18px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+}
+.promo-chart-legend span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+.promo-legend-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+/* ─── Task stats (slide 5) ─────────────────────────────── */
+.promo-task-layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 20px;
+    align-items: start;
+}
+.promo-donut-wrap {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.promo-donut-canvas {
+    width: 220px !important;
+    height: 220px !important;
+}
+.promo-donut-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -60%);
+    text-align: center;
+}
+.promo-donut-pct {
+    font-family: var(--font-heading);
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--accent-cyan);
+}
+.promo-donut-sub {
+    font-size: 11px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+.promo-task-team {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.promo-task-team-title {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+.promo-team-item {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px;
+    padding: 12px 14px;
+}
+.promo-team-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+.promo-team-name {
+    font-weight: 600;
+    font-size: 13px;
+}
+.promo-team-pct {
+    font-weight: 800;
+    font-size: 13px;
+}
+.promo-team-meta {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+}
+.promo-team-bar {
+    height: 6px;
+    border-radius: 99px;
+    background: rgba(255,255,255,0.06);
+    overflow: hidden;
+}
+.promo-team-bar-fill {
+    height: 100%;
+    border-radius: 99px;
+    background: linear-gradient(90deg, #10b981, var(--accent-cyan));
+    transition: width 0.6s ease;
+}
+
+/* ─── Progress dots ────────────────────────────────────── */
+.carousel-dots {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    padding: 14px 0 18px;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 2;
+}
+.carousel-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.15);
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    padding: 0;
+}
+.carousel-dot.active {
+    width: 28px;
+    border-radius: 10px;
+    background: var(--accent-cyan);
+    box-shadow: 0 0 10px rgba(0,242,255,0.4);
+}
+
+/* ─── Fin summary chips ────────────────────────────────── */
+.promo-fin-chips {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-top: 14px;
+}
+.promo-fin-chip {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 14px;
+    padding: 12px 14px;
+}
+.promo-fin-chip .k {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+.promo-fin-chip .v {
+    font-weight: 800;
+    font-size: 15px;
+    letter-spacing: 0.2px;
+}
+
+/* ─── Loading state ────────────────────────────────────── */
+.slide-loading {
+    text-align: center;
+    padding: 60px 0;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+.slide-loading i {
+    display: block;
+    font-size: 24px;
+    margin-bottom: 12px;
+    color: var(--accent-cyan);
+}
+
+/* ─── Responsive ───────────────────────────────────────── */
+@media (max-width: 900px) {
+    .carousel-container {
+        flex-direction: column;
+    }
+    .carousel-labels {
+        width: 100%;
+        height: 80px;
+        flex-direction: row;
+        border-right: none;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .carousel-labels::before,
+    .carousel-labels::after {
+        display: none;
+    }
+    .labels-track {
+        flex-direction: row;
+        overflow-x: auto;
+        gap: 8px;
+        padding: 0 16px;
+    }
+    .label-item {
+        position: relative;
+        font-size: 12px;
+        padding: 10px 18px;
+    }
+    .carousel-viewport {
+        padding: 20px 16px;
+    }
+    .slide { padding: 20px 16px; }
+    .promo-stats-grid { grid-template-columns: 1fr 1fr; }
+    .promo-apt-grid { grid-template-columns: 1fr; }
+    .promo-emp-grid { grid-template-columns: 1fr; }
+    .promo-task-layout { grid-template-columns: 1fr; }
+    .promo-fin-chips { grid-template-columns: repeat(2, 1fr); }
+    .promo-header { padding: 12px 16px; }
+}
+
+@media (max-width: 600px) {
+    .promo-stats-grid { grid-template-columns: 1fr; }
+    .promo-stat-value { font-size: 24px; }
+}

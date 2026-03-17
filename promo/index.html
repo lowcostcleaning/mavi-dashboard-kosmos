@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MAVI GUEST — Promo</title>
+    <meta name="description" content="MAVI GUEST — система управления апартаментами. Финансовая аналитика, управление командой и объектами в реальном времени.">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="promo.css">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <div class="stars-bg"></div>
+
+    <div class="promo-page">
+        <!-- Header -->
+        <header class="promo-header">
+            <div class="promo-logo">
+                <img src="../mavi-logo-De2JrLse.jpg" alt="MAVI GUEST">
+                <span class="promo-logo-text">MAVI GUEST</span>
+            </div>
+            <span class="promo-badge"><i class="fa-solid fa-signal" style="margin-right:6px;"></i>Live Dashboard</span>
+        </header>
+
+        <!-- Carousel -->
+        <div class="carousel-container">
+            <!-- Left: Labels -->
+            <div class="carousel-labels">
+                <div class="labels-track" id="labels-track">
+                    <!-- JS fills label items -->
+                </div>
+            </div>
+
+            <!-- Right: Slides -->
+            <div class="carousel-viewport" id="carousel-viewport">
+                <!-- JS fills slide panels -->
+            </div>
+        </div>
+
+        <!-- Bottom dots -->
+        <div class="carousel-dots" id="carousel-dots"></div>
+    </div>
+
+    <script src="promo.js"></script>
+</body>
+</html>
