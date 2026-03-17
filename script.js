@@ -644,6 +644,10 @@ document.addEventListener('DOMContentLoaded', function () {
     const navItems = document.querySelectorAll('.nav-item');
     navItems.forEach(item => {
         item.addEventListener('click', function (e) {
+            // Allow external links (e.g. /promo/) to work normally
+            const href = this.getAttribute('href');
+            if (href && href !== '#') return;
+
             e.preventDefault(); // Prevent default anchor jump
 
             // Remove active class from all
