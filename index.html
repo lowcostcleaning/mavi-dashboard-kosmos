@@ -1839,7 +1839,11 @@
     async function deleteEmployee(id) {
         const e = allEmployees.find(x => x.id === id);
         if (!confirm(`Удалить сотрудника "${e?.full_name}"?`)) return;
-        await supa.from('employees').delete().eq('id', id);
+        // Unlink tasks before deleting (FK constraint)
+        await supa.from('tasks').update({ assigned_to: null }).eq('assigned_to', id);
+        await supa.from('tasks').update({ cleaner2_id: null }).eq('cleaner2_id', id);
+        const { error } = await supa.from('employees').delete().eq('id', id);
+        if (error) { alert('Ошибка удаления: ' + error.message); return; }
         document.getElementById('emp-profile-modal').hidden = true;
         await loadEmployees();
     }
@@ -2942,8 +2946,8 @@
         // Populate cleaner dropdowns
         const cleanerOpts = '<option value="">— не назначен —</option>'
             + allEmployees
-                .filter(e => e.role === 'cleaner')
-                .map(e => `<option value="${e.id}" data-tariff="${e.default_tariff || ''}">${e.full_name}</option>`)
+                .filter(e => e.role === 'cleaner' || (e.role === 'intern' && e.department === 'cleaner'))
+                .map(e => `<option value="${e.id}" data-tariff="${e.default_tariff || ''}">${e.full_name}${e.role === 'intern' ? ' (стажер)' : ''}</option>`)
                 .join('');
         document.getElementById('sched-cleaner').innerHTML = cleanerOpts;
         document.getElementById('sched-cleaner2').innerHTML = cleanerOpts;
@@ -3245,13 +3249,14 @@
             durationStr = mins >= 60 ? `${Math.floor(mins/60)}ч ${mins%60}м` : `${mins}м`;
         }
 
+        const isCleanerRole = e => e.role === 'cleaner' || (e.role === 'intern' && e.department === 'cleaner');
         const cleanerOptions = `<option value="">— не назначен —</option>`
-            + allEmployees.filter(e => e.role === 'cleaner').map(e =>
-                `<option value="${e.id}" data-tariff="${e.default_tariff || ''}" ${e.id === t.assigned_to ? 'selected' : ''}>${e.full_name}</option>`
+            + allEmployees.filter(isCleanerRole).map(e =>
+                `<option value="${e.id}" data-tariff="${e.default_tariff || ''}" ${e.id === t.assigned_to ? 'selected' : ''}>${e.full_name}${e.role === 'intern' ? ' (стажер)' : ''}</option>`
             ).join('');
         const cleaner2Options = `<option value="">— не назначен —</option>`
-            + allEmployees.filter(e => e.role === 'cleaner').map(e =>
-                `<option value="${e.id}" data-tariff="${e.default_tariff || ''}" ${e.id === t.cleaner2_id ? 'selected' : ''}>${e.full_name}</option>`
+            + allEmployees.filter(isCleanerRole).map(e =>
+                `<option value="${e.id}" data-tariff="${e.default_tariff || ''}" ${e.id === t.cleaner2_id ? 'selected' : ''}>${e.full_name}${e.role === 'intern' ? ' (стажер)' : ''}</option>`
             ).join('');
         const emp2 = allEmployees.find(e => e.id === t.cleaner2_id);
         const initials2 = emp2 ? (emp2.full_name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() : null;
