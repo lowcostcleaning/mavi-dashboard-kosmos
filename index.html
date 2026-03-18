@@ -613,32 +613,7 @@
                                 <div id="sched-apt-type-val" class="mavi-input" style="width:100%;font-size:13px;padding:8px 12px;background:rgba(255,255,255,0.03);cursor:default;color:var(--text-secondary);">—</div>
                             </div>
 
-                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-                                <div>
-                                    <label style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:5px;"><i class="fa-solid fa-user" style="margin-right:5px;"></i>Клинер 1</label>
-                                    <select id="sched-cleaner" class="mavi-input" style="width:100%;font-size:13px;padding:8px 12px;">
-                                        <option value="">— не назначен —</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:5px;"><i class="fa-solid fa-coins" style="margin-right:5px;"></i>Ставка 1 (₾)</label>
-                                    <input type="number" id="sched-cost" class="mavi-input" placeholder="10" style="width:100%;font-size:13px;padding:8px 12px;">
-                                </div>
-                            </div>
-
-                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-                                <div>
-                                    <label style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:5px;"><i class="fa-solid fa-user-plus" style="margin-right:5px;"></i>Клинер 2</label>
-                                    <select id="sched-cleaner2" class="mavi-input" style="width:100%;font-size:13px;padding:8px 12px;">
-                                        <option value="">— не назначен —</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:5px;"><i class="fa-solid fa-coins" style="margin-right:5px;"></i>Ставка 2 (₾)</label>
-                                    <input type="number" id="sched-cost2" class="mavi-input" placeholder="10" style="width:100%;font-size:13px;padding:8px 12px;">
-                                </div>
-                            </div>
-
+                            <!-- Тариф (base) + Набор -->
                             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                                 <div>
                                     <label style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:5px;"><i class="fa-solid fa-tag" style="margin-right:5px;"></i>Тариф</label>
@@ -650,6 +625,60 @@
                                     </select>
                                 </div>
                                 <div>
+                                    <label style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:5px;"><i class="fa-solid fa-money-bill" style="margin-right:5px;"></i>Сумма тарифа (₾)</label>
+                                    <input type="number" id="sched-cost" class="mavi-input" placeholder="40" style="width:100%;font-size:13px;padding:8px 12px;">
+                                </div>
+                            </div>
+
+                            <!-- Клинеры + их бонус (тариф клинера) -->
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                                <div>
+                                    <label style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:5px;"><i class="fa-solid fa-user" style="margin-right:5px;"></i>Клинер 1</label>
+                                    <select id="sched-cleaner" class="mavi-input" style="width:100%;font-size:13px;padding:8px 12px;">
+                                        <option value="">— не назначен —</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:5px;"><i class="fa-solid fa-star" style="margin-right:5px;"></i>Тариф клинера 1 (₾)</label>
+                                    <input type="number" id="sched-cost" class="mavi-input" placeholder="10" style="display:none;">
+                                    <input type="number" id="sched-cleaner-rate" class="mavi-input" placeholder="10" style="width:100%;font-size:13px;padding:8px 12px;">
+                                </div>
+                            </div>
+
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                                <div>
+                                    <label style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:5px;"><i class="fa-solid fa-user-plus" style="margin-right:5px;"></i>Клинер 2</label>
+                                    <select id="sched-cleaner2" class="mavi-input" style="width:100%;font-size:13px;padding:8px 12px;">
+                                        <option value="">— не назначен —</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:5px;"><i class="fa-solid fa-star" style="margin-right:5px;"></i>Тариф клинера 2 (₾)</label>
+                                    <input type="number" id="sched-cost2" class="mavi-input" placeholder="10" style="display:none;">
+                                    <input type="number" id="sched-cleaner2-rate" class="mavi-input" placeholder="10" style="width:100%;font-size:13px;padding:8px 12px;">
+                                </div>
+                            </div>
+
+                            <!-- Долгий срок + сумма -->
+                            <div style="display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center;">
+                                <div style="display:flex;align-items:center;gap:8px;">
+                                    <input type="checkbox" id="sched-long-stay" style="width:16px;height:16px;accent-color:#6366f1;cursor:pointer;">
+                                    <label for="sched-long-stay" style="font-size:12px;color:var(--text-secondary);cursor:pointer;white-space:nowrap;">Долгий срок</label>
+                                </div>
+                                <div>
+                                    <input type="number" id="sched-long-stay-amount" class="mavi-input" placeholder="сумма (₾)" style="width:100%;font-size:13px;padding:8px 12px;" disabled>
+                                </div>
+                            </div>
+
+                            <!-- Итого (computed) -->
+                            <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;">
+                                <span style="font-size:12px;color:var(--text-secondary);">Итого к выплате</span>
+                                <span id="sched-total" style="font-size:16px;font-weight:700;color:#ffcc33;">— ₾</span>
+                            </div>
+
+                            <!-- Набор + Приоритет -->
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                                <div>
                                     <label style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:5px;"><i class="fa-solid fa-box-open" style="margin-right:5px;"></i>Набор</label>
                                     <select id="sched-kit-type" class="mavi-input" style="width:100%;font-size:13px;padding:8px 12px;">
                                         <option value="">— выбрать —</option>
@@ -658,9 +687,6 @@
                                         <option value="премиум">Премиум</option>
                                     </select>
                                 </div>
-                            </div>
-
-                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                                 <div>
                                     <label style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:5px;"><i class="fa-solid fa-circle-half-stroke" style="margin-right:5px;"></i>Приоритет</label>
                                     <select id="sched-priority" class="mavi-input" style="width:100%;font-size:13px;padding:8px 12px;">
@@ -668,10 +694,6 @@
                                         <option value="urgent">Срочная</option>
                                         <option value="standard">Стандартная</option>
                                     </select>
-                                </div>
-                                <div style="display:flex;align-items:center;gap:8px;padding-top:20px;">
-                                    <input type="checkbox" id="sched-long-stay" style="width:16px;height:16px;accent-color:#6366f1;cursor:pointer;">
-                                    <label for="sched-long-stay" style="font-size:12px;color:var(--text-secondary);cursor:pointer;">Долгий срок</label>
                                 </div>
                             </div>
 
@@ -2038,7 +2060,7 @@
         // fetch all cleaning tasks (no date filter — filter client-side for flexibility)
         const { data, error } = await supa
             .from('tasks')
-            .select('id, title, status, type, deadline, started_at, completed_at, assigned_to, cleaner2_id, apartment_id, cost, cleaner_rate, cleaner2_rate, tariff_type, kit_type, long_stay, apt_type_auto, comment, rating, sheet_apt_name')
+            .select('id, title, status, type, deadline, started_at, completed_at, assigned_to, cleaner2_id, apartment_id, cost, cleaner_rate, cleaner2_rate, tariff_type, kit_type, long_stay, long_stay_amount, apt_type_auto, comment, rating, sheet_apt_name')
             .eq('type', 'cleaning')
             .order('deadline', { ascending: true });
 
@@ -2666,14 +2688,36 @@
         document.getElementById('sched-cleaner').innerHTML = cleanerOpts;
         document.getElementById('sched-cleaner2').innerHTML = cleanerOpts;
 
-        // Auto-fill tariff on cleaner select
+        // Helper: recompute total
+        function schedRecompute() {
+            const base     = parseFloat(document.getElementById('sched-cost').value) || 0;
+            const rate1    = parseFloat(document.getElementById('sched-cleaner-rate').value) || 0;
+            const rate2    = parseFloat(document.getElementById('sched-cleaner2-rate').value) || 0;
+            const lsAmt    = parseFloat(document.getElementById('sched-long-stay-amount').value) || 0;
+            const total    = base + rate1 + rate2 + lsAmt;
+            document.getElementById('sched-total').textContent = total > 0 ? total + ' ₾' : '— ₾';
+        }
+        ['sched-cost','sched-cleaner-rate','sched-cleaner2-rate','sched-long-stay-amount'].forEach(id => {
+            document.getElementById(id)?.addEventListener('input', schedRecompute);
+        });
+
+        // Auto-fill тариф клинера on cleaner select
         document.getElementById('sched-cleaner').onchange = function() {
             const opt = this.options[this.selectedIndex];
-            if (opt.value && opt.dataset.tariff) document.getElementById('sched-cost').value = opt.dataset.tariff;
+            if (opt.value && opt.dataset.tariff) document.getElementById('sched-cleaner-rate').value = opt.dataset.tariff;
+            schedRecompute();
         };
         document.getElementById('sched-cleaner2').onchange = function() {
             const opt = this.options[this.selectedIndex];
-            if (opt.value && opt.dataset.tariff) document.getElementById('sched-cost2').value = opt.dataset.tariff;
+            if (opt.value && opt.dataset.tariff) document.getElementById('sched-cleaner2-rate').value = opt.dataset.tariff;
+            schedRecompute();
+        };
+
+        // Toggle долгий срок amount
+        document.getElementById('sched-long-stay').onchange = function() {
+            const amtEl = document.getElementById('sched-long-stay-amount');
+            amtEl.disabled = !this.checked;
+            if (!this.checked) { amtEl.value = ''; schedRecompute(); }
         };
 
         // Show apt type from DB
@@ -2683,7 +2727,6 @@
         if (aptTypeVal) {
             document.getElementById('sched-apt-type-val').textContent = aptTypeVal;
             aptTypeRow.style.display = '';
-            // Pre-select tariff type based on apt_type
             const tariffMap = {'студия':'студия','1+1':'1+1','1-1':'1+1','2+1':'2+1','2-1':'2+1'};
             const tt = tariffMap[aptTypeVal.toLowerCase()] || '';
             if (tt) document.getElementById('sched-tariff-type').value = tt;
@@ -2692,9 +2735,13 @@
         }
 
         document.getElementById('sched-cost').value = '';
-        document.getElementById('sched-cost2').value = '';
+        document.getElementById('sched-cleaner-rate').value = '';
+        document.getElementById('sched-cleaner2-rate').value = '';
+        document.getElementById('sched-long-stay-amount').value = '';
+        document.getElementById('sched-long-stay-amount').disabled = true;
         document.getElementById('sched-kit-type').value = '';
         document.getElementById('sched-long-stay').checked = false;
+        document.getElementById('sched-total').textContent = '— ₾';
         document.getElementById('sched-comment').value = apt?.access_info ? `Доступ: ${apt.access_info}` : '';
         document.getElementById('sched-msg').textContent = '';
         document.getElementById('sched-save').disabled = false;
@@ -2704,17 +2751,19 @@
     }
 
     async function saveSchedCleaning() {
-        const aptId      = schedAptId;
-        const dateVal    = document.getElementById('sched-date').value;
-        const cleaner    = document.getElementById('sched-cleaner').value || null;
-        const cleaner2   = document.getElementById('sched-cleaner2').value || null;
-        const cost       = parseFloat(document.getElementById('sched-cost').value) || null;
-        const cost2      = parseFloat(document.getElementById('sched-cost2').value) || null;
-        const priority   = document.getElementById('sched-priority').value;
-        const tariffType = document.getElementById('sched-tariff-type').value || null;
-        const kitType    = document.getElementById('sched-kit-type').value || null;
-        const longStay   = document.getElementById('sched-long-stay').checked;
-        const comment    = document.getElementById('sched-comment').value.trim() || null;
+        const aptId         = schedAptId;
+        const dateVal       = document.getElementById('sched-date').value;
+        const cleaner       = document.getElementById('sched-cleaner').value || null;
+        const cleaner2      = document.getElementById('sched-cleaner2').value || null;
+        const cost          = parseFloat(document.getElementById('sched-cost').value) || null;          // тариф (base)
+        const cleanerRate   = parseFloat(document.getElementById('sched-cleaner-rate').value) || null;  // тариф клинера 1
+        const cleaner2Rate  = parseFloat(document.getElementById('sched-cleaner2-rate').value) || null; // тариф клинера 2
+        const longStay      = document.getElementById('sched-long-stay').checked;
+        const longStayAmt   = parseFloat(document.getElementById('sched-long-stay-amount').value) || 0;
+        const priority      = document.getElementById('sched-priority').value;
+        const tariffType    = document.getElementById('sched-tariff-type').value || null;
+        const kitType       = document.getElementById('sched-kit-type').value || null;
+        const comment       = document.getElementById('sched-comment').value.trim() || null;
 
         if (!aptId || !dateVal) {
             document.getElementById('sched-msg').textContent = 'Выберите дату';
@@ -2729,23 +2778,24 @@
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="margin-right:7px;"></i>Сохраняем...';
 
         const { data, error } = await supa.from('tasks').insert({
-            apartment_id:  aptId,
-            assigned_to:   cleaner,
-            cleaner2_id:   cleaner2,
-            cleaner_rate:  cost,
-            cleaner2_rate: cost2,
-            cost,
-            tariff_type:   tariffType,
-            kit_type:      kitType,
-            long_stay:     longStay,
-            type:          'cleaning',
-            status:        cleaner ? 'assigned' : 'new',
+            apartment_id:      aptId,
+            assigned_to:       cleaner,
+            cleaner2_id:       cleaner2,
+            cost,                           // тариф (base)
+            cleaner_rate:      cleanerRate, // тариф клинера 1
+            cleaner2_rate:     cleaner2Rate,
+            long_stay:         longStay,
+            long_stay_amount:  longStayAmt || null,
+            tariff_type:       tariffType,
+            kit_type:          kitType,
+            type:              'cleaning',
+            status:            cleaner ? 'assigned' : 'new',
             priority,
-            deadline:      dateVal + 'T00:00:00Z',
+            deadline:          dateVal + 'T00:00:00Z',
             comment,
-            title:         'Уборка — ' + (apt?.name || ''),
-            source:        'dashboard',
-            apt_type_auto: apt?.apt_type || null,
+            title:             'Уборка — ' + (apt?.name || ''),
+            source:            'dashboard',
+            apt_type_auto:     apt?.apt_type || null,
         }).select();
 
         if (error) {
@@ -2988,12 +3038,34 @@
 
                 ${t.tariff_type || t.kit_type ? `<div class="clean-detail-row">
                     <span class="clean-detail-label"><i class="fa-solid fa-tag" style="margin-right:5px;opacity:.5;"></i>Тариф / Набор</span>
-                    <span class="clean-detail-value" style="color:var(--text-secondary);">${[t.tariff_type, t.kit_type].filter(Boolean).join(' / ')}${t.long_stay ? ' + долгий срок' : ''}</span>
+                    <span class="clean-detail-value" style="color:var(--text-secondary);">${[t.tariff_type, t.kit_type].filter(Boolean).join(' / ')}</span>
                 </div>` : ''}
 
                 <div class="clean-detail-row">
-                    <span class="clean-detail-label"><i class="fa-solid fa-coins" style="margin-right:5px;opacity:.5;"></i>Ставка</span>
-                    <span class="clean-detail-value" style="color:#ffcc33;font-weight:700;font-size:15px;">${t.cost ? t.cost + ' ₾' : '—'}</span>
+                    <span class="clean-detail-label"><i class="fa-solid fa-money-bill" style="margin-right:5px;opacity:.5;"></i>Тариф</span>
+                    <span class="clean-detail-value" style="color:var(--text-secondary);">${t.cost ? t.cost + ' ₾' : '—'}</span>
+                </div>
+
+                <div class="clean-detail-row">
+                    <span class="clean-detail-label"><i class="fa-solid fa-star" style="margin-right:5px;opacity:.5;"></i>Тариф клинера</span>
+                    <span class="clean-detail-value" style="color:var(--text-secondary);">${t.cleaner_rate ? t.cleaner_rate + ' ₾' : '—'}${t.cleaner2_rate ? ' + ' + t.cleaner2_rate + ' ₾' : ''}</span>
+                </div>
+
+                ${t.long_stay ? `<div class="clean-detail-row">
+                    <span class="clean-detail-label"><i class="fa-solid fa-calendar-days" style="margin-right:5px;opacity:.5;"></i>Долгий срок</span>
+                    <span class="clean-detail-value" style="color:var(--text-secondary);">${t.long_stay_amount ? t.long_stay_amount + ' ₾' : '—'}</span>
+                </div>` : ''}
+
+                <div class="clean-detail-row" style="border-top:1px solid rgba(255,255,255,.07);margin-top:4px;padding-top:8px;">
+                    <span class="clean-detail-label" style="font-weight:600;"><i class="fa-solid fa-coins" style="margin-right:5px;opacity:.5;"></i>Итого</span>
+                    <span class="clean-detail-value" style="color:#ffcc33;font-weight:700;font-size:15px;">${(() => {
+                        const base = parseFloat(t.cost) || 0;
+                        const r1   = parseFloat(t.cleaner_rate) || 0;
+                        const r2   = parseFloat(t.cleaner2_rate) || 0;
+                        const ls   = parseFloat(t.long_stay_amount) || 0;
+                        const tot  = base + r1 + r2 + ls;
+                        return tot > 0 ? tot + ' ₾' : '—';
+                    })()}</span>
                 </div>
 
                 <div class="clean-detail-row">
@@ -3049,25 +3121,9 @@
                 </div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
                     <div>
-                        <label style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:3px;">Клинер 1</label>
-                        <select id="clean-edit-cleaner" class="mavi-input" style="font-size:12px;padding:6px 8px;width:100%;">${cleanerOptions}</select>
+                        <label style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:3px;">Тариф (₾)</label>
+                        <input type="number" id="clean-edit-cost" class="mavi-input" value="${t.cost || ''}" placeholder="40" style="font-size:12px;padding:6px 8px;width:100%;">
                     </div>
-                    <div>
-                        <label style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:3px;">Ставка 1 (₾)</label>
-                        <input type="number" id="clean-edit-rate" class="mavi-input" value="${t.cleaner_rate || ''}" placeholder="10" style="font-size:12px;padding:6px 8px;width:100%;">
-                    </div>
-                </div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
-                    <div>
-                        <label style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:3px;">Клинер 2</label>
-                        <select id="clean-edit-cleaner2" class="mavi-input" style="font-size:12px;padding:6px 8px;width:100%;">${cleaner2Options}</select>
-                    </div>
-                    <div>
-                        <label style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:3px;">Ставка 2 (₾)</label>
-                        <input type="number" id="clean-edit-rate2" class="mavi-input" value="${t.cleaner2_rate || ''}" placeholder="10" style="font-size:12px;padding:6px 8px;width:100%;">
-                    </div>
-                </div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
                     <div>
                         <label style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:3px;">Набор</label>
                         <select id="clean-edit-kit" class="mavi-input" style="font-size:12px;padding:6px 8px;width:100%;">
@@ -3077,10 +3133,33 @@
                             <option value="премиум" ${t.kit_type==='премиум'?'selected':''}>Премиум</option>
                         </select>
                     </div>
-                    <div style="display:flex;align-items:center;gap:6px;padding-top:18px;">
-                        <input type="checkbox" id="clean-edit-long-stay" ${t.long_stay?'checked':''} style="width:14px;height:14px;accent-color:#6366f1;cursor:pointer;">
-                        <label for="clean-edit-long-stay" style="font-size:11px;color:var(--text-secondary);cursor:pointer;">Долгий срок</label>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+                    <div>
+                        <label style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:3px;">Клинер 1</label>
+                        <select id="clean-edit-cleaner" class="mavi-input" style="font-size:12px;padding:6px 8px;width:100%;">${cleanerOptions}</select>
                     </div>
+                    <div>
+                        <label style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:3px;">Тариф клинера 1 (₾)</label>
+                        <input type="number" id="clean-edit-rate" class="mavi-input" value="${t.cleaner_rate || ''}" placeholder="10" style="font-size:12px;padding:6px 8px;width:100%;">
+                    </div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+                    <div>
+                        <label style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:3px;">Клинер 2</label>
+                        <select id="clean-edit-cleaner2" class="mavi-input" style="font-size:12px;padding:6px 8px;width:100%;">${cleaner2Options}</select>
+                    </div>
+                    <div>
+                        <label style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:3px;">Тариф клинера 2 (₾)</label>
+                        <input type="number" id="clean-edit-rate2" class="mavi-input" value="${t.cleaner2_rate || ''}" placeholder="10" style="font-size:12px;padding:6px 8px;width:100%;">
+                    </div>
+                </div>
+                <div style="display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:center;margin-bottom:8px;">
+                    <div style="display:flex;align-items:center;gap:6px;">
+                        <input type="checkbox" id="clean-edit-long-stay" ${t.long_stay?'checked':''} style="width:14px;height:14px;accent-color:#6366f1;cursor:pointer;">
+                        <label for="clean-edit-long-stay" style="font-size:11px;color:var(--text-secondary);cursor:pointer;white-space:nowrap;">Долгий срок</label>
+                    </div>
+                    <input type="number" id="clean-edit-long-stay-amount" class="mavi-input" value="${t.long_stay_amount || ''}" placeholder="сумма (₾)" ${!t.long_stay?'disabled':''} style="font-size:12px;padding:6px 8px;width:100%;">
                 </div>
 
                 <div style="margin-bottom:8px;">
@@ -3124,6 +3203,12 @@
         });
 
         document.getElementById('clean-save-btn')?.addEventListener('click', () => saveCleaningCard(selectedRating));
+
+        // Toggle долгий срок amount input
+        document.getElementById('clean-edit-long-stay')?.addEventListener('change', function() {
+            const amtEl = document.getElementById('clean-edit-long-stay-amount');
+            if (amtEl) { amtEl.disabled = !this.checked; if (!this.checked) amtEl.value = ''; }
+        });
     }
 
     async function saveCleaningCard(rating) {
@@ -3131,16 +3216,18 @@
         const t = calData.find(x => String(x.id) === String(taskId));
         if (!t) return;
 
-        const newStatus   = document.getElementById('clean-edit-status').value;
-        const newCleaner  = document.getElementById('clean-edit-cleaner').value || null;
-        const newCleaner2 = document.getElementById('clean-edit-cleaner2').value || null;
-        const newRate     = parseFloat(document.getElementById('clean-edit-rate').value) || null;
-        const newRate2    = parseFloat(document.getElementById('clean-edit-rate2').value) || null;
-        const newTariff   = document.getElementById('clean-edit-tariff').value || null;
-        const newKit      = document.getElementById('clean-edit-kit').value || null;
-        const newLongStay = document.getElementById('clean-edit-long-stay').checked;
-        const newComment  = document.getElementById('clean-edit-comment').value.trim() || null;
-        const newRating   = rating || null;
+        const newStatus    = document.getElementById('clean-edit-status').value;
+        const newCleaner   = document.getElementById('clean-edit-cleaner').value || null;
+        const newCleaner2  = document.getElementById('clean-edit-cleaner2').value || null;
+        const newCost      = parseFloat(document.getElementById('clean-edit-cost').value) || null;       // тариф (base)
+        const newRate      = parseFloat(document.getElementById('clean-edit-rate').value) || null;       // тариф клинера 1
+        const newRate2     = parseFloat(document.getElementById('clean-edit-rate2').value) || null;      // тариф клинера 2
+        const newTariff    = document.getElementById('clean-edit-tariff').value || null;
+        const newKit       = document.getElementById('clean-edit-kit').value || null;
+        const newLongStay  = document.getElementById('clean-edit-long-stay').checked;
+        const newLsAmt     = parseFloat(document.getElementById('clean-edit-long-stay-amount').value) || null;
+        const newComment   = document.getElementById('clean-edit-comment').value.trim() || null;
+        const newRating    = rating || null;
 
         const btn = document.getElementById('clean-save-btn');
         const msg = document.getElementById('clean-save-msg');
@@ -3148,34 +3235,36 @@
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="margin-right:6px;"></i>Сохраняем...';
 
         const { error } = await supa.from('tasks').update({
-            status:        newStatus,
-            assigned_to:   newCleaner,
-            cleaner2_id:   newCleaner2,
-            cleaner_rate:  newRate,
-            cleaner2_rate: newRate2,
-            cost:          newRate,
-            tariff_type:   newTariff,
-            kit_type:      newKit,
-            long_stay:     newLongStay,
-            comment:       newComment,
-            rating:        newRating,
+            status:           newStatus,
+            assigned_to:      newCleaner,
+            cleaner2_id:      newCleaner2,
+            cost:             newCost,
+            cleaner_rate:     newRate,
+            cleaner2_rate:    newRate2,
+            tariff_type:      newTariff,
+            kit_type:         newKit,
+            long_stay:        newLongStay,
+            long_stay_amount: newLsAmt,
+            comment:          newComment,
+            rating:           newRating,
         }).eq('id', taskId);
 
         if (error) {
             msg.textContent = 'Ошибка: ' + error.message;
             msg.style.color = '#ef4444';
         } else {
-            t.status       = newStatus;
-            t.assigned_to  = newCleaner;
-            t.cleaner2_id  = newCleaner2;
-            t.cleaner_rate = newRate;
-            t.cleaner2_rate= newRate2;
-            t.cost         = newRate;
-            t.tariff_type  = newTariff;
-            t.kit_type     = newKit;
-            t.long_stay    = newLongStay;
-            t.comment      = newComment;
-            t.rating       = newRating;
+            t.status           = newStatus;
+            t.assigned_to      = newCleaner;
+            t.cleaner2_id      = newCleaner2;
+            t.cost             = newCost;
+            t.cleaner_rate     = newRate;
+            t.cleaner2_rate    = newRate2;
+            t.tariff_type      = newTariff;
+            t.kit_type         = newKit;
+            t.long_stay        = newLongStay;
+            t.long_stay_amount = newLsAmt;
+            t.comment          = newComment;
+            t.rating           = newRating;
             msg.textContent = 'Сохранено ✓';
             msg.style.color = '#10b981';
             renderCalendar(); updateCalStats();
