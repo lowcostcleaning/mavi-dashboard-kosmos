@@ -4511,8 +4511,9 @@
             return;
         }
 
-        // Sort: not-ready first, then ready
-        rows.sort((a, b) => (b.kitReady ? 0 : 1) - (a.kitReady ? 0 : 1));
+        // Sort: delivered last → in-transit → kit ready → assembling → not started
+        const sortOrder = r => r.delivery?.status === 'done' ? 4 : r.delivery?.status === 'in_progress' ? 3 : r.kitReady ? 2 : r.restockTask ? 1 : 0;
+        rows.sort((a, b) => sortOrder(a) - sortOrder(b));
 
         const cards = rows.map(({ c, apt, cleaner, kitType, aptType, kitColor, kitReady, restockTask, delivery, delStatus }) => {
             const kitBadge = kitType
@@ -4522,49 +4523,50 @@
                 ? `<span style="background:rgba(99,102,241,.15);color:#a5b4fc;padding:2px 8px;border-radius:10px;font-size:11px;">${aptType}</span>`
                 : '';
 
-            const deliveryDone = delivery?.status === 'done';
+            const deliveryDone       = delivery?.status === 'done';
             const deliveryInProgress = delivery?.status === 'in_progress';
-            const cardBorder = deliveryDone ? 'rgba(16,185,129,.5)' : deliveryInProgress ? 'rgba(245,158,11,.45)' : kitReady ? 'rgba(16,185,129,.25)' : 'rgba(255,255,255,.08)';
+            // 0=not started 1=assembling 2=kit ready 3=in transit 4=delivered
+            const flowStep = deliveryDone ? 4 : deliveryInProgress ? 3 : kitReady ? 2 : restockTask ? 1 : 0;
 
-            // Step-by-step status flow
-            const KIT_STEP = !restockTask ? 0 : restockTask.status === 'done' ? 2 : 1;
-            // 0 = not started, 1 = assembling, 2 = ready
-            // DEL_STEP: 0 = not taken, 1 = in transit, 2 = delivered
+            const STEP_COLORS = ['#6b7280','#f59e0b','#10b981','#f59e0b','#10b981'];
+            const cardBorder = flowStep >= 4 ? 'rgba(16,185,129,.5)' : flowStep === 3 ? 'rgba(245,158,11,.45)' : flowStep === 2 ? 'rgba(16,185,129,.25)' : 'rgba(255,255,255,.08)';
 
-            const stepBadge = (icon, label, color, active) =>
-                `<div style="display:flex;align-items:center;gap:7px;padding:7px 10px;border-radius:8px;background:${active ? color+'18' : 'rgba(255,255,255,.03)'};border:1px solid ${active ? color+'44' : 'rgba(255,255,255,.07)'};">
-                    <i class="fa-solid ${icon}" style="color:${active ? color : '#444'};font-size:13px;"></i>
-                    <span style="font-size:12px;font-weight:${active ? '600' : '400'};color:${active ? color : '#555'};">${label}</span>
+            // Status badge row
+            const statusRow = (icon, label, color, btnHtml='') =>
+                `<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;margin-top:8px;background:${color}18;border:1px solid ${color}44;border-radius:8px;">
+                    <i class="fa-solid ${icon}" style="color:${color};font-size:14px;flex-shrink:0;"></i>
+                    <span style="font-size:12px;font-weight:600;color:${color};flex:1;">${label}</span>
+                    ${btnHtml}
                 </div>`;
 
-            const kitStatusHtml = deliveryDone
-                ? ''  // kit status hidden when delivery is done
-                : delivery
-                ? stepBadge('fa-circle-check', 'Комплект собран', '#10b981', true)
-                : KIT_STEP === 0
-                ? stepBadge('fa-clock', 'Сборка не начата', '#6b7280', false)
-                : KIT_STEP === 1
-                ? stepBadge('fa-shirt', 'Комплектуется...', '#f59e0b', true)
-                : stepBadge('fa-circle-check', 'Комплект готов — можно везти', '#10b981', true);
+            let kitStatusHtml = '';
+            let deliveryStatusHtml = '';
 
-            const deliveryStatusHtml = deliveryDone
-                ? `<div style="display:flex;align-items:center;gap:8px;padding:9px 12px;margin-top:8px;background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.4);border-radius:8px;">
-                    <i class="fa-solid fa-circle-check" style="color:#10b981;font-size:18px;"></i>
-                    <span style="font-size:13px;font-weight:700;color:#10b981;">Доставлено ✓</span>
-                   </div>`
-                : deliveryInProgress
-                ? `<div style="display:flex;align-items:center;gap:8px;padding:9px 12px;margin-top:8px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.35);border-radius:8px;">
-                    <i class="fa-solid fa-truck-fast" style="color:#f59e0b;font-size:16px;"></i>
-                    <span style="font-size:12px;font-weight:600;color:#f59e0b;flex:1;">В пути к клиенту</span>
-                    <button class="exp-deliver-btn action-btn" data-delivery-id="${delivery.id}" style="padding:5px 14px;font-size:11px;background:#10b981;border-color:#10b981;flex-shrink:0;">
-                        <i class="fa-solid fa-check" style="margin-right:4px;"></i>Доставлено
+            if (flowStep === 0) {
+                kitStatusHtml = statusRow('fa-clock', 'Сборка не начата', '#6b7280');
+            } else if (flowStep === 1) {
+                kitStatusHtml = statusRow('fa-shirt', 'Комплектуется...', '#f59e0b');
+            } else if (flowStep === 2) {
+                kitStatusHtml = statusRow('fa-circle-check', 'Комплект готов', '#10b981');
+                deliveryStatusHtml = `<button class="exp-create-delivery-btn action-btn" data-exp-clean-id="${c.id}" data-apt-id="${c.apartment_id}" data-restock-id="${restockTask?.id || ''}" style="margin-top:6px;padding:9px 14px;font-size:13px;font-weight:700;width:100%;justify-content:center;background:#6366f1;border-color:#6366f1;">
+                    <i class="fa-solid fa-box-open" style="margin-right:7px;"></i>Забрать комплект
+                </button>`;
+            } else if (flowStep === 3) {
+                kitStatusHtml = statusRow('fa-circle-check', 'Комплект забран', '#6366f1');
+                deliveryStatusHtml = statusRow('fa-truck-fast', 'В пути к клиенту', '#f59e0b',
+                    `<button class="exp-deliver-btn action-btn" data-delivery-id="${delivery.id}" style="padding:6px 16px;font-size:12px;font-weight:700;background:#10b981;border-color:#10b981;flex-shrink:0;">
+                        <i class="fa-solid fa-check" style="margin-right:5px;"></i>Готово
+                    </button>`
+                );
+            } else if (flowStep === 4) {
+                deliveryStatusHtml = `<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;margin-top:8px;background:rgba(16,185,129,.14);border:1px solid rgba(16,185,129,.45);border-radius:10px;">
+                    <i class="fa-solid fa-circle-check" style="color:#10b981;font-size:20px;"></i>
+                    <span style="font-size:14px;font-weight:700;color:#10b981;">Доставлено ✓</span>
+                    <button class="exp-status-change-btn action-btn" data-delivery-id="${delivery.id}" style="margin-left:auto;padding:4px 10px;font-size:10px;background:transparent;border-color:rgba(255,255,255,.15);color:var(--text-secondary);">
+                        <i class="fa-solid fa-rotate" style="margin-right:3px;"></i>Изменить
                     </button>
-                   </div>`
-                : KIT_STEP === 2
-                ? `<button class="exp-create-delivery-btn action-btn" data-exp-clean-id="${c.id}" data-apt-id="${c.apartment_id}" data-restock-id="${restockTask?.id || ''}" style="margin-top:8px;padding:8px 14px;font-size:12px;width:100%;justify-content:center;background:#6366f1;border-color:#6366f1;">
-                    <i class="fa-solid fa-box-open" style="margin-right:6px;"></i>Забрать комплект
-                   </button>`
-                : '';
+                </div>`;
+            }
 
             return `<div class="lnd-apt-card" style="border-color:${cardBorder};">
                 <div class="lnd-apt-card-top">
@@ -4634,13 +4636,47 @@
             });
         });
 
-        // Wire "Доставлено" buttons
+        // Wire "Готово" (delivered) buttons
         document.querySelectorAll('.exp-deliver-btn').forEach(btn => {
             btn.addEventListener('click', async () => {
                 btn.disabled = true;
                 btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
                 await supa.from('tasks').update({ status: 'done', completed_at: new Date().toISOString() }).eq('id', btn.dataset.deliveryId);
                 loadExpeditor();
+            });
+        });
+
+        // Wire "Изменить" status buttons
+        document.querySelectorAll('.exp-status-change-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const delId = btn.dataset.deliveryId;
+                const menu = document.createElement('div');
+                menu.style.cssText = 'position:fixed;background:#1e1e2e;border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:6px;z-index:9999;min-width:160px;box-shadow:0 8px 24px rgba(0,0,0,.5);';
+                const options = [
+                    { status:'in_progress', label:'🚚 В пути',       color:'#f59e0b' },
+                    { status:'done',        label:'✅ Доставлено',    color:'#10b981' },
+                    { status:'new',         label:'📋 Назначена',     color:'#6366f1' },
+                ];
+                options.forEach(o => {
+                    const item = document.createElement('div');
+                    item.textContent = o.label;
+                    item.style.cssText = `padding:8px 12px;border-radius:6px;cursor:pointer;font-size:13px;color:${o.color};`;
+                    item.addEventListener('mouseenter', () => item.style.background = 'rgba(255,255,255,.07)');
+                    item.addEventListener('mouseleave', () => item.style.background = '');
+                    item.addEventListener('click', async () => {
+                        document.body.removeChild(menu);
+                        await supa.from('tasks').update({ status: o.status, ...(o.status==='done' ? {completed_at: new Date().toISOString()} : {}) }).eq('id', delId);
+                        loadExpeditor();
+                    });
+                    menu.appendChild(item);
+                });
+                const rect = btn.getBoundingClientRect();
+                menu.style.top  = (rect.bottom + 4) + 'px';
+                menu.style.left = (rect.left - 80) + 'px';
+                document.body.appendChild(menu);
+                const close = (ev) => { if (!menu.contains(ev.target)) { document.body.removeChild(menu); document.removeEventListener('click', close); } };
+                setTimeout(() => document.addEventListener('click', close), 0);
             });
         });
     }
