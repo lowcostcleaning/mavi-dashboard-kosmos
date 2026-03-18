@@ -3426,34 +3426,29 @@
                 if (!el) return;
                 if (!restockTask2 && !delivery2) { el.innerHTML = ''; return; }
 
-                const KIT_ST = { new:'Сборка не начата', assigned:'Назначена', in_progress:'Комплектуется', done:'Комплект готов' };
-                const KIT_COL = { new:'#6b7280', assigned:'#6366f1', in_progress:'#f59e0b', done:'#10b981' };
-                const DEL_ST  = { new:'Доставка назначена', in_progress:'В пути', done:'Доставлено' };
-                const DEL_COL = { new:'#6366f1', in_progress:'#f59e0b', done:'#10b981' };
+                // Kit: red=not ready, yellow=assembling, green=ready
+                const KIT_COL = { new:'#ef4444', assigned:'#f59e0b', in_progress:'#f59e0b', done:'#10b981' };
+                const KIT_LBL = { new:'Не собран', assigned:'Назначен', in_progress:'Собирается', done:'Собран' };
+                // Delivery: red=waiting, yellow=in transit, green=delivered
+                const DEL_COL = { new:'#ef4444', in_progress:'#f59e0b', done:'#10b981' };
+                const DEL_LBL = { new:'Ожидает', in_progress:'В пути', done:'Доставлено' };
 
-                let html = '<div style="display:flex;flex-direction:column;gap:6px;">';
+                let badges = [];
                 if (restockTask2) {
                     const s = restockTask2.status || 'new';
-                    html += `<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:${KIT_COL[s]}18;border:1px solid ${KIT_COL[s]}44;border-radius:8px;">
-                        <i class="fa-solid ${s==='done'?'fa-circle-check':'fa-shirt'}" style="color:${KIT_COL[s]};font-size:14px;"></i>
-                        <div style="flex:1;">
-                            <div style="font-size:11px;color:var(--text-secondary);">Комплектация</div>
-                            <div style="font-size:12px;font-weight:600;color:${KIT_COL[s]};">${KIT_ST[s]||s}</div>
-                        </div>
-                    </div>`;
+                    badges.push(`<div style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;background:${KIT_COL[s]}18;border:1px solid ${KIT_COL[s]}44;border-radius:20px;">
+                        <i class="fa-solid fa-shirt" style="color:${KIT_COL[s]};font-size:12px;"></i>
+                        <span style="font-size:11px;font-weight:600;color:${KIT_COL[s]};">${KIT_LBL[s]||s}</span>
+                    </div>`);
                 }
                 if (delivery2) {
                     const s = delivery2.status || 'new';
-                    html += `<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:${DEL_COL[s]}18;border:1px solid ${DEL_COL[s]}44;border-radius:8px;">
-                        <i class="fa-solid ${s==='done'?'fa-circle-check':'fa-truck-fast'}" style="color:${DEL_COL[s]};font-size:14px;"></i>
-                        <div style="flex:1;">
-                            <div style="font-size:11px;color:var(--text-secondary);">Доставка</div>
-                            <div style="font-size:12px;font-weight:600;color:${DEL_COL[s]};">${DEL_ST[s]||s}</div>
-                        </div>
-                    </div>`;
+                    badges.push(`<div style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;background:${DEL_COL[s]}18;border:1px solid ${DEL_COL[s]}44;border-radius:20px;">
+                        <i class="fa-solid fa-truck-fast" style="color:${DEL_COL[s]};font-size:12px;"></i>
+                        <span style="font-size:11px;font-weight:600;color:${DEL_COL[s]};">${DEL_LBL[s]||s}</span>
+                    </div>`);
                 }
-                html += '</div>';
-                el.innerHTML = html;
+                el.innerHTML = badges.length ? `<div style="display:flex;gap:8px;flex-wrap:wrap;">${badges.join('')}</div>` : '';
             })();
         }
 
@@ -5139,7 +5134,7 @@
 
         const { data, error } = await supa.from('tasks')
             .select('*')
-            .not('type', 'in', '("cleaning","laundry")')
+            .not('type', 'in', '("cleaning","laundry","delivery")')
             .order('created_at', { ascending: false });
 
         if (error) { console.error('tasks', error); loading.style.display = 'none'; return; }
