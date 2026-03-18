@@ -4659,16 +4659,24 @@
                 const options = [
                     { status:'in_progress', label:'🚚 В пути',       color:'#f59e0b' },
                     { status:'done',        label:'✅ Доставлено',    color:'#10b981' },
-                    { status:'new',         label:'📋 Назначена',     color:'#6366f1' },
+                    { status:'new',         label:'📦 Забрать',       color:'#ef4444' },
                 ];
+                let menuRemoved = false;
+                const removeMenu = () => {
+                    if (menuRemoved) return;
+                    menuRemoved = true;
+                    if (menu.parentNode) menu.parentNode.removeChild(menu);
+                    document.removeEventListener('click', closeMenu);
+                };
                 options.forEach(o => {
                     const item = document.createElement('div');
                     item.textContent = o.label;
                     item.style.cssText = `padding:8px 12px;border-radius:6px;cursor:pointer;font-size:13px;color:${o.color};`;
                     item.addEventListener('mouseenter', () => item.style.background = 'rgba(255,255,255,.07)');
                     item.addEventListener('mouseleave', () => item.style.background = '');
-                    item.addEventListener('click', async () => {
-                        document.body.removeChild(menu);
+                    item.addEventListener('click', async (ev) => {
+                        ev.stopPropagation();
+                        removeMenu();
                         await supa.from('tasks').update({ status: o.status, ...(o.status==='done' ? {completed_at: new Date().toISOString()} : {}) }).eq('id', delId);
                         loadExpeditor();
                     });
@@ -4678,8 +4686,8 @@
                 menu.style.top  = (rect.bottom + 4) + 'px';
                 menu.style.left = (rect.left - 80) + 'px';
                 document.body.appendChild(menu);
-                const close = (ev) => { if (!menu.contains(ev.target)) { document.body.removeChild(menu); document.removeEventListener('click', close); } };
-                setTimeout(() => document.addEventListener('click', close), 0);
+                const closeMenu = (ev) => { if (!menu.contains(ev.target)) removeMenu(); };
+                setTimeout(() => document.addEventListener('click', closeMenu), 0);
             });
         });
     }
