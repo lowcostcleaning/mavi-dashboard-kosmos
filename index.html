@@ -274,17 +274,79 @@
                         </div>
                     </div>
 
-                    <div class="emp-filters">
-                        <button class="emp-filter-btn active" data-role="all">Все</button>
-                        <button class="emp-filter-btn" data-role="cleaner">Клинеры</button>
-                        <button class="emp-filter-btn" data-role="expeditor">Экспедиторы</button>
-                        <button class="emp-filter-btn" data-role="complector">Комплектовщики</button>
-                        <button class="emp-filter-btn" data-role="mbip">Менеджеры</button>
-                        <button class="emp-filter-btn" data-role="ceo">Руководство</button>
+                    <!-- Sub-tabs -->
+                    <div style="display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid rgba(255,255,255,.07);padding-bottom:0;">
+                        <button class="emp-subtab active" data-subtab="list" style="padding:8px 18px;font-size:13px;font-weight:600;border:none;background:none;cursor:pointer;color:var(--text-primary);border-bottom:2px solid #6366f1;margin-bottom:-1px;">Список</button>
+                        <button class="emp-subtab" data-subtab="salary" style="padding:8px 18px;font-size:13px;font-weight:600;border:none;background:none;cursor:pointer;color:var(--text-secondary);border-bottom:2px solid transparent;margin-bottom:-1px;"><i class="fa-solid fa-calculator" style="margin-right:6px;font-size:11px;"></i>Расчёт зарплаты</button>
                     </div>
 
-                    <div id="employees-grid" class="emp-grid">
-                        <div style="opacity:.5;padding:40px;text-align:center;">Загрузка...</div>
+                    <!-- Sub-tab: Список -->
+                    <div id="emp-subtab-list">
+                        <div class="emp-filters">
+                            <button class="emp-filter-btn active" data-role="all">Все</button>
+                            <button class="emp-filter-btn" data-role="cleaner">Клинеры</button>
+                            <button class="emp-filter-btn" data-role="expeditor">Экспедиторы</button>
+                            <button class="emp-filter-btn" data-role="complector">Комплектовщики</button>
+                            <button class="emp-filter-btn" data-role="mbip">Менеджеры</button>
+                            <button class="emp-filter-btn" data-role="ceo">Руководство</button>
+                        </div>
+                        <div id="employees-grid" class="emp-grid">
+                            <div style="opacity:.5;padding:40px;text-align:center;">Загрузка...</div>
+                        </div>
+                    </div>
+
+                    <!-- Sub-tab: Расчёт зарплаты -->
+                    <div id="emp-subtab-salary" style="display:none;">
+
+                        <!-- Тарифная сетка клинеров -->
+                        <div class="chart-card" style="margin-bottom:16px;">
+                            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+                                <div style="font-size:14px;font-weight:600;"><i class="fa-solid fa-broom" style="margin-right:8px;color:#6366f1;"></i>Ставки клинеров</div>
+                                <div style="font-size:11px;color:var(--text-secondary);">Изменения сохраняются автоматически</div>
+                            </div>
+                            <div style="overflow-x:auto;">
+                                <table style="width:100%;border-collapse:collapse;" id="salary-cleaners-table">
+                                    <thead>
+                                        <tr style="border-bottom:1px solid rgba(255,255,255,.08);">
+                                            <th style="padding:8px 12px;text-align:left;font-size:10px;color:var(--text-secondary);font-weight:500;text-transform:uppercase;">Клинер</th>
+                                            <th style="padding:8px 12px;text-align:center;font-size:10px;color:var(--text-secondary);font-weight:500;text-transform:uppercase;">Рейтинг</th>
+                                            <th style="padding:8px 12px;text-align:center;font-size:10px;color:var(--text-secondary);font-weight:500;text-transform:uppercase;">Уборок 2026</th>
+                                            <th style="padding:8px 12px;text-align:center;font-size:10px;color:var(--text-secondary);font-weight:500;text-transform:uppercase;">Ставка за уборку (₾)</th>
+                                            <th style="padding:8px 12px;text-align:center;font-size:10px;color:var(--text-secondary);font-weight:500;text-transform:uppercase;">Статус</th>
+                                            <th style="padding:8px 12px;"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="salary-cleaners-body">
+                                        <tr><td colspan="6" style="padding:30px;text-align:center;opacity:.4;">Загрузка...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Прайс-лист по типам уборки -->
+                        <div class="chart-card">
+                            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+                                <div style="font-size:14px;font-weight:600;"><i class="fa-solid fa-tag" style="margin-right:8px;color:#f59e0b;"></i>Тарифы по типу апартамента</div>
+                                <div style="font-size:11px;color:var(--text-secondary);">Автоподставляются при создании уборки</div>
+                            </div>
+                            <div style="overflow-x:auto;">
+                                <table style="width:100%;border-collapse:collapse;" id="salary-tariffs-table">
+                                    <thead>
+                                        <tr style="border-bottom:1px solid rgba(255,255,255,.08);">
+                                            <th style="padding:8px 12px;text-align:left;font-size:10px;color:var(--text-secondary);font-weight:500;text-transform:uppercase;">Тип</th>
+                                            <th style="padding:8px 12px;text-align:center;font-size:10px;color:var(--text-secondary);font-weight:500;text-transform:uppercase;">Тариф уборки (₾)</th>
+                                            <th style="padding:8px 12px;text-align:center;font-size:10px;color:var(--text-secondary);font-weight:500;text-transform:uppercase;">Долгий срок (₾)</th>
+                                            <th style="padding:8px 12px;text-align:left;font-size:10px;color:var(--text-secondary);font-weight:500;text-transform:uppercase;">Примечание</th>
+                                            <th style="padding:8px 12px;"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="salary-tariffs-body">
+                                        <tr><td colspan="5" style="padding:30px;text-align:center;opacity:.4;">Загрузка...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
                     </div>
                 </section>
 
@@ -1447,6 +1509,162 @@
         if (error) { console.error(error); return; }
         allEmployees = data || [];
         applyFilter();
+        renderSalaryCleaners();
+    }
+
+    // ── Sub-tabs: Список / Расчёт зарплаты ──────────────────────────
+    document.querySelectorAll('.emp-subtab').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.emp-subtab').forEach(b => {
+                b.style.color = 'var(--text-secondary)';
+                b.style.borderBottomColor = 'transparent';
+                b.classList.remove('active');
+            });
+            btn.style.color = 'var(--text-primary)';
+            btn.style.borderBottomColor = '#6366f1';
+            btn.classList.add('active');
+            const tab = btn.dataset.subtab;
+            document.getElementById('emp-subtab-list').style.display   = tab === 'list'   ? '' : 'none';
+            document.getElementById('emp-subtab-salary').style.display = tab === 'salary' ? '' : 'none';
+            if (tab === 'salary') { renderSalaryCleaners(); loadTariffRates(); }
+        });
+    });
+
+    // ── Salary: cleaners table ───────────────────────────────────────
+    function renderSalaryCleaners() {
+        const tbody = document.getElementById('salary-cleaners-body');
+        if (!tbody) return;
+        const cleaners = allEmployees.filter(e => e.role === 'cleaner');
+        if (!cleaners.length) {
+            tbody.innerHTML = '<tr><td colspan="6" style="padding:30px;text-align:center;opacity:.4;">Нет клинеров</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = cleaners.map(e => {
+            const stars = e.rating
+                ? [1,2,3,4,5].map(i => `<i class="fa-${i <= Math.round(e.rating) ? 'solid' : 'regular'} fa-star" style="color:${i <= Math.round(e.rating) ? '#ffcc33' : '#ffffff22'};font-size:11px;"></i>`).join('')
+                : '—';
+            const statusColor = e.status === 'active' ? '#10b981' : '#6b7280';
+            const statusLabel = { active: 'Активен', inactive: 'Неактивен', vacation: 'Отпуск' }[e.status] || e.status;
+            return `<tr style="border-bottom:1px solid rgba(255,255,255,.05);">
+                <td style="padding:10px 12px;">
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#a855f7);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">
+                            ${(e.full_name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}
+                        </div>
+                        <span style="font-size:13px;font-weight:500;">${e.full_name}</span>
+                    </div>
+                </td>
+                <td style="padding:10px 12px;text-align:center;">
+                    <div style="display:flex;align-items:center;justify-content:center;gap:3px;">${stars}</div>
+                    ${e.rating ? `<div style="font-size:11px;color:#ffcc33;margin-top:2px;">${e.rating}</div>` : ''}
+                </td>
+                <td style="padding:10px 12px;text-align:center;color:#10b981;font-weight:600;">${e.cleaning_count || 0}</td>
+                <td style="padding:10px 12px;text-align:center;">
+                    <input type="number" class="mavi-input salary-rate-inp" data-emp-id="${e.id}"
+                        value="${e.default_tariff || ''}" min="0" step="1" placeholder="—"
+                        style="width:80px;padding:5px 8px;font-size:13px;text-align:center;font-weight:600;color:#ffcc33;">
+                </td>
+                <td style="padding:10px 12px;text-align:center;">
+                    <span style="font-size:11px;color:${statusColor};background:${statusColor}22;border:1px solid ${statusColor}44;padding:2px 8px;border-radius:8px;">${statusLabel}</span>
+                </td>
+                <td style="padding:10px 12px;text-align:right;">
+                    <span class="salary-save-status" data-emp-id="${e.id}" style="font-size:11px;color:var(--text-secondary);"></span>
+                </td>
+            </tr>`;
+        }).join('');
+
+        // Auto-save on change with debounce
+        tbody.querySelectorAll('.salary-rate-inp').forEach(inp => {
+            let timer;
+            inp.addEventListener('input', () => {
+                clearTimeout(timer);
+                const statusEl = tbody.querySelector(`.salary-save-status[data-emp-id="${inp.dataset.empId}"]`);
+                if (statusEl) statusEl.textContent = '...';
+                timer = setTimeout(async () => {
+                    const rate = parseFloat(inp.value) || null;
+                    const { error } = await supa.from('employees')
+                        .update({ default_tariff: rate })
+                        .eq('id', inp.dataset.empId);
+                    if (!error) {
+                        const emp = allEmployees.find(e => e.id === inp.dataset.empId);
+                        if (emp) emp.default_tariff = rate;
+                        if (statusEl) { statusEl.textContent = '✓ сохранено'; statusEl.style.color = '#10b981'; }
+                        setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 2000);
+                    } else {
+                        if (statusEl) { statusEl.textContent = 'ошибка'; statusEl.style.color = '#ef4444'; }
+                    }
+                }, 800);
+            });
+        });
+    }
+
+    // ── Salary: tariff rates table ───────────────────────────────────
+    let allTariffRates = [];
+
+    async function loadTariffRates() {
+        const tbody = document.getElementById('salary-tariffs-body');
+        if (!tbody) return;
+        const { data } = await supa.from('tariff_rates').select('*').order('id');
+        allTariffRates = data || [];
+        renderTariffRates();
+    }
+
+    function renderTariffRates() {
+        const tbody = document.getElementById('salary-tariffs-body');
+        if (!tbody || !allTariffRates.length) return;
+
+        const typeIcon = { 'студия': '🛏', '1+1': '🛏🛏', '2+1': '🛏🛏🛏' };
+        tbody.innerHTML = allTariffRates.map(r => `
+            <tr style="border-bottom:1px solid rgba(255,255,255,.05);">
+                <td style="padding:10px 12px;font-size:14px;font-weight:600;">
+                    ${typeIcon[r.tariff_type] || ''} ${r.tariff_type}
+                </td>
+                <td style="padding:10px 12px;text-align:center;">
+                    <input type="number" class="mavi-input tariff-price-inp" data-id="${r.id}" data-field="cleaning_price"
+                        value="${r.cleaning_price || ''}" min="0" step="1"
+                        style="width:80px;padding:5px 8px;font-size:13px;text-align:center;font-weight:600;color:#f59e0b;">
+                </td>
+                <td style="padding:10px 12px;text-align:center;">
+                    <input type="number" class="mavi-input tariff-price-inp" data-id="${r.id}" data-field="long_stay_rate"
+                        value="${r.long_stay_rate || ''}" min="0" step="1"
+                        style="width:80px;padding:5px 8px;font-size:13px;text-align:center;color:#a78bfa;">
+                </td>
+                <td style="padding:10px 12px;">
+                    <input type="text" class="mavi-input tariff-price-inp" data-id="${r.id}" data-field="notes"
+                        value="${r.notes || ''}" placeholder="—"
+                        style="width:100%;padding:5px 8px;font-size:12px;color:var(--text-secondary);">
+                </td>
+                <td style="padding:10px 12px;text-align:right;">
+                    <span class="tariff-save-status" data-id="${r.id}" style="font-size:11px;color:var(--text-secondary);"></span>
+                </td>
+            </tr>
+        `).join('');
+
+        // Auto-save with debounce
+        tbody.querySelectorAll('.tariff-price-inp').forEach(inp => {
+            let timer;
+            inp.addEventListener('input', () => {
+                clearTimeout(timer);
+                const statusEl = tbody.querySelector(`.tariff-save-status[data-id="${inp.dataset.id}"]`);
+                if (statusEl) statusEl.textContent = '...';
+                timer = setTimeout(async () => {
+                    const field = inp.dataset.field;
+                    const val   = field === 'notes' ? inp.value.trim() || null : parseFloat(inp.value) || 0;
+                    const { error } = await supa.from('tariff_rates')
+                        .update({ [field]: val, updated_at: new Date().toISOString() })
+                        .eq('id', inp.dataset.id);
+                    if (!error) {
+                        const r = allTariffRates.find(x => String(x.id) === String(inp.dataset.id));
+                        if (r) r[field] = val;
+                        if (statusEl) { statusEl.textContent = '✓'; statusEl.style.color = '#10b981'; }
+                        setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 2000);
+                    } else {
+                        if (statusEl) { statusEl.textContent = 'ошибка'; statusEl.style.color = '#ef4444'; }
+                    }
+                }, 800);
+            });
+        });
     }
 
     // ── Profile modal ───────────────────────────────────────────────
@@ -1656,6 +1874,7 @@
     });
 
     loadEmployees();
+    loadTariffRates(); // load early so schedule modal can use them
 
     // ════════════════════════════════════════════════════════════════
     // APARTMENTS
@@ -2720,6 +2939,19 @@
             if (!this.checked) { amtEl.value = ''; schedRecompute(); }
         };
 
+        // Auto-fill тариф (base) when tariff type changes
+        document.getElementById('sched-tariff-type').onchange = function() {
+            const rate = allTariffRates.find(r => r.tariff_type === this.value);
+            if (rate) {
+                document.getElementById('sched-cost').value = rate.cleaning_price || '';
+                // Also pre-fill долгий срок amount from table
+                if (rate.long_stay_rate) document.getElementById('sched-long-stay-amount').value = rate.long_stay_rate;
+            } else {
+                document.getElementById('sched-cost').value = '';
+            }
+            schedRecompute();
+        };
+
         // Show apt type from DB
         const apt = allApartments.find(a => a.id === aptId);
         const aptTypeVal = apt?.apt_type || '';
@@ -2729,12 +2961,17 @@
             aptTypeRow.style.display = '';
             const tariffMap = {'студия':'студия','1+1':'1+1','1-1':'1+1','2+1':'2+1','2-1':'2+1'};
             const tt = tariffMap[aptTypeVal.toLowerCase()] || '';
-            if (tt) document.getElementById('sched-tariff-type').value = tt;
+            if (tt) {
+                document.getElementById('sched-tariff-type').value = tt;
+                // Auto-fill cost from tariff table
+                const rate = allTariffRates.find(r => r.tariff_type === tt);
+                if (rate) document.getElementById('sched-cost').value = rate.cleaning_price || '';
+            }
         } else {
             aptTypeRow.style.display = 'none';
         }
 
-        document.getElementById('sched-cost').value = '';
+        document.getElementById('sched-cost').value = document.getElementById('sched-cost').value || '';
         document.getElementById('sched-cleaner-rate').value = '';
         document.getElementById('sched-cleaner2-rate').value = '';
         document.getElementById('sched-long-stay-amount').value = '';
