@@ -2070,11 +2070,13 @@
             const revenue = a.monthly_revenue ? `${Number(a.monthly_revenue).toLocaleString('ru-RU')} GEL/мес` : null;
             const floor   = a.floor ? `${a.floor} эт.` : '';
             const sub     = [a.complex_name, floor, a.room_type].filter(Boolean).join(' · ');
+            const firstPhoto = Array.isArray(a.media) && a.media.length ? a.media.find(m=>m.type==='image') : null;
+            const thumbHtml = firstPhoto
+                ? `<div class="apt-card-icon" style="background:${color}22;border-color:${color}66;overflow:hidden;padding:0;"><img src="${firstPhoto.url}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block;"></div>`
+                : `<div class="apt-card-icon" style="background:${color}22;border-color:${color}66;color:${color};"><i class="fa-solid fa-building"></i></div>`;
             return `<div class="apt-card" data-id="${a.id}" style="--apt-color:${color};">
                 <div class="apt-card-header">
-                    <div class="apt-card-icon" style="background:${color}22;border-color:${color}66;color:${color};">
-                        <i class="fa-solid fa-building"></i>
-                    </div>
+                    ${thumbHtml}
                     <div style="flex:1;min-width:0;">
                         <div class="apt-card-name">${a.name || '—'}</div>
                         <div class="apt-card-sub">${sub || a.address || '—'}</div>
