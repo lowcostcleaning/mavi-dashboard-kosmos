@@ -58,7 +58,7 @@
                     <span>Брони</span>
                 </a>
                 <a href="#" class="nav-item" data-view="laundry" data-label="Laundry">
-                    <i class="fa-solid fa-jug-detergent"></i>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width:1em;height:1em;vertical-align:-0.1em;"><path d="M18 2H6C4.9 2 4 2.9 4 4v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 18H6V8h12v12zm0-14H6V4h12v2zM8 5.5a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0zm2.5 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0z"/><path d="M12 9.5a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9zm0 7a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg>
                     <span>Laundry</span>
                 </a>
                 <a href="#" class="nav-item" data-view="reports" data-label="Отчеты">
@@ -1027,13 +1027,31 @@
                                         <option value="launching">Запуск</option>
                                     </select>
                                 </div>
-                                <div><label class="emp-label">Тип апартамента</label><input class="mavi-input" id="apt-form-apt-type" placeholder="Студия / 1+1 / 1+2"></div>
+                                <div><label class="emp-label">Тип апартамента</label>
+                                    <select class="mavi-input" id="apt-form-apt-type">
+                                        <option value="">— выбрать —</option>
+                                        <option value="Студия">Студия</option>
+                                        <option value="Студия/твин">Студия/твин</option>
+                                        <option value="Студия на 4х">Студия на 4х</option>
+                                        <option value="1+1">1+1</option>
+                                        <option value="1+2">1+2</option>
+                                        <option value="Дом">Дом</option>
+                                    </select>
+                                </div>
                                 <div><label class="emp-label">Менеджер</label>
                                     <select class="mavi-input" id="apt-form-manager">
                                         <option value="">— не назначен —</option>
                                     </select>
                                 </div>
-                                <div><label class="emp-label">Стратегия</label><input class="mavi-input" id="apt-form-strategy" placeholder="70/30"></div>
+                                <div><label class="emp-label">Стратегия</label>
+                                    <select class="mavi-input" id="apt-form-strategy">
+                                        <option value="">— выбрать —</option>
+                                        <option value="70/30">70/30</option>
+                                        <option value="80/20">80/20</option>
+                                        <option value="90/10">90/10</option>
+                                        <option value="100/0">100/0</option>
+                                    </select>
+                                </div>
                                 <div><label class="emp-label">Доход/мес (GEL)</label><input class="mavi-input" id="apt-form-revenue" type="number" placeholder="2500"></div>
                             </div>
                             <div><label class="emp-label">Адрес</label><input class="mavi-input" id="apt-form-address" placeholder="ул. Горгиладзе, 4"></div>
