@@ -4547,30 +4547,28 @@
             } else if (flowStep === 1) {
                 kitStatusHtml = statusRow('fa-shirt', 'Комплектуется...', '#f59e0b');
             } else if (flowStep === 2) {
+                // Комплект готов → КРАСНАЯ кнопка "Забрать"
                 kitStatusHtml = statusRow('fa-circle-check', 'Комплект готов', '#10b981');
-                deliveryStatusHtml = `<button class="exp-create-delivery-btn action-btn" data-exp-clean-id="${c.id}" data-apt-id="${c.apartment_id}" data-restock-id="${restockTask?.id || ''}" style="margin-top:6px;padding:9px 14px;font-size:13px;font-weight:700;width:100%;justify-content:center;background:#6366f1;border-color:#6366f1;">
-                    <i class="fa-solid fa-box-open" style="margin-right:7px;"></i>Забрать комплект
+                deliveryStatusHtml = `<button class="exp-create-delivery-btn action-btn" data-exp-clean-id="${c.id}" data-apt-id="${c.apartment_id}" data-restock-id="${restockTask?.id || ''}" style="margin-top:6px;padding:10px 14px;font-size:13px;font-weight:700;width:100%;justify-content:center;background:#ef4444;border-color:#ef4444;">
+                    <i class="fa-solid fa-box-open" style="margin-right:7px;"></i>Забрать
                 </button>`;
             } else if (flowStep === 3) {
+                // В пути → ОРАНЖЕВАЯ кнопка "Доставить"
                 kitStatusHtml = statusRow('fa-circle-check', 'Комплект забран', '#6366f1');
-                deliveryStatusHtml = `<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;margin-top:8px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.35);border-radius:8px;">
-                    <i class="fa-solid fa-truck-fast" style="color:#f59e0b;font-size:14px;flex-shrink:0;"></i>
-                    <span style="font-size:12px;font-weight:600;color:#f59e0b;flex:1;">В пути к клиенту</span>
-                    <button class="exp-deliver-btn action-btn" data-delivery-id="${delivery.id}" style="padding:6px 16px;font-size:12px;font-weight:700;background:#10b981;border-color:#10b981;flex-shrink:0;">
-                        <i class="fa-solid fa-check" style="margin-right:5px;"></i>Готово
-                    </button>
-                    <button class="exp-status-change-btn action-btn" data-delivery-id="${delivery.id}" style="padding:4px 8px;font-size:10px;background:transparent;border-color:rgba(255,255,255,.15);color:var(--text-secondary);flex-shrink:0;" title="Изменить статус">
-                        <i class="fa-solid fa-ellipsis-vertical"></i>
-                    </button>
-                </div>`;
+                deliveryStatusHtml = `<button class="exp-deliver-btn action-btn" data-delivery-id="${delivery.id}" style="margin-top:6px;padding:10px 14px;font-size:13px;font-weight:700;width:100%;justify-content:center;background:#f59e0b;border-color:#f59e0b;">
+                    <i class="fa-solid fa-truck-fast" style="margin-right:7px;"></i>Доставить
+                </button>
+                <button class="exp-status-change-btn action-btn" data-delivery-id="${delivery.id}" style="margin-top:4px;padding:4px 10px;font-size:10px;width:100%;justify-content:center;background:transparent;border-color:rgba(255,255,255,.12);color:var(--text-secondary);">
+                    <i class="fa-solid fa-ellipsis" style="margin-right:4px;"></i>Изменить статус
+                </button>`;
             } else if (flowStep === 4) {
-                deliveryStatusHtml = `<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;margin-top:8px;background:rgba(16,185,129,.14);border:1px solid rgba(16,185,129,.45);border-radius:10px;">
-                    <i class="fa-solid fa-circle-check" style="color:#10b981;font-size:20px;"></i>
-                    <span style="font-size:14px;font-weight:700;color:#10b981;">Доставлено ✓</span>
-                    <button class="exp-status-change-btn action-btn" data-delivery-id="${delivery.id}" style="margin-left:auto;padding:4px 10px;font-size:10px;background:transparent;border-color:rgba(255,255,255,.15);color:var(--text-secondary);">
-                        <i class="fa-solid fa-rotate" style="margin-right:3px;"></i>Изменить
-                    </button>
-                </div>`;
+                // Доставлено → ЗЕЛЁНАЯ кнопка "Готово" (неактивная, как бейдж)
+                deliveryStatusHtml = `<div style="margin-top:6px;padding:10px 14px;font-size:13px;font-weight:700;width:100%;text-align:center;background:#10b981;border:1px solid #10b981;border-radius:8px;color:#fff;">
+                    <i class="fa-solid fa-circle-check" style="margin-right:7px;"></i>Готово
+                </div>
+                <button class="exp-status-change-btn action-btn" data-delivery-id="${delivery.id}" style="margin-top:4px;padding:4px 10px;font-size:10px;width:100%;justify-content:center;background:transparent;border-color:rgba(255,255,255,.12);color:var(--text-secondary);">
+                    <i class="fa-solid fa-ellipsis" style="margin-right:4px;"></i>Изменить статус
+                </button>`;
             }
 
             return `<div class="lnd-apt-card" style="border-color:${cardBorder};">
