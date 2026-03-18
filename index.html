@@ -2995,7 +2995,7 @@
             deadline:          dateVal + 'T00:00:00Z',
             comment,
             title:             'Уборка — ' + (apt?.name || ''),
-            source:            'dashboard',
+            source:            'manual',
             apt_type_auto:     apt?.apt_type || null,
         }).select();
 
@@ -3957,7 +3957,7 @@
             modal.dataset.currentStageKey = stageKey || '';
 
             document.getElementById('lnd-complector').innerHTML = complectorOpts;
-            document.getElementById('lnd-date').value    = date || '';
+            document.getElementById('lnd-date').value    = lndISODate(new Date()); // всегда сегодня
             document.getElementById('lnd-linen').value   = apt?.bed_linen_size || '';
             document.getElementById('lnd-comment').value = '';
 
@@ -4035,7 +4035,7 @@
                 deadline:     dateVal ? dateVal + 'T00:00:00Z' : null,
                 comment:      commentVal,
                 title:        `${prefix} — ${apt?.name || ''}`,
-                source:       'dashboard',
+                source:       'manual',
             });
 
             if (error) {
@@ -4520,7 +4520,7 @@
                     status:       'in_progress',
                     deadline:     dateISO + 'T00:00:00Z',
                     title:        'Доставка — ' + (apt?.name || ''),
-                    source:       'dashboard',
+                    source:       'manual',
                 });
                 loadExpeditor();
             });
