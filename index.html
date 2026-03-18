@@ -4697,11 +4697,15 @@
                     item.addEventListener('click', async (ev) => {
                         ev.stopPropagation();
                         removeMenu();
-                        if (o.action === 'delete') {
-                            await supa.from('tasks').delete().eq('id', delId);
-                        } else {
-                            await supa.from('tasks').update({ status: o.status, ...(o.status==='done' ? {completed_at: new Date().toISOString()} : {}) }).eq('id', delId);
-                        }
+                        try {
+                            if (o.action === 'delete') {
+                                const { error } = await supa.from('tasks').delete().eq('id', delId).select();
+                                if (error) { alert('Ошибка удаления: ' + error.message); return; }
+                            } else {
+                                const { error } = await supa.from('tasks').update({ status: o.status, ...(o.status==='done' ? {completed_at: new Date().toISOString()} : {}) }).eq('id', delId);
+                                if (error) { alert('Ошибка: ' + error.message); return; }
+                            }
+                        } catch(err) { alert('Ошибка: ' + err.message); return; }
                         loadExpeditor();
                     });
                     menu.appendChild(item);
