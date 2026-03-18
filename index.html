@@ -1616,26 +1616,53 @@
                         <div class="emp-stat-value" style="font-size:13px;">${a.complex_name || '—'}</div>
                     </div>
                     <div class="emp-stat-card">
-                        <div class="emp-stat-label">Этаж / тип</div>
-                        <div class="emp-stat-value" style="font-size:13px;">${[a.floor ? a.floor+' эт.' : null, a.room_type].filter(Boolean).join(' · ') || '—'}</div>
+                        <div class="emp-stat-label">Тип / этаж</div>
+                        <div class="emp-stat-value" style="font-size:13px;">${[a.apt_type || a.room_type, a.floor ? a.floor+' эт.' : null].filter(Boolean).join(' · ') || '—'}</div>
                     </div>
                     <div class="emp-stat-card" style="border-color:#ffcc3355;">
                         <div class="emp-stat-label">Доход / мес</div>
                         <div class="emp-stat-value" style="color:#ffcc33;font-size:13px;">${revenue}</div>
                     </div>
-                    <div class="emp-stat-card" style="border-color:#10b98155;">
-                        <div class="emp-stat-label">Последн. уборка</div>
-                        <div class="emp-stat-value" style="color:#10b981;font-size:13px;">${a.last_service ? new Date(a.last_service).toLocaleDateString('ru-RU') : '—'}</div>
+                    <div class="emp-stat-card" style="border-color:#6366f155;">
+                        <div class="emp-stat-label">Менеджер / стратегия</div>
+                        <div class="emp-stat-value" style="color:#a78bfa;font-size:13px;">${[a.manager, a.strategy].filter(Boolean).join(' · ') || '—'}</div>
                     </div>
                 </div>
 
-                <div class="apt-section-title"><i class="fa-solid fa-key" style="margin-right:6px;"></i>Доступ</div>
+                ${(a.link_airbnb || a.link_booking || a.link_sutochno || a.link_ostrovok) ? `
+                <div class="apt-section-title"><i class="fa-solid fa-globe" style="margin-right:6px;"></i>Площадки</div>
+                <div class="apt-platforms-row">
+                    ${a.link_airbnb ? `<a href="${a.link_airbnb}" target="_blank" class="apt-platform-btn apt-platform-airbnb"><i class="fa-brands fa-airbnb"></i> Airbnb</a>` : ''}
+                    ${a.link_booking ? `<a href="${a.link_booking}" target="_blank" class="apt-platform-btn apt-platform-booking"><i class="fa-solid fa-b"></i> Booking</a>` : ''}
+                    ${a.link_sutochno ? `<a href="${a.link_sutochno}" target="_blank" class="apt-platform-btn apt-platform-sutochno"><i class="fa-solid fa-calendar-days"></i> Суточно</a>` : ''}
+                    ${a.link_ostrovok ? `<a href="${a.link_ostrovok}" target="_blank" class="apt-platform-btn apt-platform-ostrovok"><i class="fa-solid fa-island-tropical"></i> Островок</a>` : ''}
+                </div>` : ''}
+
+                <div class="apt-section-title" style="margin-top:14px;"><i class="fa-solid fa-key" style="margin-right:6px;"></i>Доступ</div>
                 <div class="apt-info-block">
                     ${infoRow('Код замка', a.locker_code, '#00f2ff')}
                     ${infoRow('Размер белья', a.bed_linen_size)}
                     ${infoRow('Набор уборки', a.cleaning_kit)}
+                    ${a.link_how_to_find ? `<div class="apt-info-row"><span class="apt-info-label">Как добраться</span><span class="apt-info-val"><a href="${a.link_how_to_find.startsWith('http') ? a.link_how_to_find : '#'}" target="_blank" style="color:#6366f1;">${a.link_how_to_find.startsWith('http') ? 'Открыть инструкцию' : a.link_how_to_find}</a></span></div>` : ''}
                     ${a.access_info ? `<div class="apt-info-row apt-info-full"><span class="apt-info-label">Инструкция</span><span class="apt-info-val">${a.access_info}</span></div>` : ''}
                 </div>
+
+                ${(a.util_gas || a.util_electricity || a.util_water || a.util_internet) ? `
+                <div class="apt-section-title" style="margin-top:14px;"><i class="fa-solid fa-bolt" style="margin-right:6px;"></i>ЖКХ</div>
+                <div class="apt-info-block">
+                    ${a.util_gas && a.util_gas !== '-' ? infoRow('Газ', a.util_gas) : ''}
+                    ${a.util_electricity && a.util_electricity !== '-' ? infoRow('Электро', a.util_electricity) : ''}
+                    ${a.util_water && a.util_water !== '-' ? infoRow('Вода', a.util_water) : ''}
+                    ${a.util_internet && a.util_internet !== '-' ? infoRow('Интернет', a.util_internet) : ''}
+                    ${a.util_tariff && a.util_tariff !== '-' ? infoRow('Тариф', a.util_tariff) : ''}
+                </div>` : ''}
+
+                ${(a.bank_account || a.owner_full_name) ? `
+                <div class="apt-section-title" style="margin-top:14px;"><i class="fa-solid fa-building-columns" style="margin-right:6px;"></i>Реквизиты</div>
+                <div class="apt-info-block">
+                    ${infoRow('Владелец', a.owner_full_name, '#a78bfa')}
+                    ${a.bank_account ? `<div class="apt-info-row"><span class="apt-info-label">Р/счёт</span><span class="apt-info-val" style="font-family:monospace;font-size:11px;word-break:break-all;">${a.bank_account}</span></div>` : ''}
+                </div>` : ''}
 
                 <div class="apt-section-title" style="margin-top:14px;"><i class="fa-solid fa-calendar-days" style="margin-right:6px;"></i>Календарь iCal</div>
                 <div id="apt-ical-view-${a.id}">

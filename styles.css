@@ -907,6 +907,31 @@ button:active,
     width: 100%;
 }
 
+/* Apartment platform buttons */
+.apt-platforms-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+.apt-platform-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: opacity .15s, transform .1s;
+    border: 1px solid transparent;
+}
+.apt-platform-btn:hover { opacity: .8; transform: translateY(-1px); }
+.apt-platform-airbnb  { background: rgba(255,90,95,.15);  color: #ff5a5f; border-color: rgba(255,90,95,.3); }
+.apt-platform-booking { background: rgba(0,109,204,.15);  color: #4a9eff; border-color: rgba(0,109,204,.3); }
+.apt-platform-sutochno{ background: rgba(99,102,241,.15); color: #818cf8; border-color: rgba(99,102,241,.3); }
+.apt-platform-ostrovok{ background: rgba(16,185,129,.15); color: #10b981; border-color: rgba(16,185,129,.3); }
+
 /* Apartments Section */
 .apartments-section {
     background-color: var(--bg-card);
