@@ -975,6 +975,14 @@
                         </div>
                     </div>
 
+                    <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center;">
+                        <select id="apt-filter-complex" class="mavi-input" style="font-size:12px;padding:5px 10px;min-width:160px;">
+                            <option value="">Все комплексы</option>
+                        </select>
+                        <select id="apt-filter-manager" class="mavi-input" style="font-size:12px;padding:5px 10px;min-width:140px;">
+                            <option value="">Все менеджеры</option>
+                        </select>
+                    </div>
                     <div class="emp-filters" id="apt-status-filters">
                         <button class="apt-filter-btn active" data-status="all">Все</button>
                         <button class="apt-filter-btn" data-status="free">Свободно</button>
@@ -999,20 +1007,18 @@
 
                 <!-- Add/Edit Apartment Modal -->
                 <div class="emp-modal-backdrop" id="apt-form-modal" hidden>
-                    <div class="emp-modal" style="max-width:520px;">
+                    <div class="emp-modal" style="max-width:580px;">
                         <div class="emp-modal-header">
                             <h3 id="apt-form-title">Добавить апартамент</h3>
                             <button class="emp-modal-close" id="apt-form-close"><i class="fa-solid fa-xmark"></i></button>
                         </div>
-                        <div style="padding:20px;display:grid;gap:14px;max-height:75vh;overflow-y:auto;">
+                        <div style="padding:20px;display:grid;gap:14px;max-height:80vh;overflow-y:auto;">
                             <input type="hidden" id="apt-form-id">
-                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-                                <div>
-                                    <label class="emp-label">Название</label>
-                                    <input class="mavi-input" id="apt-form-name" placeholder="Апарт. №5">
-                                </div>
-                                <div>
-                                    <label class="emp-label">Статус</label>
+
+                            <div class="apt-form-section-title">Основное</div>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                                <div><label class="emp-label">Название</label><input class="mavi-input" id="apt-form-name" placeholder="WS B 503"></div>
+                                <div><label class="emp-label">Статус</label>
                                     <select class="mavi-input" id="apt-form-status">
                                         <option value="free">Свободно</option>
                                         <option value="occupied">Занято</option>
@@ -1021,55 +1027,50 @@
                                         <option value="launching">Запуск</option>
                                     </select>
                                 </div>
+                                <div><label class="emp-label">Тип апартамента</label><input class="mavi-input" id="apt-form-apt-type" placeholder="Студия / 1+1 / 1+2"></div>
+                                <div><label class="emp-label">Менеджер</label><input class="mavi-input" id="apt-form-manager" placeholder="Марина"></div>
+                                <div><label class="emp-label">Стратегия</label><input class="mavi-input" id="apt-form-strategy" placeholder="70/30"></div>
+                                <div><label class="emp-label">Доход/мес (GEL)</label><input class="mavi-input" id="apt-form-revenue" type="number" placeholder="2500"></div>
                             </div>
-                            <div>
-                                <label class="emp-label">Адрес</label>
-                                <input class="mavi-input" id="apt-form-address" placeholder="ул. Горгиладзе, 4">
+                            <div><label class="emp-label">Адрес</label><input class="mavi-input" id="apt-form-address" placeholder="ул. Горгиладзе, 4"></div>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                                <div><label class="emp-label">Комплекс</label><input class="mavi-input" id="apt-form-complex" placeholder="Orbi Beach"></div>
+                                <div><label class="emp-label">Этаж</label><input class="mavi-input" id="apt-form-floor" type="number" placeholder="12"></div>
                             </div>
-                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-                                <div>
-                                    <label class="emp-label">Комплекс</label>
-                                    <input class="mavi-input" id="apt-form-complex" placeholder="Orbi Beach">
-                                </div>
-                                <div>
-                                    <label class="emp-label">Этаж</label>
-                                    <input class="mavi-input" id="apt-form-floor" type="number" placeholder="12">
-                                </div>
+
+                            <div class="apt-form-section-title" style="margin-top:4px;">Площадки</div>
+                            <div><label class="emp-label"><i class="fa-brands fa-airbnb" style="margin-right:4px;color:#ff5a5f;"></i>Airbnb</label><input class="mavi-input" id="apt-form-airbnb" placeholder="https://airbnb.ru/h/..."></div>
+                            <div><label class="emp-label"><i class="fa-solid fa-b" style="margin-right:4px;color:#4a9eff;"></i>Booking.com</label><input class="mavi-input" id="apt-form-booking" placeholder="https://booking.com/Share-..."></div>
+                            <div><label class="emp-label"><i class="fa-solid fa-calendar-days" style="margin-right:4px;color:#818cf8;"></i>Суточно.ру</label><input class="mavi-input" id="apt-form-sutochno" placeholder="https://sutochno.ru/..."></div>
+                            <div><label class="emp-label"><i class="fa-solid fa-island-tropical" style="margin-right:4px;color:#10b981;"></i>Островок</label><input class="mavi-input" id="apt-form-ostrovok" placeholder="https://ostrovok.ru/..."></div>
+                            <div><label class="emp-label">Как добраться (ссылка)</label><input class="mavi-input" id="apt-form-how-to-find" placeholder="https://docs.google.com/..."></div>
+                            <div><label class="emp-label">iCal ссылка (Hostify)</label><input class="mavi-input" id="apt-form-ical" placeholder="https://...ics"></div>
+
+                            <div class="apt-form-section-title" style="margin-top:4px;">Доступ</div>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                                <div><label class="emp-label">Код замка</label><input class="mavi-input" id="apt-form-locker" placeholder="1234#"></div>
+                                <div><label class="emp-label">Размер белья</label><input class="mavi-input" id="apt-form-linen" placeholder="180×200"></div>
                             </div>
-                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-                                <div>
-                                    <label class="emp-label">Тип комнат</label>
-                                    <input class="mavi-input" id="apt-form-room-type" placeholder="1BR / Studio">
-                                </div>
-                                <div>
-                                    <label class="emp-label">Доход/мес (GEL)</label>
-                                    <input class="mavi-input" id="apt-form-revenue" type="number" placeholder="2500">
-                                </div>
+                            <div><label class="emp-label">Инструкция по доступу</label><input class="mavi-input" id="apt-form-access" placeholder="Ключи у консьержа..."></div>
+
+                            <div class="apt-form-section-title" style="margin-top:4px;">ЖКХ</div>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                                <div><label class="emp-label">Газ</label><input class="mavi-input" id="apt-form-gas" placeholder="Лицевой счёт"></div>
+                                <div><label class="emp-label">Электро</label><input class="mavi-input" id="apt-form-electricity" placeholder="Счётчик / номер"></div>
+                                <div><label class="emp-label">Вода</label><input class="mavi-input" id="apt-form-water" placeholder="Лицевой счёт"></div>
+                                <div><label class="emp-label">Интернет</label><input class="mavi-input" id="apt-form-internet" placeholder="Номер договора"></div>
+                                <div><label class="emp-label">Тариф</label><input class="mavi-input" id="apt-form-tariff" placeholder="33"></div>
                             </div>
-                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-                                <div>
-                                    <label class="emp-label">Код замка</label>
-                                    <input class="mavi-input" id="apt-form-locker" placeholder="1234#">
-                                </div>
-                                <div>
-                                    <label class="emp-label">Размер белья</label>
-                                    <input class="mavi-input" id="apt-form-linen" placeholder="180×200">
-                                </div>
-                            </div>
-                            <div>
-                                <label class="emp-label">Доступ / инструкция</label>
-                                <input class="mavi-input" id="apt-form-access" placeholder="Ключи у консьержа...">
-                            </div>
-                            <div>
-                                <label class="emp-label">iCal ссылка (Hostify)</label>
-                                <input class="mavi-input" id="apt-form-ical" placeholder="https://...ics">
-                            </div>
-                            <div>
-                                <label class="emp-label">Заметки</label>
-                                <input class="mavi-input" id="apt-form-notes" placeholder="Дополнительно...">
-                            </div>
+
+                            <div class="apt-form-section-title" style="margin-top:4px;">Реквизиты</div>
+                            <div><label class="emp-label">Владелец (ФИО)</label><input class="mavi-input" id="apt-form-owner-name" placeholder="IVANOV IVAN"></div>
+                            <div><label class="emp-label">Р/счёт</label><input class="mavi-input" id="apt-form-bank" placeholder="GE00BG000..."></div>
+
+                            <div class="apt-form-section-title" style="margin-top:4px;">Прочее</div>
+                            <div><label class="emp-label">Заметки</label><input class="mavi-input" id="apt-form-notes" placeholder="Дополнительно..."></div>
+
                             <div style="display:flex;gap:10px;margin-top:4px;">
-                                <button class="action-btn" id="apt-form-save" style="flex:1;">Сохранить</button>
+                                <button class="action-btn" id="apt-form-save" style="flex:1;"><i class="fa-solid fa-floppy-disk" style="margin-right:6px;"></i>Сохранить</button>
                                 <button class="mini-btn" id="apt-form-cancel" style="flex:1;">Отмена</button>
                             </div>
                         </div>
@@ -1564,7 +1565,11 @@
     }
 
     function applyAptFilter() {
+        const complexFilter  = document.getElementById('apt-filter-complex')?.value  || '';
+        const managerFilter  = document.getElementById('apt-filter-manager')?.value  || '';
         let list = aptStatusFilter === 'all' ? allApartments : allApartments.filter(a => a.status === aptStatusFilter);
+        if (complexFilter)  list = list.filter(a => (a.complex_name||'') === complexFilter);
+        if (managerFilter)  list = list.filter(a => (a.manager||'')      === managerFilter);
         if (aptSearchQuery) list = list.filter(a =>
             (a.name||'').toLowerCase().includes(aptSearchQuery.toLowerCase()) ||
             (a.complex_name||'').toLowerCase().includes(aptSearchQuery.toLowerCase()) ||
@@ -1573,14 +1578,27 @@
         renderApartments(list);
     }
 
+    function populateAptFilterDropdowns() {
+        const complexSel = document.getElementById('apt-filter-complex');
+        const managerSel = document.getElementById('apt-filter-manager');
+        if (!complexSel || !managerSel) return;
+        const complexes = [...new Set(allApartments.map(a => a.complex_name).filter(Boolean))].sort();
+        const managers  = [...new Set(allApartments.map(a => a.manager).filter(Boolean))].sort();
+        const saved = { complex: complexSel.value, manager: managerSel.value };
+        complexSel.innerHTML = '<option value="">Все комплексы</option>' + complexes.map(c => `<option value="${c}">${c}</option>`).join('');
+        managerSel.innerHTML = '<option value="">Все менеджеры</option>' + managers.map(m => `<option value="${m}">${m}</option>`).join('');
+        if (saved.complex) complexSel.value = saved.complex;
+        if (saved.manager) managerSel.value = saved.manager;
+    }
+
     async function loadApartments() {
         const { data: apts, error } = await supa.from('apartments').select('*').order('name');
         if (error) { console.error('apartments error:', error); return; }
-        // fetch owners separately and map by id
         const { data: owners } = await supa.from('owners').select('id, full_name, phone, telegram_id');
         const ownersMap = {};
         (owners || []).forEach(o => { ownersMap[o.id] = o; });
         allApartments = (apts || []).map(a => ({ ...a, owners: a.owner_id ? ownersMap[a.owner_id] : null }));
+        populateAptFilterDropdowns();
         applyAptFilter();
         if (typeof renderDashboardApts === 'function') renderDashboardApts();
     }
@@ -1711,38 +1729,68 @@
     function openAptForm(id = null) {
         const a = id ? allApartments.find(x => x.id === id) : null;
         document.getElementById('apt-form-title').textContent = a ? 'Редактировать апартамент' : 'Добавить апартамент';
-        document.getElementById('apt-form-id').value      = a ? a.id : '';
-        document.getElementById('apt-form-name').value    = a ? (a.name || '') : '';
-        document.getElementById('apt-form-status').value  = a ? a.status : 'free';
-        document.getElementById('apt-form-address').value = a ? (a.address || '') : '';
-        document.getElementById('apt-form-complex').value = a ? (a.complex_name || '') : '';
-        document.getElementById('apt-form-floor').value   = a ? (a.floor || '') : '';
-        document.getElementById('apt-form-room-type').value = a ? (a.room_type || '') : '';
-        document.getElementById('apt-form-revenue').value = a ? (a.monthly_revenue || '') : '';
-        document.getElementById('apt-form-locker').value  = a ? (a.locker_code || '') : '';
-        document.getElementById('apt-form-linen').value   = a ? (a.bed_linen_size || '') : '';
-        document.getElementById('apt-form-access').value  = a ? (a.access_info || '') : '';
-        document.getElementById('apt-form-ical').value    = a ? (a.hostify_link || '') : '';
-        document.getElementById('apt-form-notes').value   = a ? (a.notes || '') : '';
+        const f = (fid, val) => { const el = document.getElementById(fid); if (el) el.value = val ?? ''; };
+        f('apt-form-id',          a?.id          || '');
+        f('apt-form-name',        a?.name);
+        f('apt-form-status',      a?.status      || 'free');
+        f('apt-form-apt-type',    a?.apt_type);
+        f('apt-form-manager',     a?.manager);
+        f('apt-form-strategy',    a?.strategy);
+        f('apt-form-address',     a?.address);
+        f('apt-form-complex',     a?.complex_name);
+        f('apt-form-floor',       a?.floor);
+        f('apt-form-revenue',     a?.monthly_revenue);
+        f('apt-form-airbnb',      a?.link_airbnb);
+        f('apt-form-booking',     a?.link_booking);
+        f('apt-form-sutochno',    a?.link_sutochno);
+        f('apt-form-ostrovok',    a?.link_ostrovok);
+        f('apt-form-how-to-find', a?.link_how_to_find);
+        f('apt-form-ical',        a?.hostify_link);
+        f('apt-form-locker',      a?.locker_code);
+        f('apt-form-linen',       a?.bed_linen_size);
+        f('apt-form-access',      a?.access_info);
+        f('apt-form-gas',         a?.util_gas);
+        f('apt-form-electricity', a?.util_electricity);
+        f('apt-form-water',       a?.util_water);
+        f('apt-form-internet',    a?.util_internet);
+        f('apt-form-tariff',      a?.util_tariff);
+        f('apt-form-owner-name',  a?.owner_full_name);
+        f('apt-form-bank',        a?.bank_account);
+        f('apt-form-notes',       a?.notes);
         document.getElementById('apt-profile-modal').hidden = true;
         document.getElementById('apt-form-modal').hidden = false;
     }
 
     async function saveApartment() {
         const id = document.getElementById('apt-form-id').value;
+        const g = id => document.getElementById(id)?.value.trim() || null;
         const payload = {
-            name:           document.getElementById('apt-form-name').value.trim() || null,
-            status:         document.getElementById('apt-form-status').value,
-            address:        document.getElementById('apt-form-address').value.trim() || null,
-            complex_name:   document.getElementById('apt-form-complex').value.trim() || null,
-            floor:          parseInt(document.getElementById('apt-form-floor').value) || null,
-            room_type:      document.getElementById('apt-form-room-type').value.trim() || null,
-            monthly_revenue: parseFloat(document.getElementById('apt-form-revenue').value) || null,
-            locker_code:    document.getElementById('apt-form-locker').value.trim() || null,
-            bed_linen_size: document.getElementById('apt-form-linen').value.trim() || null,
-            access_info:    document.getElementById('apt-form-access').value.trim() || null,
-            hostify_link:   document.getElementById('apt-form-ical').value.trim() || null,
-            notes:          document.getElementById('apt-form-notes').value.trim() || null,
+            name:              g('apt-form-name'),
+            status:            document.getElementById('apt-form-status').value,
+            apt_type:          g('apt-form-apt-type'),
+            manager:           g('apt-form-manager'),
+            strategy:          g('apt-form-strategy'),
+            address:           g('apt-form-address'),
+            complex_name:      g('apt-form-complex'),
+            floor:             parseInt(document.getElementById('apt-form-floor').value) || null,
+            monthly_revenue:   parseFloat(document.getElementById('apt-form-revenue').value) || null,
+            link_airbnb:       g('apt-form-airbnb'),
+            link_booking:      g('apt-form-booking'),
+            link_sutochno:     g('apt-form-sutochno'),
+            link_ostrovok:     g('apt-form-ostrovok'),
+            link_how_to_find:  g('apt-form-how-to-find'),
+            hostify_link:      g('apt-form-ical'),
+            locker_code:       g('apt-form-locker'),
+            bed_linen_size:    g('apt-form-linen'),
+            access_info:       g('apt-form-access'),
+            util_gas:          g('apt-form-gas'),
+            util_electricity:  g('apt-form-electricity'),
+            util_water:        g('apt-form-water'),
+            util_internet:     g('apt-form-internet'),
+            util_tariff:       g('apt-form-tariff'),
+            owner_full_name:   g('apt-form-owner-name'),
+            bank_account:      g('apt-form-bank'),
+            notes:             g('apt-form-notes'),
         };
         if (id) {
             await supa.from('apartments').update(payload).eq('id', id);
@@ -1818,6 +1866,8 @@
         aptSearchQuery = e.target.value;
         applyAptFilter();
     });
+    document.getElementById('apt-filter-complex')?.addEventListener('change', applyAptFilter);
+    document.getElementById('apt-filter-manager')?.addEventListener('change', applyAptFilter);
 
     loadApartments();
 

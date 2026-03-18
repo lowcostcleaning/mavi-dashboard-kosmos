@@ -907,6 +907,17 @@ button:active,
     width: 100%;
 }
 
+/* Apartment form section titles */
+.apt-form-section-title {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--text-secondary);
+    padding-bottom: 2px;
+    border-bottom: 1px solid var(--border);
+}
+
 /* Apartment platform buttons */
 .apt-platforms-row {
     display: flex;
