@@ -3318,6 +3318,15 @@
                     <textarea id="clean-edit-comment" class="mavi-input" rows="2" placeholder="Замечания..." style="width:100%;resize:vertical;font-size:12px;padding:6px 8px;line-height:1.4;">${t.comment || ''}</textarea>
                 </div>
 
+                <div style="background:rgba(255,204,51,0.08);border:1px solid rgba(255,204,51,0.2);border-radius:8px;padding:8px 12px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                    <span style="font-size:11px;color:var(--text-secondary);">Итого к выплате</span>
+                    <span id="clean-live-total" style="font-size:15px;font-weight:700;color:#ffcc33;">${(() => {
+                        const base = parseFloat(t.cost)||0, r1 = parseFloat(t.cleaner_rate)||0, r2 = parseFloat(t.cleaner2_rate)||0, ls = t.long_stay ? (parseFloat(t.long_stay_amount)||0) : 0;
+                        const tot = base + r1 + r2 + ls;
+                        return tot > 0 ? tot + ' ₾' : '—';
+                    })()}</span>
+                </div>
+
                 <button id="clean-save-btn" class="action-btn" style="width:100%;justify-content:center;padding:8px;">
                     <i class="fa-solid fa-floppy-disk" style="margin-right:6px;"></i>Сохранить
                 </button>
@@ -3351,6 +3360,42 @@
         document.getElementById('clean-edit-long-stay')?.addEventListener('change', function() {
             const amtEl = document.getElementById('clean-edit-long-stay-amount');
             if (amtEl) { amtEl.disabled = !this.checked; if (!this.checked) amtEl.value = ''; }
+            cardRecompute();
+        });
+
+        // Live total recompute
+        function cardRecompute() {
+            const base  = parseFloat(document.getElementById('clean-edit-cost')?.value) || 0;
+            const r1    = parseFloat(document.getElementById('clean-edit-rate')?.value) || 0;
+            const r2    = parseFloat(document.getElementById('clean-edit-rate2')?.value) || 0;
+            const ls    = document.getElementById('clean-edit-long-stay')?.checked;
+            const lsAmt = ls ? (parseFloat(document.getElementById('clean-edit-long-stay-amount')?.value) || 0) : 0;
+            const total = base + r1 + r2 + lsAmt;
+            const el = document.getElementById('clean-live-total');
+            if (el) el.textContent = total > 0 ? total + ' ₾' : '—';
+        }
+
+        // Auto-fill cleaner rate from employee profile
+        document.getElementById('clean-edit-cleaner')?.addEventListener('change', function() {
+            const emp = allEmployees.find(e => String(e.id) === String(this.value));
+            if (emp?.default_tariff) {
+                const rateEl = document.getElementById('clean-edit-rate');
+                if (rateEl) rateEl.value = emp.default_tariff;
+            }
+            cardRecompute();
+        });
+        document.getElementById('clean-edit-cleaner2')?.addEventListener('change', function() {
+            const emp = allEmployees.find(e => String(e.id) === String(this.value));
+            if (emp?.default_tariff) {
+                const rateEl = document.getElementById('clean-edit-rate2');
+                if (rateEl) rateEl.value = emp.default_tariff;
+            }
+            cardRecompute();
+        });
+
+        // Wire all numeric inputs to recompute
+        ['clean-edit-cost','clean-edit-rate','clean-edit-rate2','clean-edit-long-stay-amount'].forEach(id => {
+            document.getElementById(id)?.addEventListener('input', cardRecompute);
         });
     }
 
