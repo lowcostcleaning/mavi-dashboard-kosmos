@@ -3147,8 +3147,9 @@
             const makeTip = ev => encodeURIComponent(`Бронь||${fmtD(ev.start)} — ${fmtD(new Date(ev.end.getTime()-86400000))}`);
 
             // Push checkin cell + middle cells for ev (NOT checkout — handled by main loop)
+            // roundRight: true = rounded right cap (no turnover), false = flat right (turnover follows)
             // Returns number of additional days after current i to skip (not including checkout day)
-            const pushCheckinMiddle = (ev, fromIdx, isStart) => {
+            const pushCheckinMiddle = (ev, fromIdx, isStart, roundRight = true) => {
                 const evEndMs = dayMs(ev.end);
                 let cnt = 0;
                 for (let j = fromIdx; j < days.length; j++) {
@@ -3158,17 +3159,26 @@
                 if (cnt === 0) return -1;
                 const tip = makeTip(ev);
                 const an  = apt.name;
+                const rR = roundRight ? '6px' : '0';
                 if (isStart) {
-                    cells.push(`<td class="bk-cell bk-booked" data-bk-tip="${tip}" data-bk-apt="${an}">
-                        <div class="bk-bar" style="margin-left:62.5%;border-radius:6px 0 0 6px;"></div>
-                    </td>`);
-                    cnt--;
+                    if (cnt === 1) {
+                        // Only one day — checkin + last day combined
+                        cells.push(`<td class="bk-cell bk-booked" data-bk-tip="${tip}" data-bk-apt="${an}">
+                            <div class="bk-bar" style="margin-left:62.5%;border-radius:6px ${rR} ${rR} 6px;"></div>
+                        </td>`);
+                        cnt--;
+                    } else {
+                        cells.push(`<td class="bk-cell bk-booked" data-bk-tip="${tip}" data-bk-apt="${an}">
+                            <div class="bk-bar" style="margin-left:62.5%;border-radius:6px 0 0 6px;"></div>
+                        </td>`);
+                        cnt--;
+                    }
                 }
                 if (cnt > 0) {
                     const rL = isStart ? '0' : '6px';
                     const lbl = cnt > 3 ? '<span class="bk-bar-text">Бронь</span>' : '';
                     cells.push(`<td class="bk-cell bk-booked" colspan="${cnt}" data-bk-tip="${tip}" data-bk-apt="${an}">
-                        <div class="bk-bar" style="border-radius:${rL} 0 0 ${rL};">${lbl}</div>
+                        <div class="bk-bar" style="border-radius:${rL} ${rR} ${rR} ${rL};">${lbl}</div>
                     </td>`);
                 }
                 // original cnt before decrement = cnt + (isStart?1:0), skip = that - 1
@@ -3197,11 +3207,9 @@
                     // Continue with checkin event's middle days (checkin cell already shown in split)
                     skip = pushCheckinMiddle(checkin, i + 1, false);
                 } else if (checkout) {
-                    // Only checkout — half bar ending at noon
-                    cells.push(`<td class="bk-cell bk-booked" data-bk-tip="${makeTip(checkout)}" data-bk-apt="${apt.name}">
-                        <div class="bk-bar" style="width:50%;border-radius:0 6px 6px 0;"></div>
-                    </td>`);
-                    skip = 0;
+                    // Checkout only (no new checkin) — empty cell, bar already ended at last night
+                    const cls = isToday ? 'bk-today-cell' : (isWe ? 'bk-we-cell' : '');
+                    cells.push(`<td class="bk-cell ${cls}"></td>`);
                 } else if (checkin) {
                     // Checkin — bar starts at 15:00, middle days follow, checkout day handled later
                     skip = pushCheckinMiddle(checkin, i, true);
