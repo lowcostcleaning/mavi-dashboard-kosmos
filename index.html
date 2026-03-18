@@ -1798,37 +1798,42 @@
     });
 
     async function saveEmployee() {
-        const id       = document.getElementById('emp-form-id').value;
-        const payload  = {
-            full_name:   document.getElementById('emp-form-name').value.trim(),
-            role:        document.getElementById('emp-form-role').value,
-            phone:       document.getElementById('emp-form-phone').value.trim() || null,
-            telegram_id: document.getElementById('emp-form-telegram').value.trim() || null,
-            status:      document.getElementById('emp-form-status').value,
-            rating:          parseFloat(document.getElementById('emp-form-rating').value) || null,
-            default_tariff:  parseFloat(document.getElementById('emp-form-tariff').value) || null,
-            notes:           document.getElementById('emp-form-notes').value.trim() || null,
-            department:      document.getElementById('emp-form-department').value || null,
-        };
-        if (!payload.full_name) { alert('Введите имя'); return; }
+        try {
+            const id       = document.getElementById('emp-form-id').value;
+            const payload  = {
+                full_name:   document.getElementById('emp-form-name').value.trim(),
+                role:        document.getElementById('emp-form-role').value,
+                phone:       document.getElementById('emp-form-phone').value.trim() || null,
+                telegram_id: document.getElementById('emp-form-telegram').value.trim() || null,
+                status:      document.getElementById('emp-form-status').value,
+                rating:          parseFloat(document.getElementById('emp-form-rating').value) || null,
+                default_tariff:  parseFloat(document.getElementById('emp-form-tariff').value) || null,
+                notes:           document.getElementById('emp-form-notes').value.trim() || null,
+                department:      document.getElementById('emp-form-department')?.value || null,
+            };
+            if (!payload.full_name) { alert('Введите имя'); return; }
 
-        const btn = document.getElementById('emp-form-save');
-        btn.disabled = true;
-        btn.textContent = 'Сохраняем...';
+            const btn = document.getElementById('emp-form-save');
+            btn.disabled = true;
+            btn.textContent = 'Сохраняем...';
 
-        const { error } = id
-            ? await supa.from('employees').update(payload).eq('id', id)
-            : await supa.from('employees').insert(payload);
+            const { error } = id
+                ? await supa.from('employees').update(payload).eq('id', id)
+                : await supa.from('employees').insert(payload);
 
-        btn.disabled = false;
-        btn.textContent = 'Сохранить';
+            btn.disabled = false;
+            btn.textContent = 'Сохранить';
 
-        if (error) {
-            alert('Ошибка сохранения: ' + error.message);
-            return;
+            if (error) {
+                alert('Ошибка сохранения: ' + error.message);
+                return;
+            }
+            document.getElementById('emp-form-modal').hidden = true;
+            await loadEmployees();
+        } catch(err) {
+            alert('JS ошибка: ' + err.message);
+            console.error('saveEmployee error:', err);
         }
-        document.getElementById('emp-form-modal').hidden = true;
-        await loadEmployees();
     }
 
     async function deleteEmployee(id) {
