@@ -3654,8 +3654,8 @@
                 const kitColor = KIT_COLORS[kitType] || '#a0a4cc';
                 const linen   = apt?.bed_linen_size || '';
 
-                // Build stage buttons
-                const stagesBtns = LND_STAGES.map(stage => {
+                // Build stage buttons — only Комплектация in apt card
+                const stagesBtns = LND_STAGES.filter(s => s.key === 'restocking').map(stage => {
                     const task = findLndTask(c, stage);
                     const stageDate = new Date(c.deadline);
                     stageDate.setDate(stageDate.getDate() + stage.dayOffset);
