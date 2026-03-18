@@ -380,8 +380,23 @@
                                 <input class="mavi-input" id="emp-form-phone" placeholder="+7 999 123-45-67">
                             </div>
                             <div>
+                                <label class="emp-label">Email</label>
+                                <input class="mavi-input" id="emp-form-email" type="email" placeholder="name@example.com">
+                            </div>
+                            <div>
                                 <label class="emp-label">Telegram ID</label>
                                 <input class="mavi-input" id="emp-form-telegram" placeholder="123456789">
+                            </div>
+                            <div>
+                                <label class="emp-label">Фото</label>
+                                <div style="display:flex;align-items:center;gap:10px;">
+                                    <div id="emp-form-photo-preview" style="width:48px;height:48px;border-radius:50%;background:var(--card-bg);border:2px solid var(--border);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--text-muted);">—</div>
+                                    <label class="mini-btn" style="cursor:pointer;font-size:12px;padding:6px 12px;">
+                                        <i class="fa-solid fa-camera" style="margin-right:4px;"></i>Загрузить
+                                        <input type="file" id="emp-form-photo" accept="image/*" hidden>
+                                    </label>
+                                    <button type="button" class="mini-btn" id="emp-form-photo-remove" style="font-size:12px;padding:6px 8px;display:none;" title="Удалить фото"><i class="fa-solid fa-xmark"></i></button>
+                                </div>
                             </div>
                             <div>
                                 <label class="emp-label">Статус</label>
@@ -1316,8 +1331,12 @@
                                 <div><label class="emp-label">Тариф</label><input class="mavi-input" id="apt-form-tariff" placeholder="33"></div>
                             </div>
 
-                            <div class="apt-form-section-title" style="margin-top:4px;">Реквизиты</div>
+                            <div class="apt-form-section-title" style="margin-top:4px;">Собственник</div>
                             <div><label class="emp-label">Владелец (ФИО)</label><input class="mavi-input" id="apt-form-owner-name" placeholder="IVANOV IVAN"></div>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                                <div><label class="emp-label">Телефон собственника</label><input class="mavi-input" id="apt-form-owner-phone" placeholder="+995 555 12-34-56"></div>
+                                <div><label class="emp-label">Email собственника</label><input class="mavi-input" id="apt-form-owner-email" type="email" placeholder="owner@mail.com"></div>
+                            </div>
                             <div><label class="emp-label">Р/счёт</label><input class="mavi-input" id="apt-form-bank" placeholder="GE00BG000..."></div>
 
                             <div class="apt-form-section-title" style="margin-top:4px;">Прочее</div>
@@ -1547,7 +1566,7 @@
                     <i class="fa-solid fa-${isActive ? 'signal' : 'clock'}"></i> ${status}
                 </div>
                 <div class="emp-card-top">
-                    <div class="emp-avatar" style="border-color:${color};box-shadow:0 0 16px ${color}55;">${initials}</div>
+                    <div class="emp-avatar" style="border-color:${color};box-shadow:0 0 16px ${color}55;">${e.photo_url ? `<img src="${e.photo_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">` : initials}</div>
                     <div class="emp-card-info">
                         <div class="emp-card-name">${e.full_name}</div>
                         <div class="emp-card-role" style="color:${color};display:flex;align-items:center;flex-wrap:wrap;gap:2px;">${role}${deptBadge}${ratingBadge}${tariffBadge}</div>
@@ -1717,7 +1736,7 @@
         document.getElementById('emp-profile-body').innerHTML = `
             <div class="emp-profile">
                 <div class="emp-profile-top">
-                    <div class="emp-profile-avatar" style="border-color:${color};box-shadow:0 0 24px ${color}66;">${initials}</div>
+                    <div class="emp-profile-avatar" style="border-color:${color};box-shadow:0 0 24px ${color}66;">${e.photo_url ? `<img src="${e.photo_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">` : initials}</div>
                     <div>
                         <div class="emp-profile-name">${e.full_name}</div>
                         <div class="emp-profile-role" style="color:${color};margin-bottom:6px;">${role}</div>
@@ -1736,6 +1755,10 @@
                     <div class="emp-stat-card" style="border-color:#00f2ff55;">
                         <div class="emp-stat-label">Телефон</div>
                         <div class="emp-stat-value" style="color:#00f2ff;font-size:13px;">${e.phone || '—'}</div>
+                    </div>
+                    <div class="emp-stat-card" style="border-color:#f59e0b55;">
+                        <div class="emp-stat-label">Email</div>
+                        <div class="emp-stat-value" style="color:#f59e0b;font-size:12px;word-break:break-all;">${e.email ? `<a href="mailto:${e.email}" style="color:#f59e0b;text-decoration:none;">${e.email}</a>` : '—'}</div>
                     </div>
                     <div class="emp-stat-card" style="border-color:#ffcc3355;">
                         <div class="emp-stat-label">Рейтинг</div>
@@ -1779,11 +1802,25 @@
         document.getElementById('emp-form-role').value     = e ? e.role : 'cleaner';
         document.getElementById('emp-form-department').value = e ? (e.department || '') : '';
         document.getElementById('emp-form-phone').value    = e ? (e.phone || '') : '';
+        document.getElementById('emp-form-email').value    = e ? (e.email || '') : '';
         document.getElementById('emp-form-telegram').value = e ? (e.telegram_id || '') : '';
         document.getElementById('emp-form-status').value   = e ? e.status : 'active';
         document.getElementById('emp-form-rating').value   = e ? (e.rating || '') : '';
         document.getElementById('emp-form-tariff').value   = e ? (e.default_tariff || '') : '';
         document.getElementById('emp-form-notes').value    = e ? (e.notes || '') : '';
+        // Photo preview
+        const preview = document.getElementById('emp-form-photo-preview');
+        const removeBtn = document.getElementById('emp-form-photo-remove');
+        document.getElementById('emp-form-photo').value = '';
+        window._empPhotoFile = null;
+        window._empPhotoRemoved = false;
+        if (e?.photo_url) {
+            preview.innerHTML = `<img src="${e.photo_url}" style="width:100%;height:100%;object-fit:cover;">`;
+            removeBtn.style.display = '';
+        } else {
+            preview.innerHTML = '—';
+            removeBtn.style.display = 'none';
+        }
         // Show department only for intern
         const deptWrap = document.getElementById('emp-form-dept-wrap');
         if (deptWrap) deptWrap.style.display = (e?.role === 'intern') ? '' : 'none';
@@ -1797,6 +1834,26 @@
         if (deptWrap) deptWrap.style.display = this.value === 'intern' ? '' : 'none';
     });
 
+    // Photo file picker
+    document.getElementById('emp-form-photo')?.addEventListener('change', function() {
+        const file = this.files[0];
+        if (!file) return;
+        window._empPhotoFile = file;
+        const reader = new FileReader();
+        reader.onload = e => {
+            document.getElementById('emp-form-photo-preview').innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;">`;
+            document.getElementById('emp-form-photo-remove').style.display = '';
+        };
+        reader.readAsDataURL(file);
+    });
+    document.getElementById('emp-form-photo-remove')?.addEventListener('click', () => {
+        window._empPhotoFile = null;
+        window._empPhotoRemoved = true;
+        document.getElementById('emp-form-photo').value = '';
+        document.getElementById('emp-form-photo-preview').innerHTML = '—';
+        document.getElementById('emp-form-photo-remove').style.display = 'none';
+    });
+
     async function saveEmployee() {
         try {
             const id       = document.getElementById('emp-form-id').value;
@@ -1804,6 +1861,7 @@
                 full_name:   document.getElementById('emp-form-name').value.trim(),
                 role:        document.getElementById('emp-form-role').value,
                 phone:       document.getElementById('emp-form-phone').value.trim() || null,
+                email:       document.getElementById('emp-form-email').value.trim() || null,
                 telegram_id: document.getElementById('emp-form-telegram').value.trim() || null,
                 status:      document.getElementById('emp-form-status').value,
                 rating:          parseFloat(document.getElementById('emp-form-rating').value) || null,
@@ -1816,6 +1874,19 @@
             const btn = document.getElementById('emp-form-save');
             btn.disabled = true;
             btn.textContent = 'Сохраняем...';
+
+            // Upload photo if selected
+            if (window._empPhotoFile) {
+                const empId = id || crypto.randomUUID();
+                const ext = window._empPhotoFile.name.split('.').pop();
+                const path = `employees/${empId}.${ext}`;
+                await supa.storage.from('avatars').upload(path, window._empPhotoFile, { upsert: true });
+                const { data: urlData } = supa.storage.from('avatars').getPublicUrl(path);
+                payload.photo_url = urlData.publicUrl + '?t=' + Date.now();
+                if (!id) payload.id = empId;
+            } else if (window._empPhotoRemoved) {
+                payload.photo_url = null;
+            }
 
             const { error } = id
                 ? await supa.from('employees').update(payload).eq('id', id)
@@ -1978,7 +2049,7 @@
     async function loadApartments() {
         const { data: apts, error } = await supa.from('apartments').select('*').order('name');
         if (error) { console.error('apartments error:', error); return; }
-        const { data: owners } = await supa.from('owners').select('id, full_name, phone, telegram_id');
+        const { data: owners } = await supa.from('owners').select('id, full_name, phone, telegram_id, email');
         const ownersMap = {};
         (owners || []).forEach(o => { ownersMap[o.id] = o; });
         allApartments = (apts || []).map(a => ({ ...a, owners: a.owner_id ? ownersMap[a.owner_id] : null }));
@@ -2095,7 +2166,8 @@
                 <div class="apt-section-title" style="margin-top:14px;"><i class="fa-solid fa-user-tie" style="margin-right:6px;"></i>Собственник</div>
                 <div class="apt-info-block">
                     ${infoRow('Имя', owner.full_name, '#a78bfa')}
-                    ${infoRow('Телефон', owner.phone, '#00f2ff')}
+                    ${infoRow('Телефон', owner.phone ? `<a href="tel:${owner.phone}" style="color:#00f2ff;text-decoration:none;">${owner.phone}</a>` : null, '#00f2ff')}
+                    ${owner.email ? infoRow('Email', `<a href="mailto:${owner.email}" style="color:#f59e0b;text-decoration:none;">${owner.email}</a>`, '') : ''}
                     ${owner.telegram_id ? infoRow('Telegram', `<a href="tg://user?id=${owner.telegram_id}" style="color:#a78bfa;">@${owner.telegram_id}</a>`, '') : ''}
                 </div>` : ''}
 
@@ -2153,6 +2225,8 @@
         f('apt-form-internet',    a?.util_internet);
         f('apt-form-tariff',      a?.util_tariff);
         f('apt-form-owner-name',  a?.owner_full_name);
+        f('apt-form-owner-phone', a?.owners?.phone);
+        f('apt-form-owner-email', a?.owners?.email);
         f('apt-form-bank',        a?.bank_account);
         f('apt-form-notes',       a?.notes);
         document.getElementById('apt-profile-modal').hidden = true;
@@ -2195,6 +2269,15 @@
         } else {
             await supa.from('apartments').insert(payload);
         }
+
+        // Update owner phone/email if apartment has owner_id
+        const apt = allApartments.find(a => a.id === id);
+        const ownerPhone = g('apt-form-owner-phone');
+        const ownerEmail = g('apt-form-owner-email');
+        if (apt?.owner_id && (ownerPhone || ownerEmail)) {
+            await supa.from('owners').update({ phone: ownerPhone, email: ownerEmail }).eq('id', apt.owner_id);
+        }
+
         document.getElementById('apt-form-modal').hidden = true;
         await loadApartments();
     }
