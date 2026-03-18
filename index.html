@@ -77,6 +77,10 @@
                     <i class="fa-solid fa-building"></i>
                     <span>Апартаменты</span>
                 </a>
+                <a href="#" class="nav-item" data-view="owners" data-label="Собственники">
+                    <i class="fa-solid fa-user-tie"></i>
+                    <span>Собственники</span>
+                </a>
                 <a href="#" class="nav-item" data-view="contracts" data-label="Договоры">
                     <i class="fa-solid fa-file-signature"></i>
                     <span>Договоры</span>
@@ -1350,6 +1354,62 @@
                     </div>
                 </div>
 
+                <!-- View: Owners -->
+                <section class="view" data-view="owners">
+                    <div class="content-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+                        <h2>Собственники <span id="own-count" style="font-size:14px;opacity:.4;font-weight:400;margin-left:8px;"></span></h2>
+                        <div style="display:flex;gap:10px;align-items:center;">
+                            <input class="mavi-input" id="own-search" placeholder="Поиск..." style="width:200px;font-size:13px;">
+                        </div>
+                    </div>
+                    <div id="owners-grid" class="emp-grid" style="margin-top:16px;"></div>
+
+                    <!-- Owner Profile Modal -->
+                    <div class="emp-modal-backdrop" id="own-profile-modal" hidden>
+                        <div class="emp-modal" style="max-width:640px;">
+                            <button class="emp-modal-close" id="own-profile-close"><i class="fa-solid fa-xmark"></i></button>
+                            <div id="own-profile-body"></div>
+                        </div>
+                    </div>
+
+                    <!-- Owner Edit Modal -->
+                    <div class="emp-modal-backdrop" id="own-form-modal" hidden>
+                        <div class="emp-modal" style="max-width:480px;">
+                            <div class="emp-modal-header">
+                                <h3 id="own-form-title">Добавить собственника</h3>
+                                <button class="emp-modal-close" id="own-form-close"><i class="fa-solid fa-xmark"></i></button>
+                            </div>
+                            <div style="padding:20px;display:grid;gap:14px;">
+                                <input type="hidden" id="own-form-id">
+                                <div>
+                                    <label class="emp-label">ФИО</label>
+                                    <input class="mavi-input" id="own-form-name" placeholder="Иванов Иван Иванович">
+                                </div>
+                                <div>
+                                    <label class="emp-label">Телефон</label>
+                                    <input class="mavi-input" id="own-form-phone" placeholder="+995 555 12-34-56">
+                                </div>
+                                <div>
+                                    <label class="emp-label">Email</label>
+                                    <input class="mavi-input" id="own-form-email" type="email" placeholder="owner@mail.com">
+                                </div>
+                                <div>
+                                    <label class="emp-label">Telegram ID</label>
+                                    <input class="mavi-input" id="own-form-telegram" placeholder="123456789">
+                                </div>
+                                <div>
+                                    <label class="emp-label">Заметки</label>
+                                    <input class="mavi-input" id="own-form-notes" placeholder="Дополнительно...">
+                                </div>
+                                <div style="display:flex;gap:10px;margin-top:4px;">
+                                    <button type="button" class="action-btn" id="own-form-save" style="flex:1;">Сохранить</button>
+                                    <button type="button" class="mini-btn" id="own-form-cancel" style="flex:1;">Отмена</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
                 <!-- View: Contracts -->
                 <section class="view" data-view="contracts">
                     <div class="content-header">
@@ -1877,13 +1937,18 @@
 
             // Upload photo if selected
             if (window._empPhotoFile) {
-                const empId = id || crypto.randomUUID();
-                const ext = window._empPhotoFile.name.split('.').pop();
-                const path = `employees/${empId}.${ext}`;
-                await supa.storage.from('avatars').upload(path, window._empPhotoFile, { upsert: true });
-                const { data: urlData } = supa.storage.from('avatars').getPublicUrl(path);
-                payload.photo_url = urlData.publicUrl + '?t=' + Date.now();
-                if (!id) payload.id = empId;
+                try {
+                    const empId = id || crypto.randomUUID();
+                    const ext = window._empPhotoFile.name.split('.').pop();
+                    const path = `employees/${empId}.${ext}`;
+                    const { error: upErr } = await supa.storage.from('avatars').upload(path, window._empPhotoFile, { upsert: true });
+                    if (upErr) { console.error('Photo upload error:', upErr); }
+                    else {
+                        const { data: urlData } = supa.storage.from('avatars').getPublicUrl(path);
+                        payload.photo_url = urlData.publicUrl + '?t=' + Date.now();
+                    }
+                    if (!id) payload.id = empId;
+                } catch(upEx) { console.error('Photo upload exception:', upEx); }
             } else if (window._empPhotoRemoved) {
                 payload.photo_url = null;
             }
@@ -2351,6 +2416,192 @@
     document.getElementById('apt-filter-manager')?.addEventListener('change', applyAptFilter);
 
     loadApartments();
+
+    // ════════════════════════════════════════════════════════════════
+    // OWNERS
+    // ════════════════════════════════════════════════════════════════
+    let allOwners = [];
+    let ownSearchQuery = '';
+
+    async function loadOwners() {
+        const { data } = await supa.from('owners').select('*').order('full_name');
+        allOwners = data || [];
+        renderOwners();
+    }
+
+    function renderOwners() {
+        const grid = document.getElementById('owners-grid');
+        if (!grid) return;
+        let list = allOwners;
+        if (ownSearchQuery) list = list.filter(o => (o.full_name||'').toLowerCase().includes(ownSearchQuery.toLowerCase()));
+        document.getElementById('own-count').textContent = `(${list.length})`;
+
+        if (!list.length) {
+            grid.innerHTML = '<div style="opacity:.4;padding:60px;text-align:center;grid-column:1/-1;">Собственники не найдены</div>';
+            return;
+        }
+
+        grid.innerHTML = list.map(o => {
+            const initials = (o.full_name || '?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+            // Find apartments for this owner
+            const ownerApts = allApartments.filter(a => a.owner_id === o.id);
+            const aptsLabel = ownerApts.length
+                ? ownerApts.map(a => a.name).join(', ')
+                : 'Нет апартаментов';
+            const phoneBtnHtml = o.phone
+                ? `<a href="tel:${o.phone}" class="emp-card-btn phone"><i class="fa-solid fa-phone"></i> ${o.phone}</a>`
+                : `<span class="emp-card-btn phone disabled"><i class="fa-solid fa-phone"></i> Нет телефона</span>`;
+            const emailBtnHtml = o.email
+                ? `<a href="mailto:${o.email}" class="emp-card-btn tg" style="color:#f59e0b;border-color:#f59e0b33;"><i class="fa-solid fa-envelope"></i> Email</a>`
+                : '';
+            return `<div class="emp-card own-card" data-own-id="${o.id}" style="--emp-color:#a78bfa;">
+                <div class="emp-card-top">
+                    <div class="emp-avatar" style="border-color:#a78bfa;box-shadow:0 0 16px #a78bfa55;background:linear-gradient(135deg,#a78bfa22,#6366f122);">${initials}</div>
+                    <div class="emp-card-info">
+                        <div class="emp-card-name">${o.full_name || '—'}</div>
+                        <div class="emp-card-role" style="color:#a78bfa;font-size:11px;"><i class="fa-solid fa-building" style="margin-right:4px;"></i>${aptsLabel}</div>
+                    </div>
+                </div>
+                <div class="emp-card-btns">
+                    ${phoneBtnHtml}
+                    ${emailBtnHtml}
+                </div>
+                <div class="emp-card-actions">
+                    <button class="emp-action-btn" data-own-act="profile" data-id="${o.id}"><i class="fa-solid fa-eye"></i></button>
+                    <button class="emp-action-btn" data-own-act="edit" data-id="${o.id}"><i class="fa-solid fa-pen"></i></button>
+                    <button class="emp-action-btn danger" data-own-act="delete" data-id="${o.id}"><i class="fa-solid fa-trash"></i></button>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    function openOwnProfile(id) {
+        const o = allOwners.find(x => x.id === id);
+        if (!o) return;
+        const initials = (o.full_name || '?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+        const ownerApts = allApartments.filter(a => a.owner_id === o.id);
+        const aptsHtml = ownerApts.length
+            ? ownerApts.map(a => `<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--card-bg);border:1px solid var(--border);border-radius:8px;">
+                <i class="fa-solid fa-building" style="color:#6366f1;"></i>
+                <div style="flex:1;">
+                    <div style="font-weight:600;font-size:13px;">${a.name}</div>
+                    <div style="font-size:11px;color:var(--text-muted);">${[a.complex_name, a.address].filter(Boolean).join(' · ')}</div>
+                </div>
+            </div>`).join('')
+            : '<div style="opacity:.4;font-size:12px;">Нет привязанных апартаментов</div>';
+
+        document.getElementById('own-profile-body').innerHTML = `
+            <div class="emp-profile">
+                <div class="emp-profile-top">
+                    <div class="emp-profile-avatar" style="border-color:#a78bfa;box-shadow:0 0 24px #a78bfa66;background:linear-gradient(135deg,#a78bfa22,#6366f122);">${initials}</div>
+                    <div>
+                        <div class="emp-profile-name">${o.full_name || '—'}</div>
+                        <div class="emp-profile-role" style="color:#a78bfa;">Собственник</div>
+                    </div>
+                </div>
+
+                <div class="emp-profile-stats">
+                    <div class="emp-stat-card" style="border-color:#00f2ff55;">
+                        <div class="emp-stat-label">Телефон</div>
+                        <div class="emp-stat-value" style="color:#00f2ff;font-size:13px;">${o.phone ? `<a href="tel:${o.phone}" style="color:#00f2ff;text-decoration:none;">${o.phone}</a>` : '—'}</div>
+                    </div>
+                    <div class="emp-stat-card" style="border-color:#f59e0b55;">
+                        <div class="emp-stat-label">Email</div>
+                        <div class="emp-stat-value" style="color:#f59e0b;font-size:12px;word-break:break-all;">${o.email ? `<a href="mailto:${o.email}" style="color:#f59e0b;text-decoration:none;">${o.email}</a>` : '—'}</div>
+                    </div>
+                    <div class="emp-stat-card" style="border-color:#a78bfa55;">
+                        <div class="emp-stat-label">Telegram</div>
+                        <div class="emp-stat-value" style="color:#a78bfa;font-size:13px;">${o.telegram_id ? `<a href="tg://user?id=${o.telegram_id}" style="color:#a78bfa;text-decoration:none;">@${o.telegram_id}</a>` : '—'}</div>
+                    </div>
+                </div>
+
+                <div class="apt-section-title" style="margin-top:14px;"><i class="fa-solid fa-building" style="margin-right:6px;"></i>Апартаменты (${ownerApts.length})</div>
+                <div style="display:grid;gap:8px;margin-top:8px;">${aptsHtml}</div>
+
+                ${o.notes ? `<div class="emp-profile-notes" style="margin-top:14px;"><i class="fa-solid fa-note-sticky" style="margin-right:6px;opacity:.6;"></i>${o.notes}</div>` : ''}
+
+                <div style="display:flex;gap:10px;margin-top:20px;">
+                    <button class="action-btn" style="flex:1;" data-own-act="edit" data-id="${o.id}"><i class="fa-solid fa-pen" style="margin-right:6px;"></i>Редактировать</button>
+                    <button class="emp-delete-btn" data-own-act="delete" data-id="${o.id}"><i class="fa-solid fa-trash" style="margin-right:6px;"></i>Удалить</button>
+                </div>
+            </div>`;
+
+        document.getElementById('own-profile-modal').hidden = false;
+    }
+
+    function openOwnForm(id = null) {
+        const o = id ? allOwners.find(x => x.id === id) : null;
+        document.getElementById('own-form-title').textContent = o ? 'Редактировать собственника' : 'Добавить собственника';
+        document.getElementById('own-form-id').value       = o ? o.id : '';
+        document.getElementById('own-form-name').value     = o ? (o.full_name || '') : '';
+        document.getElementById('own-form-phone').value    = o ? (o.phone || '') : '';
+        document.getElementById('own-form-email').value    = o ? (o.email || '') : '';
+        document.getElementById('own-form-telegram').value = o ? (o.telegram_id || '') : '';
+        document.getElementById('own-form-notes').value    = o ? (o.notes || '') : '';
+        document.getElementById('own-profile-modal').hidden = true;
+        document.getElementById('own-form-modal').hidden = false;
+    }
+
+    async function saveOwner() {
+        const id = document.getElementById('own-form-id').value;
+        const payload = {
+            full_name:   document.getElementById('own-form-name').value.trim(),
+            phone:       document.getElementById('own-form-phone').value.trim() || null,
+            email:       document.getElementById('own-form-email').value.trim() || null,
+            telegram_id: document.getElementById('own-form-telegram').value.trim() || null,
+            notes:       document.getElementById('own-form-notes').value.trim() || null,
+        };
+        if (!payload.full_name) { alert('Введите ФИО'); return; }
+        const { error } = id
+            ? await supa.from('owners').update(payload).eq('id', id)
+            : await supa.from('owners').insert(payload);
+        if (error) { alert('Ошибка: ' + error.message); return; }
+        document.getElementById('own-form-modal').hidden = true;
+        await loadOwners();
+    }
+
+    async function deleteOwner(id) {
+        const o = allOwners.find(x => x.id === id);
+        if (!confirm(`Удалить собственника "${o?.full_name}"?`)) return;
+        // Unlink apartments first
+        await supa.from('apartments').update({ owner_id: null }).eq('owner_id', id);
+        const { error } = await supa.from('owners').delete().eq('id', id);
+        if (error) { alert('Ошибка удаления: ' + error.message); return; }
+        document.getElementById('own-profile-modal').hidden = true;
+        await loadOwners();
+    }
+
+    // Owner events
+    document.addEventListener('click', e => {
+        const ownActBtn = e.target.closest('[data-own-act]');
+        if (ownActBtn) {
+            const act = ownActBtn.dataset.ownAct;
+            const id  = ownActBtn.dataset.id;
+            if (act === 'profile') { openOwnProfile(id); return; }
+            if (act === 'edit')    { openOwnForm(id);    return; }
+            if (act === 'delete')  { deleteOwner(id);    return; }
+        }
+        const ownCard = e.target.closest('.own-card');
+        if (ownCard && !ownActBtn) { openOwnProfile(ownCard.dataset.ownId); return; }
+
+        if (e.target.closest('#own-form-save'))  { e.preventDefault(); e.stopPropagation(); saveOwner(); return; }
+        if (e.target.closest('#own-form-cancel') || e.target.closest('#own-form-close')) {
+            document.getElementById('own-form-modal').hidden = true; return;
+        }
+        if (e.target.closest('#own-profile-close') || e.target.id === 'own-profile-modal') {
+            document.getElementById('own-profile-modal').hidden = true; return;
+        }
+        if (e.target.id === 'own-form-modal') {
+            document.getElementById('own-form-modal').hidden = true; return;
+        }
+    });
+
+    document.getElementById('own-search')?.addEventListener('input', e => {
+        ownSearchQuery = e.target.value;
+        renderOwners();
+    });
+
+    loadOwners();
 
     // ════════════════════════════════════════════════════════════════
     // CLEANING CALENDAR
