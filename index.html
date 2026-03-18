@@ -340,7 +340,11 @@
                             </div>
                             <div>
                                 <label class="emp-label">Рейтинг (0–5)</label>
-                                <input class="mavi-input" id="emp-form-rating" type="number" min="0" max="5" step="0.1" placeholder="4.5">
+                                <input class="mavi-input" id="emp-form-rating" type="number" min="0" max="10" step="0.01" placeholder="4.5">
+                            </div>
+                            <div>
+                                <label class="emp-label">Ставка за уборку (₾)</label>
+                                <input class="mavi-input" id="emp-form-tariff" type="number" min="0" step="1" placeholder="10">
                             </div>
                             <div>
                                 <label class="emp-label">Заметки</label>
@@ -603,25 +607,71 @@
                                 <input type="date" id="sched-date" class="mavi-input" style="width:100%;font-size:14px;padding:8px 12px;">
                             </div>
 
-                            <div>
-                                <label style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:5px;"><i class="fa-solid fa-user" style="margin-right:5px;"></i>Клинер</label>
-                                <select id="sched-cleaner" class="mavi-input" style="width:100%;font-size:13px;padding:8px 12px;">
-                                    <option value="">— не назначен —</option>
-                                </select>
+                            <!-- Тип апартамента (auto from DB) -->
+                            <div id="sched-apt-type-row" style="display:none;">
+                                <label style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:5px;"><i class="fa-solid fa-building" style="margin-right:5px;"></i>Тип номера</label>
+                                <div id="sched-apt-type-val" class="mavi-input" style="width:100%;font-size:13px;padding:8px 12px;background:rgba(255,255,255,0.03);cursor:default;color:var(--text-secondary);">—</div>
                             </div>
 
                             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                                 <div>
-                                    <label style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:5px;"><i class="fa-solid fa-coins" style="margin-right:5px;"></i>Ставка (₾)</label>
-                                    <input type="number" id="sched-cost" class="mavi-input" placeholder="40" style="width:100%;font-size:13px;padding:8px 12px;">
+                                    <label style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:5px;"><i class="fa-solid fa-user" style="margin-right:5px;"></i>Клинер 1</label>
+                                    <select id="sched-cleaner" class="mavi-input" style="width:100%;font-size:13px;padding:8px 12px;">
+                                        <option value="">— не назначен —</option>
+                                    </select>
                                 </div>
+                                <div>
+                                    <label style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:5px;"><i class="fa-solid fa-coins" style="margin-right:5px;"></i>Ставка 1 (₾)</label>
+                                    <input type="number" id="sched-cost" class="mavi-input" placeholder="10" style="width:100%;font-size:13px;padding:8px 12px;">
+                                </div>
+                            </div>
+
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                                <div>
+                                    <label style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:5px;"><i class="fa-solid fa-user-plus" style="margin-right:5px;"></i>Клинер 2</label>
+                                    <select id="sched-cleaner2" class="mavi-input" style="width:100%;font-size:13px;padding:8px 12px;">
+                                        <option value="">— не назначен —</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:5px;"><i class="fa-solid fa-coins" style="margin-right:5px;"></i>Ставка 2 (₾)</label>
+                                    <input type="number" id="sched-cost2" class="mavi-input" placeholder="10" style="width:100%;font-size:13px;padding:8px 12px;">
+                                </div>
+                            </div>
+
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                                <div>
+                                    <label style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:5px;"><i class="fa-solid fa-tag" style="margin-right:5px;"></i>Тариф</label>
+                                    <select id="sched-tariff-type" class="mavi-input" style="width:100%;font-size:13px;padding:8px 12px;">
+                                        <option value="">— выбрать —</option>
+                                        <option value="студия">Студия</option>
+                                        <option value="1+1">1+1</option>
+                                        <option value="2+1">2+1</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:5px;"><i class="fa-solid fa-box-open" style="margin-right:5px;"></i>Набор</label>
+                                    <select id="sched-kit-type" class="mavi-input" style="width:100%;font-size:13px;padding:8px 12px;">
+                                        <option value="">— выбрать —</option>
+                                        <option value="эконом">Эконом</option>
+                                        <option value="стандарт">Стандарт</option>
+                                        <option value="премиум">Премиум</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                                 <div>
                                     <label style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:5px;"><i class="fa-solid fa-circle-half-stroke" style="margin-right:5px;"></i>Приоритет</label>
                                     <select id="sched-priority" class="mavi-input" style="width:100%;font-size:13px;padding:8px 12px;">
-                                        <option value="planned">Плановая</option>
+                                        <option value="planned">Уборка по время проживания</option>
                                         <option value="urgent">Срочная</option>
                                         <option value="standard">Стандартная</option>
                                     </select>
+                                </div>
+                                <div style="display:flex;align-items:center;gap:8px;padding-top:20px;">
+                                    <input type="checkbox" id="sched-long-stay" style="width:16px;height:16px;accent-color:#6366f1;cursor:pointer;">
+                                    <label for="sched-long-stay" style="font-size:12px;color:var(--text-secondary);cursor:pointer;">Долгий срок</label>
                                 </div>
                             </div>
 
@@ -752,6 +802,34 @@
                         Загружаем...
                     </div>
                     <div id="lnd-pipeline" style="display:none;"></div>
+
+                    <!-- Kit Management Panel -->
+                    <div class="lnd-log-panel" id="lnd-kits-panel" style="margin-top:16px;">
+                        <div class="lnd-log-header" onclick="document.getElementById('lnd-kits-body').style.display = document.getElementById('lnd-kits-body').style.display==='none'?'':'none'; this.querySelector('.lnd-chevron').style.transform = document.getElementById('lnd-kits-body').style.display===''?'rotate(180deg)':'';" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:14px 16px;">
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <i class="fa-solid fa-box-open" style="color:#6366f1;"></i>
+                                <span style="font-size:13px;font-weight:600;">Наборы для уборки</span>
+                            </div>
+                            <i class="fa-solid fa-chevron-down lnd-chevron" style="font-size:11px;color:var(--text-secondary);transition:transform .2s;"></i>
+                        </div>
+                        <div id="lnd-kits-body" style="display:none;padding:0 16px 16px;">
+                            <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+                                <select id="kits-filter-type" class="mavi-input" style="font-size:12px;padding:6px 10px;flex:1;min-width:100px;">
+                                    <option value="эконом">Эконом</option>
+                                    <option value="стандарт">Стандарт</option>
+                                    <option value="премиум">Премиум</option>
+                                </select>
+                                <select id="kits-filter-room" class="mavi-input" style="font-size:12px;padding:6px 10px;flex:1;min-width:80px;">
+                                    <option value="студия">Студия</option>
+                                    <option value="1+1">1+1</option>
+                                </select>
+                                <button class="action-btn" onclick="renderKitsTable()" style="padding:6px 12px;font-size:12px;">
+                                    <i class="fa-solid fa-filter"></i>
+                                </button>
+                            </div>
+                            <div id="lnd-kits-table" style="overflow-x:auto;"></div>
+                        </div>
+                    </div>
                 </section>
 
                 <!-- Laundry Create/Edit Modal -->
@@ -1308,6 +1386,10 @@
                 ? `<a href="tel:${e.phone}" class="emp-card-btn phone"><i class="fa-solid fa-phone"></i> Телефон</a>`
                 : `<span class="emp-card-btn phone disabled"><i class="fa-solid fa-phone"></i> Телефон</span>`;
 
+            const ratingBadge = (e.role === 'cleaner' && e.rating)
+                ? `<span style="font-size:10px;color:#ffcc33;margin-left:4px;">★ ${e.rating}</span>` : '';
+            const tariffBadge = (e.role === 'cleaner' && e.default_tariff)
+                ? `<span style="font-size:10px;color:#10b981;margin-left:4px;">${e.default_tariff}₾</span>` : '';
             return `<div class="emp-card" data-id="${e.id}" style="--emp-color:${color};">
                 <div class="emp-card-status-badge ${isActive ? 'active' : 'offline'}">
                     <i class="fa-solid fa-${isActive ? 'signal' : 'clock'}"></i> ${status}
@@ -1316,7 +1398,7 @@
                     <div class="emp-avatar" style="border-color:${color};box-shadow:0 0 16px ${color}55;">${initials}</div>
                     <div class="emp-card-info">
                         <div class="emp-card-name">${e.full_name}</div>
-                        <div class="emp-card-role" style="color:${color};">${role}</div>
+                        <div class="emp-card-role" style="color:${color};display:flex;align-items:center;flex-wrap:wrap;gap:2px;">${role}${ratingBadge}${tariffBadge}</div>
                     </div>
                 </div>
                 <div class="emp-card-btns">
@@ -1425,8 +1507,12 @@
                 ${isCleaner ? `
                 <div class="emp-profile-stats" style="margin-top:-4px;">
                     <div class="emp-stat-card" style="border-color:#10b98155;">
-                        <div class="emp-stat-label">Уборок выполнено</div>
-                        <div class="emp-stat-value" style="color:#10b981;">${cleaningsCount}</div>
+                        <div class="emp-stat-label">Уборок в 2026</div>
+                        <div class="emp-stat-value" style="color:#10b981;">${e.cleaning_count || cleaningsCount}</div>
+                    </div>
+                    <div class="emp-stat-card" style="border-color:#ffcc3355;">
+                        <div class="emp-stat-label">Ставка за уборку</div>
+                        <div class="emp-stat-value" style="color:#ffcc33;">${e.default_tariff ? e.default_tariff + ' ₾' : '—'}</div>
                     </div>
                     <div class="emp-stat-card" style="border-color:#7000ff55;">
                         <div class="emp-stat-label">Среднее время</div>
@@ -1456,6 +1542,7 @@
         document.getElementById('emp-form-telegram').value = e ? (e.telegram_id || '') : '';
         document.getElementById('emp-form-status').value   = e ? e.status : 'active';
         document.getElementById('emp-form-rating').value   = e ? (e.rating || '') : '';
+        document.getElementById('emp-form-tariff').value   = e ? (e.default_tariff || '') : '';
         document.getElementById('emp-form-notes').value    = e ? (e.notes || '') : '';
         document.getElementById('emp-profile-modal').hidden = true;
         document.getElementById('emp-form-modal').hidden = false;
@@ -1469,8 +1556,9 @@
             phone:       document.getElementById('emp-form-phone').value.trim() || null,
             telegram_id: document.getElementById('emp-form-telegram').value.trim() || null,
             status:      document.getElementById('emp-form-status').value,
-            rating:      parseFloat(document.getElementById('emp-form-rating').value) || null,
-            notes:       document.getElementById('emp-form-notes').value.trim() || null,
+            rating:          parseFloat(document.getElementById('emp-form-rating').value) || null,
+            default_tariff:  parseFloat(document.getElementById('emp-form-tariff').value) || null,
+            notes:           document.getElementById('emp-form-notes').value.trim() || null,
         };
         if (!payload.full_name) { alert('Введите имя'); return; }
 
@@ -1940,7 +2028,7 @@
         // fetch all cleaning tasks (no date filter — filter client-side for flexibility)
         const { data, error } = await supa
             .from('tasks')
-            .select('id, title, status, type, deadline, started_at, completed_at, assigned_to, apartment_id, cost, comment, rating, sheet_apt_name')
+            .select('id, title, status, type, deadline, started_at, completed_at, assigned_to, cleaner2_id, apartment_id, cost, cleaner_rate, cleaner2_rate, tariff_type, kit_type, long_stay, apt_type_auto, comment, rating, sheet_apt_name')
             .eq('type', 'cleaning')
             .order('deadline', { ascending: true });
 
@@ -2559,17 +2647,44 @@
         tomorrow.setDate(tomorrow.getDate() + 1);
         document.getElementById('sched-date').value = tomorrow.toISOString().slice(0, 10);
 
-        // Populate cleaners
-        const sel = document.getElementById('sched-cleaner');
-        sel.innerHTML = '<option value="">— не назначен —</option>'
+        // Populate cleaner dropdowns
+        const cleanerOpts = '<option value="">— не назначен —</option>'
             + allEmployees
                 .filter(e => e.role === 'cleaner')
-                .map(e => `<option value="${e.id}">${e.full_name}</option>`)
+                .map(e => `<option value="${e.id}" data-tariff="${e.default_tariff || ''}">${e.full_name}</option>`)
                 .join('');
+        document.getElementById('sched-cleaner').innerHTML = cleanerOpts;
+        document.getElementById('sched-cleaner2').innerHTML = cleanerOpts;
 
-        // Pre-fill cost from apartment data if available
+        // Auto-fill tariff on cleaner select
+        document.getElementById('sched-cleaner').onchange = function() {
+            const opt = this.options[this.selectedIndex];
+            if (opt.value && opt.dataset.tariff) document.getElementById('sched-cost').value = opt.dataset.tariff;
+        };
+        document.getElementById('sched-cleaner2').onchange = function() {
+            const opt = this.options[this.selectedIndex];
+            if (opt.value && opt.dataset.tariff) document.getElementById('sched-cost2').value = opt.dataset.tariff;
+        };
+
+        // Show apt type from DB
         const apt = allApartments.find(a => a.id === aptId);
+        const aptTypeVal = apt?.apt_type || '';
+        const aptTypeRow = document.getElementById('sched-apt-type-row');
+        if (aptTypeVal) {
+            document.getElementById('sched-apt-type-val').textContent = aptTypeVal;
+            aptTypeRow.style.display = '';
+            // Pre-select tariff type based on apt_type
+            const tariffMap = {'студия':'студия','1+1':'1+1','1-1':'1+1','2+1':'2+1','2-1':'2+1'};
+            const tt = tariffMap[aptTypeVal.toLowerCase()] || '';
+            if (tt) document.getElementById('sched-tariff-type').value = tt;
+        } else {
+            aptTypeRow.style.display = 'none';
+        }
+
         document.getElementById('sched-cost').value = '';
+        document.getElementById('sched-cost2').value = '';
+        document.getElementById('sched-kit-type').value = '';
+        document.getElementById('sched-long-stay').checked = false;
         document.getElementById('sched-comment').value = apt?.access_info ? `Доступ: ${apt.access_info}` : '';
         document.getElementById('sched-msg').textContent = '';
         document.getElementById('sched-save').disabled = false;
@@ -2579,12 +2694,17 @@
     }
 
     async function saveSchedCleaning() {
-        const aptId    = schedAptId;
-        const dateVal  = document.getElementById('sched-date').value;
-        const cleaner  = document.getElementById('sched-cleaner').value || null;
-        const cost     = parseFloat(document.getElementById('sched-cost').value) || null;
-        const priority = document.getElementById('sched-priority').value;
-        const comment  = document.getElementById('sched-comment').value.trim() || null;
+        const aptId      = schedAptId;
+        const dateVal    = document.getElementById('sched-date').value;
+        const cleaner    = document.getElementById('sched-cleaner').value || null;
+        const cleaner2   = document.getElementById('sched-cleaner2').value || null;
+        const cost       = parseFloat(document.getElementById('sched-cost').value) || null;
+        const cost2      = parseFloat(document.getElementById('sched-cost2').value) || null;
+        const priority   = document.getElementById('sched-priority').value;
+        const tariffType = document.getElementById('sched-tariff-type').value || null;
+        const kitType    = document.getElementById('sched-kit-type').value || null;
+        const longStay   = document.getElementById('sched-long-stay').checked;
+        const comment    = document.getElementById('sched-comment').value.trim() || null;
 
         if (!aptId || !dateVal) {
             document.getElementById('sched-msg').textContent = 'Выберите дату';
@@ -2599,16 +2719,23 @@
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="margin-right:7px;"></i>Сохраняем...';
 
         const { data, error } = await supa.from('tasks').insert({
-            apartment_id: aptId,
-            assigned_to:  cleaner,
-            type:         'cleaning',
-            status:       cleaner ? 'assigned' : 'new',
-            priority,
-            deadline:     dateVal + 'T00:00:00Z',
+            apartment_id:  aptId,
+            assigned_to:   cleaner,
+            cleaner2_id:   cleaner2,
+            cleaner_rate:  cost,
+            cleaner2_rate: cost2,
             cost,
+            tariff_type:   tariffType,
+            kit_type:      kitType,
+            long_stay:     longStay,
+            type:          'cleaning',
+            status:        cleaner ? 'assigned' : 'new',
+            priority,
+            deadline:      dateVal + 'T00:00:00Z',
             comment,
-            title:        'Уборка — ' + (apt?.name || ''),
-            source:       'dashboard',
+            title:         'Уборка — ' + (apt?.name || ''),
+            source:        'dashboard',
+            apt_type_auto: apt?.apt_type || null,
         }).select();
 
         if (error) {
@@ -2781,9 +2908,15 @@
         }
 
         const cleanerOptions = `<option value="">— не назначен —</option>`
-            + allEmployees.map(e =>
-                `<option value="${e.id}" ${e.id === t.assigned_to ? 'selected' : ''}>${e.full_name}</option>`
+            + allEmployees.filter(e => e.role === 'cleaner').map(e =>
+                `<option value="${e.id}" data-tariff="${e.default_tariff || ''}" ${e.id === t.assigned_to ? 'selected' : ''}>${e.full_name}</option>`
             ).join('');
+        const cleaner2Options = `<option value="">— не назначен —</option>`
+            + allEmployees.filter(e => e.role === 'cleaner').map(e =>
+                `<option value="${e.id}" data-tariff="${e.default_tariff || ''}" ${e.id === t.cleaner2_id ? 'selected' : ''}>${e.full_name}</option>`
+            ).join('');
+        const emp2 = allEmployees.find(e => e.id === t.cleaner2_id);
+        const initials2 = emp2 ? (emp2.full_name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() : null;
 
         const statusOptions = Object.entries(CLEAN_STATUS).map(([key, val]) =>
             `<option value="${key}" ${key === t.status ? 'selected' : ''}>${val.label}</option>`
@@ -2818,20 +2951,35 @@
 
             <div class="clean-detail-rows">
 
+                ${t.apt_type_auto ? `<div class="clean-detail-row">
+                    <span class="clean-detail-label"><i class="fa-solid fa-building" style="margin-right:5px;opacity:.5;"></i>Тип номера</span>
+                    <span class="clean-detail-value" style="color:var(--text-secondary);">${t.apt_type_auto}</span>
+                </div>` : ''}
+
                 <div class="clean-detail-row">
-                    <span class="clean-detail-label"><i class="fa-solid fa-user" style="margin-right:5px;opacity:.5;"></i>Клинер</span>
+                    <span class="clean-detail-label"><i class="fa-solid fa-user" style="margin-right:5px;opacity:.5;"></i>Клинер 1</span>
                     <span class="clean-detail-value">
                         ${emp
-                            ? `<span style="display:flex;align-items:center;gap:6px;"><span style="width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#a855f7);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">${initials}</span>${emp.full_name}</span>`
+                            ? `<span style="display:flex;align-items:center;gap:6px;"><span style="width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#a855f7);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">${initials}</span>${emp.full_name}${t.cleaner_rate ? ` <span style="color:#ffcc33;font-size:12px;margin-left:4px;">${t.cleaner_rate}₾</span>` : ''}</span>`
                             : '<em style="opacity:.4">Не назначен</em>'
                         }
                     </span>
                 </div>
 
+                ${emp2 ? `<div class="clean-detail-row">
+                    <span class="clean-detail-label"><i class="fa-solid fa-user-plus" style="margin-right:5px;opacity:.5;"></i>Клинер 2</span>
+                    <span class="clean-detail-value"><span style="display:flex;align-items:center;gap:6px;"><span style="width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#10b981,#059669);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">${initials2}</span>${emp2.full_name}${t.cleaner2_rate ? ` <span style="color:#ffcc33;font-size:12px;margin-left:4px;">${t.cleaner2_rate}₾</span>` : ''}</span></span>
+                </div>` : ''}
+
                 <div class="clean-detail-row">
                     <span class="clean-detail-label"><i class="fa-solid fa-circle-half-stroke" style="margin-right:5px;opacity:.5;"></i>Статус</span>
                     <span class="clean-detail-value" style="color:${st.color};">${st.label}</span>
                 </div>
+
+                ${t.tariff_type || t.kit_type ? `<div class="clean-detail-row">
+                    <span class="clean-detail-label"><i class="fa-solid fa-tag" style="margin-right:5px;opacity:.5;"></i>Тариф / Набор</span>
+                    <span class="clean-detail-value" style="color:var(--text-secondary);">${[t.tariff_type, t.kit_type].filter(Boolean).join(' / ')}${t.long_stay ? ' + долгий срок' : ''}</span>
+                </div>` : ''}
 
                 <div class="clean-detail-row">
                     <span class="clean-detail-label"><i class="fa-solid fa-coins" style="margin-right:5px;opacity:.5;"></i>Ставка</span>
@@ -2880,8 +3028,48 @@
                         <select id="clean-edit-status" class="mavi-input" style="font-size:12px;padding:6px 8px;width:100%;">${statusOptions}</select>
                     </div>
                     <div>
-                        <label style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:3px;">Клинер</label>
+                        <label style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:3px;">Тариф</label>
+                        <select id="clean-edit-tariff" class="mavi-input" style="font-size:12px;padding:6px 8px;width:100%;">
+                            <option value="">—</option>
+                            <option value="студия" ${t.tariff_type==='студия'?'selected':''}>Студия</option>
+                            <option value="1+1" ${t.tariff_type==='1+1'?'selected':''}>1+1</option>
+                            <option value="2+1" ${t.tariff_type==='2+1'?'selected':''}>2+1</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+                    <div>
+                        <label style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:3px;">Клинер 1</label>
                         <select id="clean-edit-cleaner" class="mavi-input" style="font-size:12px;padding:6px 8px;width:100%;">${cleanerOptions}</select>
+                    </div>
+                    <div>
+                        <label style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:3px;">Ставка 1 (₾)</label>
+                        <input type="number" id="clean-edit-rate" class="mavi-input" value="${t.cleaner_rate || ''}" placeholder="10" style="font-size:12px;padding:6px 8px;width:100%;">
+                    </div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+                    <div>
+                        <label style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:3px;">Клинер 2</label>
+                        <select id="clean-edit-cleaner2" class="mavi-input" style="font-size:12px;padding:6px 8px;width:100%;">${cleaner2Options}</select>
+                    </div>
+                    <div>
+                        <label style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:3px;">Ставка 2 (₾)</label>
+                        <input type="number" id="clean-edit-rate2" class="mavi-input" value="${t.cleaner2_rate || ''}" placeholder="10" style="font-size:12px;padding:6px 8px;width:100%;">
+                    </div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+                    <div>
+                        <label style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:3px;">Набор</label>
+                        <select id="clean-edit-kit" class="mavi-input" style="font-size:12px;padding:6px 8px;width:100%;">
+                            <option value="">—</option>
+                            <option value="эконом" ${t.kit_type==='эконом'?'selected':''}>Эконом</option>
+                            <option value="стандарт" ${t.kit_type==='стандарт'?'selected':''}>Стандарт</option>
+                            <option value="премиум" ${t.kit_type==='премиум'?'selected':''}>Премиум</option>
+                        </select>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:6px;padding-top:18px;">
+                        <input type="checkbox" id="clean-edit-long-stay" ${t.long_stay?'checked':''} style="width:14px;height:14px;accent-color:#6366f1;cursor:pointer;">
+                        <label for="clean-edit-long-stay" style="font-size:11px;color:var(--text-secondary);cursor:pointer;">Долгий срок</label>
                     </div>
                 </div>
 
@@ -2933,10 +3121,16 @@
         const t = calData.find(x => String(x.id) === String(taskId));
         if (!t) return;
 
-        const newStatus  = document.getElementById('clean-edit-status').value;
-        const newCleaner = document.getElementById('clean-edit-cleaner').value || null;
-        const newComment = document.getElementById('clean-edit-comment').value.trim() || null;
-        const newRating  = rating || null;
+        const newStatus   = document.getElementById('clean-edit-status').value;
+        const newCleaner  = document.getElementById('clean-edit-cleaner').value || null;
+        const newCleaner2 = document.getElementById('clean-edit-cleaner2').value || null;
+        const newRate     = parseFloat(document.getElementById('clean-edit-rate').value) || null;
+        const newRate2    = parseFloat(document.getElementById('clean-edit-rate2').value) || null;
+        const newTariff   = document.getElementById('clean-edit-tariff').value || null;
+        const newKit      = document.getElementById('clean-edit-kit').value || null;
+        const newLongStay = document.getElementById('clean-edit-long-stay').checked;
+        const newComment  = document.getElementById('clean-edit-comment').value.trim() || null;
+        const newRating   = rating || null;
 
         const btn = document.getElementById('clean-save-btn');
         const msg = document.getElementById('clean-save-msg');
@@ -2944,28 +3138,39 @@
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="margin-right:6px;"></i>Сохраняем...';
 
         const { error } = await supa.from('tasks').update({
-            status:      newStatus,
-            assigned_to: newCleaner,
-            comment:     newComment,
-            rating:      newRating,
+            status:        newStatus,
+            assigned_to:   newCleaner,
+            cleaner2_id:   newCleaner2,
+            cleaner_rate:  newRate,
+            cleaner2_rate: newRate2,
+            cost:          newRate,
+            tariff_type:   newTariff,
+            kit_type:      newKit,
+            long_stay:     newLongStay,
+            comment:       newComment,
+            rating:        newRating,
         }).eq('id', taskId);
 
         if (error) {
             msg.textContent = 'Ошибка: ' + error.message;
             msg.style.color = '#ef4444';
         } else {
-            // Update local data
-            t.status      = newStatus;
-            t.assigned_to = newCleaner;
-            t.comment     = newComment;
-            t.rating      = newRating;
+            t.status       = newStatus;
+            t.assigned_to  = newCleaner;
+            t.cleaner2_id  = newCleaner2;
+            t.cleaner_rate = newRate;
+            t.cleaner2_rate= newRate2;
+            t.cost         = newRate;
+            t.tariff_type  = newTariff;
+            t.kit_type     = newKit;
+            t.long_stay    = newLongStay;
+            t.comment      = newComment;
+            t.rating       = newRating;
             msg.textContent = 'Сохранено ✓';
             msg.style.color = '#10b981';
-            // Refresh calendar views
             renderCalendar(); updateCalStats();
             if (calSelDay) renderDayDetail(calSelDay);
             if (calViewMode === 'list') renderRangeList();
-            // Re-render card header with new status
             setTimeout(() => renderCleaningCard(taskId), 800);
         }
 
@@ -3575,6 +3780,84 @@
             else renderLaundry();
         });
     });
+
+    // ── Kit Items Management ─────────────────────────────────────────
+    let allKitItems = [];
+
+    async function loadKitItems() {
+        const { data } = await supa.from('kit_items').select('*').order('kit_type').order('room_type').order('category').order('id');
+        allKitItems = data || [];
+        renderKitsTable();
+    }
+
+    function renderKitsTable() {
+        const kitType  = document.getElementById('kits-filter-type')?.value || 'эконом';
+        const roomType = document.getElementById('kits-filter-room')?.value || 'студия';
+        const items    = allKitItems.filter(i => i.kit_type === kitType && i.room_type === roomType);
+        const el       = document.getElementById('lnd-kits-table');
+        if (!el) return;
+
+        if (!items.length) {
+            el.innerHTML = '<div style="text-align:center;padding:20px;opacity:.4;font-size:13px;">Нет данных</div>';
+            return;
+        }
+
+        const rows = items.map(item => `
+            <tr>
+                <td style="padding:6px 8px;font-size:12px;color:var(--text-secondary);">${item.category || ''}</td>
+                <td style="padding:6px 8px;font-size:13px;">${item.item_name}</td>
+                <td style="padding:6px 8px;font-size:13px;text-align:center;">
+                    <input type="number" class="mavi-input kit-qty-inp" data-id="${item.id}" value="${item.quantity || 0}" min="0" style="width:60px;padding:4px 6px;font-size:12px;text-align:center;">
+                </td>
+                <td style="padding:6px 8px;font-size:13px;text-align:center;">
+                    <input type="number" class="mavi-input kit-price-inp" data-id="${item.id}" value="${item.price_per_unit || 0}" min="0" step="0.01" style="width:70px;padding:4px 6px;font-size:12px;text-align:center;">
+                </td>
+                <td style="padding:6px 8px;">
+                    <button class="kit-save-btn action-btn" data-id="${item.id}" style="padding:3px 10px;font-size:11px;">Сохранить</button>
+                </td>
+            </tr>
+        `).join('');
+
+        el.innerHTML = `<table style="width:100%;border-collapse:collapse;">
+            <thead><tr style="border-bottom:1px solid rgba(255,255,255,.08);">
+                <th style="padding:6px 8px;font-size:10px;text-align:left;color:var(--text-secondary);font-weight:500;text-transform:uppercase;">Категория</th>
+                <th style="padding:6px 8px;font-size:10px;text-align:left;color:var(--text-secondary);font-weight:500;text-transform:uppercase;">Позиция</th>
+                <th style="padding:6px 8px;font-size:10px;text-align:center;color:var(--text-secondary);font-weight:500;text-transform:uppercase;">Кол-во</th>
+                <th style="padding:6px 8px;font-size:10px;text-align:center;color:var(--text-secondary);font-weight:500;text-transform:uppercase;">Цена (₾)</th>
+                <th style="padding:6px 8px;"></th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+        </table>`;
+
+        // Save buttons
+        el.querySelectorAll('.kit-save-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const id    = btn.dataset.id;
+                const qtyEl = el.querySelector(`.kit-qty-inp[data-id="${id}"]`);
+                const priceEl = el.querySelector(`.kit-price-inp[data-id="${id}"]`);
+                const qty   = parseFloat(qtyEl.value) || 0;
+                const price = parseFloat(priceEl.value) || 0;
+                btn.textContent = '...';
+                const { error } = await supa.from('kit_items').update({ quantity: qty, price_per_unit: price }).eq('id', id);
+                if (!error) {
+                    const item = allKitItems.find(i => String(i.id) === String(id));
+                    if (item) { item.quantity = qty; item.price_per_unit = price; }
+                    btn.textContent = '✓';
+                    setTimeout(() => { btn.textContent = 'Сохранить'; }, 1500);
+                } else {
+                    btn.textContent = 'Ошибка';
+                }
+            });
+        });
+    }
+
+    // Load kit items when laundry tab opens
+    document.querySelectorAll('.nav-item[data-view="laundry"]').forEach(el => {
+        el.addEventListener('click', () => { if (!allKitItems.length) loadKitItems(); });
+    });
+
+    document.getElementById('kits-filter-type')?.addEventListener('change', renderKitsTable);
+    document.getElementById('kits-filter-room')?.addEventListener('change', renderKitsTable);
 
     // ── Financial Reports & Payouts (from Google Sheets) ─────────────
     const FIN_SHEET_ID  = '1qmfEGEzq55Miu9ICDhpCdihk_TE402mpIao5KNbaYlA';
