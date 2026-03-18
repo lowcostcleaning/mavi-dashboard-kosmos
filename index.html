@@ -769,11 +769,34 @@
                 <section class="view" data-view="laundry">
                     <div class="content-header">
                         <h2>Прачечная</h2>
-                        <div class="date-filter" style="gap:8px;">
-                            <button class="date-btn" id="lnd-prev"><i class="fa-solid fa-chevron-left"></i></button>
-                            <span id="lnd-date-label" style="font-size:14px;font-weight:600;min-width:140px;text-align:center;"></span>
-                            <button class="date-btn" id="lnd-next"><i class="fa-solid fa-chevron-right"></i></button>
+                        <div class="date-filter" style="gap:6px;flex-wrap:wrap;">
+                            <input type="date" id="lnd-from-date" class="mavi-input" style="font-size:13px;padding:5px 10px;width:auto;">
+                            <span style="color:var(--text-secondary);align-self:center;">—</span>
+                            <input type="date" id="lnd-to-date" class="mavi-input" style="font-size:13px;padding:5px 10px;width:auto;">
                             <button class="date-btn" id="lnd-today">Сегодня</button>
+                            <button class="date-btn" id="lnd-week">Неделя</button>
+                            <button class="date-btn" id="lnd-refresh" title="Обновить"><i class="fa-solid fa-rotate-right"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- Guest Kits Panel (top) -->
+                    <div class="lnd-log-panel" id="lnd-kits-panel" style="margin-bottom:16px;">
+                        <div class="lnd-log-header" id="lnd-kits-toggle" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:14px 16px;">
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <i class="fa-solid fa-gift" style="color:#a855f7;"></i>
+                                <span style="font-size:13px;font-weight:600;">Гостевые наборы</span>
+                            </div>
+                            <i class="fa-solid fa-chevron-down lnd-chevron" id="lnd-kits-chevron" style="font-size:11px;color:var(--text-secondary);transition:transform .2s;"></i>
+                        </div>
+                        <div id="lnd-kits-body" style="display:none;padding:0 16px 16px;">
+                            <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;">
+                                <span style="font-size:11px;color:var(--text-secondary);">Тип номера:</span>
+                                <select id="kits-filter-room" class="mavi-input" style="font-size:12px;padding:5px 10px;width:auto;">
+                                    <option value="студия">Студия</option>
+                                    <option value="1+1">1+1</option>
+                                </select>
+                            </div>
+                            <div id="lnd-kits-table" style="overflow-x:auto;"></div>
                         </div>
                     </div>
 
@@ -817,7 +840,7 @@
                     </div>
 
                     <!-- Daily Log Panel -->
-                    <div class="lnd-log-panel" id="lnd-log-panel">
+                    <div class="lnd-log-panel" id="lnd-log-panel" style="margin-bottom:16px;">
                         <div class="lnd-log-header" id="lnd-log-toggle">
                             <i class="fa-solid fa-clipboard-list" style="margin-right:8px;color:#6366f1;"></i>
                             <span>Дневной учёт</span>
@@ -855,33 +878,12 @@
                         </div>
                     </div>
 
-                    <!-- Pipeline -->
+                    <!-- Apartment cards -->
                     <div id="lnd-loading" style="padding:60px;text-align:center;opacity:.5;">
                         <i class="fa-solid fa-spinner fa-spin" style="font-size:24px;margin-bottom:12px;display:block;"></i>
                         Загружаем...
                     </div>
                     <div id="lnd-pipeline" style="display:none;"></div>
-
-                    <!-- Guest Kits Panel -->
-                    <div class="lnd-log-panel" id="lnd-kits-panel" style="margin-top:16px;">
-                        <div class="lnd-log-header" onclick="document.getElementById('lnd-kits-body').style.display = document.getElementById('lnd-kits-body').style.display==='none'?'':'none'; this.querySelector('.lnd-chevron').style.transform = document.getElementById('lnd-kits-body').style.display===''?'rotate(180deg)':'';" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:14px 16px;">
-                            <div style="display:flex;align-items:center;gap:8px;">
-                                <i class="fa-solid fa-gift" style="color:#a855f7;"></i>
-                                <span style="font-size:13px;font-weight:600;">Гостевые наборы</span>
-                            </div>
-                            <i class="fa-solid fa-chevron-down lnd-chevron" style="font-size:11px;color:var(--text-secondary);transition:transform .2s;"></i>
-                        </div>
-                        <div id="lnd-kits-body" style="display:none;padding:0 16px 16px;">
-                            <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;">
-                                <span style="font-size:11px;color:var(--text-secondary);">Тип номера:</span>
-                                <select id="kits-filter-room" class="mavi-input" style="font-size:12px;padding:5px 10px;width:auto;">
-                                    <option value="студия">Студия</option>
-                                    <option value="1+1">1+1</option>
-                                </select>
-                            </div>
-                            <div id="lnd-kits-table" style="overflow-x:auto;"></div>
-                        </div>
-                    </div>
                 </section>
 
                 <!-- Laundry Create/Edit Modal -->
@@ -3509,36 +3511,42 @@
 
     let lndCleanings = [];  // cleaning tasks in current window
     let lndTasks     = [];  // laundry tasks fetched from DB
-    let lndLogs      = [];  // laundry_log entries for current week
+    let lndLogs      = [];  // laundry_log entries for current period
     let lndLoaded    = false;
-    let lndBaseDate  = new Date(); // start of the current window (Mon of week)
-
-    // Returns the Monday of the week containing date d
-    function lndWeekStart(d) {
-        const r = new Date(d);
-        const day = r.getDay() || 7; // Mon=1..Sun=7
-        r.setDate(r.getDate() - day + 1);
-        r.setHours(0,0,0,0);
-        return r;
-    }
 
     function lndISODate(d) {
         return d.toISOString().slice(0, 10);
     }
 
+    // Returns the Monday of the week containing date d
+    function lndWeekStart(d) {
+        const r = new Date(d);
+        const day = r.getDay() || 7;
+        r.setDate(r.getDate() - day + 1);
+        r.setHours(0,0,0,0);
+        return r;
+    }
+
+    // Init date inputs to today
+    (function initLndDates() {
+        const today = lndISODate(new Date());
+        const fromEl = document.getElementById('lnd-from-date');
+        const toEl   = document.getElementById('lnd-to-date');
+        if (fromEl && !fromEl.value) fromEl.value = today;
+        if (toEl   && !toEl.value)   toEl.value   = today;
+    })();
+
     async function loadLaundry() {
         document.getElementById('lnd-loading').style.display = '';
         document.getElementById('lnd-pipeline').style.display = 'none';
 
-        // Window: Mon–Sun of current week + 2 extra days for комплектация
-        const weekStart = lndWeekStart(lndBaseDate);
-        const from = new Date(weekStart);
-        from.setDate(from.getDate() - 1); // one day before (for комплектация tail)
-        const to = new Date(weekStart);
-        to.setDate(to.getDate() + 8);     // full week + next Mon
+        const fromISO = document.getElementById('lnd-from-date')?.value || lndISODate(new Date());
+        const toISO   = document.getElementById('lnd-to-date')?.value   || fromISO;
 
-        const fromISO = lndISODate(from);
-        const toISO   = lndISODate(to);
+        // Extend window by 2 days to capture комплектация tasks
+        const toExtended = new Date(toISO + 'T12:00:00');
+        toExtended.setDate(toExtended.getDate() + 2);
+        const toExtISO = lndISODate(toExtended);
 
         // Fetch cleanings in window
         const { data: cleanData } = await supa
@@ -3550,13 +3558,13 @@
             .order('deadline', { ascending: true });
         lndCleanings = cleanData || [];
 
-        // Fetch laundry tasks in same window
+        // Fetch laundry tasks (extended window for комплектация)
         const { data: lndData2 } = await supa
             .from('tasks')
             .select('id, title, status, deadline, assigned_to, apartment_id, comment')
             .eq('type', 'laundry')
             .gte('deadline', fromISO + 'T00:00:00Z')
-            .lte('deadline', toISO   + 'T23:59:59Z')
+            .lte('deadline', toExtISO + 'T23:59:59Z')
             .order('deadline', { ascending: true });
         lndTasks = lndData2 || [];
 
@@ -3593,36 +3601,21 @@
     }
 
     function renderLaundry() {
-        const weekStart = lndWeekStart(lndBaseDate);
-        const weekEnd   = new Date(weekStart);
-        weekEnd.setDate(weekEnd.getDate() + 6);
-
-        const fmtFull = d => d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
-        document.getElementById('lnd-date-label').textContent =
-            `${fmtFull(weekStart)} — ${fmtFull(weekEnd)}`;
-
         // Stats
-        document.getElementById('lnd-stat-cleanings').textContent = lndCleanings.length;
-
-        // Log-based stats (sum over fetched week)
-        const totalReceived   = lndLogs.reduce((s, l) => s + (l.received    || 0), 0);
-        const totalWashed     = lndLogs.reduce((s, l) => s + (l.washed      || 0), 0);
-        const totalWriteoffs  = lndLogs.reduce((s, l) => s + (l.written_off || 0), 0);
+        document.getElementById('lnd-stat-cleanings').textContent = lndCleanings.length || '—';
+        const totalReceived  = lndLogs.reduce((s, l) => s + (l.received    || 0), 0);
+        const totalWashed    = lndLogs.reduce((s, l) => s + (l.washed      || 0), 0);
+        const totalWriteoffs = lndLogs.reduce((s, l) => s + (l.written_off || 0), 0);
         document.getElementById('lnd-stat-received').textContent  = totalReceived  || '—';
         document.getElementById('lnd-stat-washed').textContent    = totalWashed    || '—';
         document.getElementById('lnd-stat-writeoffs').textContent = totalWriteoffs || '—';
-
-        // Кits done (restocking tasks with status=done)
         let cntKits = 0;
-        lndCleanings.forEach(c => {
-            if (findLndTask(c, LND_STAGES[2])?.status === 'done') cntKits++;
-        });
-        document.getElementById('lnd-stat-kits').textContent = lndCleanings.length
-            ? `${cntKits}/${lndCleanings.length}` : '—';
+        lndCleanings.forEach(c => { if (findLndTask(c, LND_STAGES[2])?.status === 'done') cntKits++; });
+        document.getElementById('lnd-stat-kits').textContent = lndCleanings.length ? `${cntKits}/${lndCleanings.length}` : '—';
 
         if (!lndCleanings.length) {
             document.getElementById('lnd-pipeline').innerHTML =
-                `<div style="text-align:center;opacity:.3;padding:60px;font-size:13px;"><i class="fa-solid fa-broom" style="font-size:28px;display:block;margin-bottom:12px;"></i>Уборок на этой неделе нет</div>`;
+                `<div style="text-align:center;opacity:.3;padding:60px;font-size:13px;"><i class="fa-solid fa-broom" style="font-size:28px;display:block;margin-bottom:12px;"></i>Уборок в выбранном периоде нет</div>`;
             document.getElementById('lnd-loading').style.display = 'none';
             document.getElementById('lnd-pipeline').style.display = '';
             return;
@@ -3636,6 +3629,7 @@
         });
 
         const today = lndISODate(new Date());
+        const KIT_COLORS = { эконом: '#6366f1', стандарт: '#f59e0b', премиум: '#10b981' };
 
         let html = '';
         Object.keys(byDate).sort().forEach(dateKey => {
@@ -3645,76 +3639,81 @@
 
             html += `<div class="lnd-day-group">
                 <div class="lnd-day-header ${isToday ? 'lnd-day-today' : ''}">
-                    <span>${dateLabel}</span>
+                    <span style="text-transform:capitalize;">${dateLabel}</span>
                     ${isToday ? '<span class="lnd-today-badge">сегодня</span>' : ''}
                     <span class="lnd-day-count">${byDate[dateKey].length} уб.</span>
-                </div>`;
+                </div>
+                <div class="lnd-cards-grid">`;
 
             byDate[dateKey].forEach(c => {
-                const apt = allApartments.find(a => a.id === c.apartment_id);
+                const apt     = allApartments.find(a => a.id === c.apartment_id);
                 const cleaner = allEmployees.find(e => e.id === c.assigned_to);
-                const linen = apt?.bed_linen_size || '';
+                const cleaner2 = allEmployees.find(e => e.id === c.cleaner2_id);
+                const aptType = c.apt_type_auto || apt?.apt_type || '';
+                const kitType = c.kit_type || '';
+                const kitColor = KIT_COLORS[kitType] || '#a0a4cc';
+                const linen   = apt?.bed_linen_size || '';
 
-                const stagesHtml = LND_STAGES.map(stage => {
+                // Build stage buttons
+                const stagesBtns = LND_STAGES.map(stage => {
                     const task = findLndTask(c, stage);
                     const stageDate = new Date(c.deadline);
                     stageDate.setDate(stageDate.getDate() + stage.dayOffset);
                     const stageDateStr = stageDate.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
 
+                    let chkBadge = '';
                     if (task) {
-                        const st = LND_STATUS[task.status] || LND_STATUS.new;
-                        const emp = allEmployees.find(e => e.id === task.assigned_to);
-
-                        // Parse checklist badge from comment JSON
-                        let badgeHtml = '';
                         try {
                             const meta = task.comment ? JSON.parse(task.comment) : null;
-                            if (meta && Array.isArray(meta.chk)) {
-                                const total   = meta.chk.length;
-                                const checked = meta.chk.filter(Boolean).length;
-                                const allDone = checked === total;
-                                badgeHtml = `<div class="lnd-chk-badge ${allDone ? 'lnd-chk-badge-ok' : 'lnd-chk-badge-partial'}">${allDone ? '✓' : `${checked}/${total}`}</div>`;
+                            if (meta?.chk) {
+                                const total = meta.chk.length, done = meta.chk.filter(Boolean).length;
+                                chkBadge = `<span style="font-size:10px;margin-left:4px;color:${done===total?'#10b981':'#f59e0b'};">${done===total?'✓':done+'/'+total}</span>`;
                             }
                         } catch(e) {}
-
-                        return `<div class="lnd-stage lnd-stage-exists" data-lnd-task="${task.id}" data-lnd-clean-id="${c.id}"
-                                    style="border-color:${stage.color}44;background:${stage.color}11;"
-                                    title="${stage.prefix} — ${emp?.full_name || 'не назначен'}">
-                            ${badgeHtml}
-                            <div class="lnd-stage-icon" style="color:${stage.color};"><i class="fa-solid ${stage.icon}"></i></div>
-                            <div class="lnd-stage-name">${stage.prefix}</div>
-                            <div class="lnd-stage-date" style="opacity:.55;">${stageDateStr}</div>
-                            <div class="lnd-stage-status" style="color:${st.color};">${st.label}</div>
-                            ${emp ? `<div class="lnd-stage-emp">${emp.full_name.split(' ')[0]}</div>` : ''}
+                        const st = LND_STATUS[task.status] || LND_STATUS.new;
+                        const emp = allEmployees.find(e => e.id === task.assigned_to);
+                        return `<div class="lnd-stage-btn lnd-stage-exists" data-lnd-task="${task.id}" data-lnd-clean-id="${c.id}"
+                                    style="border-color:${stage.color}55;background:${stage.color}18;">
+                            <i class="fa-solid ${stage.icon}" style="color:${stage.color};font-size:14px;"></i>
+                            <div style="flex:1;min-width:0;">
+                                <div style="font-size:11px;font-weight:600;color:${stage.color};">${stage.prefix}</div>
+                                <div style="font-size:10px;color:${st.color};">${st.label}${chkBadge}</div>
+                                ${emp ? `<div style="font-size:10px;opacity:.5;">${emp.full_name.split(' ')[0]}</div>` : ''}
+                            </div>
+                            <div style="font-size:10px;opacity:.4;">${stageDateStr}</div>
                         </div>`;
                     } else {
-                        return `<div class="lnd-stage lnd-stage-empty"
-                                    data-lnd-new-stage="${stage.key}"
-                                    data-lnd-clean-id="${c.id}"
-                                    data-lnd-apt-id="${c.apartment_id}"
-                                    data-lnd-date="${lndISODate(stageDate)}"
-                                    data-lnd-prefix="${stage.prefix}">
-                            <div class="lnd-stage-icon" style="color:rgba(255,255,255,0.2);"><i class="fa-solid ${stage.icon}"></i></div>
-                            <div class="lnd-stage-name" style="opacity:.35;">${stage.prefix}</div>
-                            <div class="lnd-stage-date" style="opacity:.3;">${stageDateStr}</div>
-                            <div class="lnd-stage-add"><i class="fa-solid fa-plus"></i></div>
+                        return `<div class="lnd-stage-btn lnd-stage-empty"
+                                    data-lnd-apt-id="${c.apartment_id}" data-lnd-clean-id="${c.id}"
+                                    data-lnd-date="${lndISODate(stageDate)}" data-lnd-prefix="${stage.prefix}"
+                                    style="border-style:dashed;opacity:.45;">
+                            <i class="fa-solid ${stage.icon}" style="color:${stage.color};font-size:14px;"></i>
+                            <div style="flex:1;min-width:0;">
+                                <div style="font-size:11px;font-weight:600;color:${stage.color};">${stage.prefix}</div>
+                                <div style="font-size:10px;opacity:.5;">${stageDateStr}</div>
+                            </div>
+                            <i class="fa-solid fa-plus" style="font-size:10px;opacity:.4;"></i>
                         </div>`;
                     }
                 }).join('');
 
-                html += `<div class="lnd-row">
-                    <div class="lnd-row-apt">
-                        <div class="lnd-row-apt-name">${apt?.name || c.title || '—'}</div>
-                        <div class="lnd-row-apt-meta">
-                            ${cleaner ? `<span><i class="fa-solid fa-broom" style="margin-right:3px;opacity:.4;font-size:9px;"></i>${cleaner.full_name}</span>` : ''}
-                            ${linen ? `<span class="lnd-linen-badge"><i class="fa-solid fa-bed" style="margin-right:3px;font-size:9px;"></i>${linen}</span>` : ''}
+                html += `<div class="lnd-apt-card">
+                    <div class="lnd-apt-card-top">
+                        <div style="flex:1;min-width:0;">
+                            <div style="font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${apt?.name || c.title || '—'}</div>
+                            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:5px;font-size:11px;">
+                                ${cleaner ? `<span style="color:var(--text-secondary);"><i class="fa-solid fa-user" style="margin-right:3px;opacity:.5;"></i>${cleaner.full_name}${cleaner2 ? ' + ' + cleaner2.full_name.split(' ')[0] : ''}</span>` : '<span style="opacity:.3;font-size:11px;">клинер не назначен</span>'}
+                                ${aptType ? `<span style="background:rgba(99,102,241,.15);color:#a5b4fc;padding:2px 7px;border-radius:10px;">${aptType}</span>` : ''}
+                                ${kitType ? `<span style="background:${kitColor}22;color:${kitColor};padding:2px 7px;border-radius:10px;">🎁 ${kitType}</span>` : ''}
+                                ${linen ? `<span style="background:rgba(255,255,255,.07);color:var(--text-secondary);padding:2px 7px;border-radius:10px;"><i class="fa-solid fa-bed" style="margin-right:3px;"></i>${linen}</span>` : ''}
+                            </div>
                         </div>
                     </div>
-                    <div class="lnd-stages-row">${stagesHtml}</div>
+                    <div class="lnd-apt-stages">${stagesBtns}</div>
                 </div>`;
             });
 
-            html += '</div>';
+            html += '</div></div>';
         });
 
         document.getElementById('lnd-pipeline').innerHTML = html;
@@ -3984,18 +3983,33 @@
         if (e.target === e.currentTarget) document.getElementById('lnd-modal').hidden = true;
     });
 
-    // ── Date navigation ──────────────────────────────────────────────
-    document.getElementById('lnd-prev')?.addEventListener('click', () => {
-        lndBaseDate.setDate(lndBaseDate.getDate() - 7);
-        loadLaundry();
-    });
-    document.getElementById('lnd-next')?.addEventListener('click', () => {
-        lndBaseDate.setDate(lndBaseDate.getDate() + 7);
-        loadLaundry();
-    });
+    // ── Date range navigation ────────────────────────────────────────
     document.getElementById('lnd-today')?.addEventListener('click', () => {
-        lndBaseDate = new Date();
+        const today = lndISODate(new Date());
+        document.getElementById('lnd-from-date').value = today;
+        document.getElementById('lnd-to-date').value   = today;
         loadLaundry();
+    });
+    document.getElementById('lnd-week')?.addEventListener('click', () => {
+        const mon = lndWeekStart(new Date());
+        const sun = new Date(mon); sun.setDate(sun.getDate() + 6);
+        document.getElementById('lnd-from-date').value = lndISODate(mon);
+        document.getElementById('lnd-to-date').value   = lndISODate(sun);
+        loadLaundry();
+    });
+    document.getElementById('lnd-refresh')?.addEventListener('click', () => loadLaundry());
+    document.getElementById('lnd-from-date')?.addEventListener('change', () => loadLaundry());
+    document.getElementById('lnd-to-date')?.addEventListener('change',   () => loadLaundry());
+
+    // ── Guest kits toggle ─────────────────────────────────────────────
+    document.getElementById('lnd-kits-toggle')?.addEventListener('click', () => {
+        const body = document.getElementById('lnd-kits-body');
+        const chev = document.getElementById('lnd-kits-chevron');
+        const open = body.style.display !== 'none';
+        body.style.display = open ? 'none' : '';
+        if (chev) chev.style.transform = open ? '' : 'rotate(180deg)';
+        if (!open && !allKitItems.length) loadKitItems();
+        else if (!open) renderKitsTable();
     });
 
     // ── Stage quick status cycle on right-click ──────────────────────

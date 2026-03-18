@@ -2394,6 +2394,59 @@ textarea.mavi-input {
     color: var(--accent-cyan);
 }
 
+/* ── Laundry Apartment Cards ─────────────────────────────────────── */
+.lnd-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.lnd-apt-card {
+    background: var(--bg-card);
+    border: var(--glass-border);
+    border-radius: 14px;
+    padding: 14px;
+    transition: border-color 0.15s;
+}
+
+.lnd-apt-card:hover {
+    border-color: rgba(255,255,255,0.15);
+}
+
+.lnd-apt-card-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.lnd-apt-stages {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.lnd-stage-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    padding: 8px 10px;
+    cursor: pointer;
+    transition: transform 0.12s, border-color 0.12s, opacity 0.12s;
+}
+
+.lnd-stage-btn:hover {
+    transform: translateX(3px);
+    border-color: rgba(255,255,255,0.2);
+}
+
+.lnd-stage-btn.lnd-stage-empty:hover {
+    opacity: 1;
+}
+
 /* ── Financial Cards ─────────────────────────────────────────────── */
 
 /* Reports — apt card */
