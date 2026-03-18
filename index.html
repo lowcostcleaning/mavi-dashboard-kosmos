@@ -862,29 +862,22 @@
                     </div>
                     <div id="lnd-pipeline" style="display:none;"></div>
 
-                    <!-- Kit Management Panel -->
+                    <!-- Guest Kits Panel -->
                     <div class="lnd-log-panel" id="lnd-kits-panel" style="margin-top:16px;">
                         <div class="lnd-log-header" onclick="document.getElementById('lnd-kits-body').style.display = document.getElementById('lnd-kits-body').style.display==='none'?'':'none'; this.querySelector('.lnd-chevron').style.transform = document.getElementById('lnd-kits-body').style.display===''?'rotate(180deg)':'';" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:14px 16px;">
                             <div style="display:flex;align-items:center;gap:8px;">
-                                <i class="fa-solid fa-box-open" style="color:#6366f1;"></i>
-                                <span style="font-size:13px;font-weight:600;">Наборы для уборки</span>
+                                <i class="fa-solid fa-gift" style="color:#a855f7;"></i>
+                                <span style="font-size:13px;font-weight:600;">Гостевые наборы</span>
                             </div>
                             <i class="fa-solid fa-chevron-down lnd-chevron" style="font-size:11px;color:var(--text-secondary);transition:transform .2s;"></i>
                         </div>
                         <div id="lnd-kits-body" style="display:none;padding:0 16px 16px;">
-                            <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
-                                <select id="kits-filter-type" class="mavi-input" style="font-size:12px;padding:6px 10px;flex:1;min-width:100px;">
-                                    <option value="эконом">Эконом</option>
-                                    <option value="стандарт">Стандарт</option>
-                                    <option value="премиум">Премиум</option>
-                                </select>
-                                <select id="kits-filter-room" class="mavi-input" style="font-size:12px;padding:6px 10px;flex:1;min-width:80px;">
+                            <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;">
+                                <span style="font-size:11px;color:var(--text-secondary);">Тип номера:</span>
+                                <select id="kits-filter-room" class="mavi-input" style="font-size:12px;padding:5px 10px;width:auto;">
                                     <option value="студия">Студия</option>
                                     <option value="1+1">1+1</option>
                                 </select>
-                                <button class="action-btn" onclick="renderKitsTable()" style="padding:6px 12px;font-size:12px;">
-                                    <i class="fa-solid fa-filter"></i>
-                                </button>
                             </div>
                             <div id="lnd-kits-table" style="overflow-x:auto;"></div>
                         </div>
@@ -963,18 +956,7 @@
                                     <label class="lnd-chk-item"><input type="checkbox" class="lnd-kit-linen" data-idx="5"> Для ног — 1 шт</label>
                                     <label class="lnd-chk-item"><input type="checkbox" class="lnd-kit-linen" data-idx="6"> Для кухни — 1 шт</label>
                                 </div>
-                                <div class="lnd-checklist-block" style="margin-top:8px;">
-                                    <div class="lnd-checklist-title"><i class="fa-solid fa-gift" style="margin-right:6px;"></i>Гостевой набор</div>
-                                    <label class="lnd-chk-item"><input type="checkbox" class="lnd-kit-guest" data-idx="0"> Тапочки — 2 пары</label>
-                                    <label class="lnd-chk-item"><input type="checkbox" class="lnd-kit-guest" data-idx="1"> Конфеты — 5 шт</label>
-                                    <label class="lnd-chk-item"><input type="checkbox" class="lnd-kit-guest" data-idx="2"> Сахар — 4 пак.</label>
-                                    <label class="lnd-chk-item"><input type="checkbox" class="lnd-kit-guest" data-idx="3"> Заварка — 4 пак.</label>
-                                    <label class="lnd-chk-item"><input type="checkbox" class="lnd-kit-guest" data-idx="4"> Туал. бумага — 2 рул.</label>
-                                    <label class="lnd-chk-item"><input type="checkbox" class="lnd-kit-guest" data-idx="5"> Влажные салфетки — 1 уп.</label>
-                                    <label class="lnd-chk-item"><input type="checkbox" class="lnd-kit-guest" data-idx="6"> Зубные наборы — 2 шт</label>
-                                    <label class="lnd-chk-item"><input type="checkbox" class="lnd-kit-guest" data-idx="7"> Вода — 2 бут.</label>
-                                    <label class="lnd-chk-item"><input type="checkbox" class="lnd-kit-guest" data-idx="8"> Губка — 1 шт</label>
-                                </div>
+                                <div id="lnd-guest-checklist-block" style="margin-top:8px;"></div>
                                 <label class="lnd-chk-item" style="margin-top:10px;padding:8px;background:rgba(16,185,129,.08);border-radius:6px;border:1px solid rgba(16,185,129,.2);">
                                     <input type="checkbox" id="lnd-chk-transferred"> <span style="color:#10b981;font-weight:600;">Передано экспедитору</span>
                                 </label>
@@ -3695,7 +3677,7 @@
                             }
                         } catch(e) {}
 
-                        return `<div class="lnd-stage lnd-stage-exists" data-lnd-task="${task.id}"
+                        return `<div class="lnd-stage lnd-stage-exists" data-lnd-task="${task.id}" data-lnd-clean-id="${c.id}"
                                     style="border-color:${stage.color}44;background:${stage.color}11;"
                                     title="${stage.prefix} — ${emp?.full_name || 'не назначен'}">
                             ${badgeHtml}
@@ -3761,8 +3743,9 @@
         // Existing stage — edit
         const existStage = e.target.closest('.lnd-stage-exists');
         if (existStage) {
-            const taskId = existStage.dataset.lndTask;
-            openLndModal({ mode: 'edit', taskId });
+            const taskId  = existStage.dataset.lndTask;
+            const cleanId = existStage.dataset.lndCleanId;
+            openLndModal({ mode: 'edit', taskId, cleanId });
         }
     });
 
@@ -3876,6 +3859,12 @@
             document.getElementById('lnd-comment').value = humanNote;
 
             lndShowStageFields(stageKey);
+            if (stageKey === 'restocking') {
+                const cleaning = calData.find(x => String(x.id) === String(cleanId));
+                const kitType  = cleaning?.kit_type || null;
+                const aptType  = cleaning?.apt_type_auto || apt?.apt_type || null;
+                lndRenderGuestChecklist(kitType, aptType, meta?.kit_guest);
+            }
             if (meta) lndLoadChecklist(meta, stageKey);
             modal.dataset.currentStageKey = stageKey || '';
 
@@ -3898,6 +3887,12 @@
             document.getElementById('lnd-comment').value = '';
 
             lndShowStageFields(stageKey);
+            if (stageKey === 'restocking') {
+                const cleaning = calData.find(x => String(x.id) === String(cleanId));
+                const kitType  = cleaning?.kit_type || null;
+                const aptType  = cleaning?.apt_type_auto || apt?.apt_type || null;
+                lndRenderGuestChecklist(kitType, aptType, null);
+            }
             saveBtn.innerHTML = '<i class="fa-solid fa-plus" style="margin-right:7px;"></i>Создать задачу';
         }
 
@@ -4103,65 +4098,121 @@
         renderKitsTable();
     }
 
+    // Render guest kits comparison table (all 3 types, one room type)
     function renderKitsTable() {
-        const kitType  = document.getElementById('kits-filter-type')?.value || 'эконом';
         const roomType = document.getElementById('kits-filter-room')?.value || 'студия';
-        const items    = allKitItems.filter(i => i.kit_type === kitType && i.room_type === roomType);
-        const el       = document.getElementById('lnd-kits-table');
+        const el = document.getElementById('lnd-kits-table');
         if (!el) return;
 
-        if (!items.length) {
+        if (!allKitItems.length) {
             el.innerHTML = '<div style="text-align:center;padding:20px;opacity:.4;font-size:13px;">Нет данных</div>';
             return;
         }
 
-        const rows = items.map(item => `
-            <tr>
-                <td style="padding:6px 8px;font-size:12px;color:var(--text-secondary);">${item.category || ''}</td>
-                <td style="padding:6px 8px;font-size:13px;">${item.item_name}</td>
-                <td style="padding:6px 8px;font-size:13px;text-align:center;">
-                    <input type="number" class="mavi-input kit-qty-inp" data-id="${item.id}" value="${item.quantity || 0}" min="0" style="width:60px;padding:4px 6px;font-size:12px;text-align:center;">
-                </td>
-                <td style="padding:6px 8px;font-size:13px;text-align:center;">
-                    <input type="number" class="mavi-input kit-price-inp" data-id="${item.id}" value="${item.price_per_unit || 0}" min="0" step="0.01" style="width:70px;padding:4px 6px;font-size:12px;text-align:center;">
-                </td>
-                <td style="padding:6px 8px;">
-                    <button class="kit-save-btn action-btn" data-id="${item.id}" style="padding:3px 10px;font-size:11px;">Сохранить</button>
-                </td>
-            </tr>
-        `).join('');
+        // Collect all unique items (by name+category) across all kit types for this room type
+        const KIT_TYPES = ['эконом', 'стандарт', 'премиум'];
+        const KIT_COLORS = { эконом: '#6366f1', стандарт: '#f59e0b', премиум: '#10b981' };
 
-        el.innerHTML = `<table style="width:100%;border-collapse:collapse;">
-            <thead><tr style="border-bottom:1px solid rgba(255,255,255,.08);">
-                <th style="padding:6px 8px;font-size:10px;text-align:left;color:var(--text-secondary);font-weight:500;text-transform:uppercase;">Категория</th>
-                <th style="padding:6px 8px;font-size:10px;text-align:left;color:var(--text-secondary);font-weight:500;text-transform:uppercase;">Позиция</th>
-                <th style="padding:6px 8px;font-size:10px;text-align:center;color:var(--text-secondary);font-weight:500;text-transform:uppercase;">Кол-во</th>
-                <th style="padding:6px 8px;font-size:10px;text-align:center;color:var(--text-secondary);font-weight:500;text-transform:uppercase;">Цена (₾)</th>
-                <th style="padding:6px 8px;"></th>
-            </tr></thead>
-            <tbody>${rows}</tbody>
-        </table>`;
+        const allForRoom = allKitItems.filter(i => i.room_type === roomType);
 
-        // Save buttons
-        el.querySelectorAll('.kit-save-btn').forEach(btn => {
-            btn.addEventListener('click', async () => {
-                const id    = btn.dataset.id;
-                const qtyEl = el.querySelector(`.kit-qty-inp[data-id="${id}"]`);
-                const priceEl = el.querySelector(`.kit-price-inp[data-id="${id}"]`);
-                const qty   = parseFloat(qtyEl.value) || 0;
-                const price = parseFloat(priceEl.value) || 0;
-                btn.textContent = '...';
-                const { error } = await supa.from('kit_items').update({ quantity: qty, price_per_unit: price }).eq('id', id);
-                if (!error) {
-                    const item = allKitItems.find(i => String(i.id) === String(id));
-                    if (item) { item.quantity = qty; item.price_per_unit = price; }
-                    btn.textContent = '✓';
-                    setTimeout(() => { btn.textContent = 'Сохранить'; }, 1500);
-                } else {
-                    btn.textContent = 'Ошибка';
-                }
+        // Group by category, then collect unique item names
+        const catMap = {}; // category → [{item_name, эконом: item, стандарт: item, ...}]
+        allForRoom.forEach(item => {
+            if (!catMap[item.category]) catMap[item.category] = {};
+            if (!catMap[item.category][item.item_name]) {
+                catMap[item.category][item.item_name] = {};
+            }
+            catMap[item.category][item.item_name][item.kit_type] = item;
+        });
+
+        let tableHtml = `<table style="width:100%;border-collapse:collapse;font-size:12px;">
+            <thead>
+                <tr style="border-bottom:2px solid rgba(255,255,255,.1);">
+                    <th style="padding:8px;text-align:left;color:var(--text-secondary);font-size:10px;text-transform:uppercase;font-weight:500;">Позиция</th>
+                    ${KIT_TYPES.map(kt => `<th style="padding:8px;text-align:center;font-size:11px;font-weight:700;color:${KIT_COLORS[kt]};text-transform:uppercase;">${kt}</th>`).join('')}
+                </tr>
+            </thead>
+            <tbody>`;
+
+        Object.entries(catMap).forEach(([cat, items]) => {
+            tableHtml += `<tr><td colspan="4" style="padding:10px 8px 4px;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);letter-spacing:.5px;opacity:.6;">${cat}</td></tr>`;
+            Object.entries(items).forEach(([itemName, kitData]) => {
+                tableHtml += `<tr style="border-bottom:1px solid rgba(255,255,255,.04);">
+                    <td style="padding:6px 8px;">${itemName}</td>`;
+                KIT_TYPES.forEach(kt => {
+                    const item = kitData[kt];
+                    if (item) {
+                        tableHtml += `<td style="padding:6px 8px;text-align:center;">
+                            <input type="number" class="mavi-input kit-qty-inp" data-id="${item.id}" value="${item.quantity || 0}" min="0"
+                                style="width:55px;padding:3px 6px;font-size:12px;text-align:center;border-color:${KIT_COLORS[kt]}33;">
+                        </td>`;
+                    } else {
+                        tableHtml += `<td style="padding:6px 8px;text-align:center;opacity:.2;">—</td>`;
+                    }
+                });
+                tableHtml += `</tr>`;
             });
         });
+
+        tableHtml += `</tbody></table>
+            <div style="text-align:right;margin-top:10px;">
+                <button id="kits-save-all-btn" class="action-btn" style="padding:6px 14px;font-size:12px;">
+                    <i class="fa-solid fa-floppy-disk" style="margin-right:5px;"></i>Сохранить изменения
+                </button>
+                <span id="kits-save-status" style="font-size:11px;margin-left:8px;color:#10b981;"></span>
+            </div>`;
+
+        el.innerHTML = tableHtml;
+
+        document.getElementById('kits-save-all-btn')?.addEventListener('click', async () => {
+            const btn = document.getElementById('kits-save-all-btn');
+            const status = document.getElementById('kits-save-status');
+            btn.disabled = true;
+            let changed = 0;
+            for (const inp of el.querySelectorAll('.kit-qty-inp')) {
+                const id  = inp.dataset.id;
+                const qty = parseFloat(inp.value) || 0;
+                const item = allKitItems.find(i => String(i.id) === String(id));
+                if (item && item.quantity !== qty) {
+                    await supa.from('kit_items').update({ quantity: qty }).eq('id', id);
+                    item.quantity = qty;
+                    changed++;
+                }
+            }
+            btn.disabled = false;
+            if (status) { status.textContent = changed ? `Сохранено (${changed} изм.)` : 'Нет изменений'; setTimeout(() => { if(status) status.textContent = ''; }, 2000); }
+        });
+    }
+
+    // Render dynamic guest checklist in комплектация modal
+    function lndRenderGuestChecklist(kitType, roomType, savedChecks) {
+        const container = document.getElementById('lnd-guest-checklist-block');
+        if (!container) return;
+
+        if (!kitType) {
+            container.innerHTML = `<div class="lnd-checklist-block"><div class="lnd-checklist-title"><i class="fa-solid fa-gift" style="margin-right:6px;"></i>Гостевой набор</div><div style="padding:8px;opacity:.4;font-size:12px;">Набор не выбран в карточке уборки</div></div>`;
+            return;
+        }
+
+        const KIT_COLORS = { эконом: '#6366f1', стандарт: '#f59e0b', премиум: '#10b981' };
+        const color = KIT_COLORS[kitType] || '#a5b4fc';
+        const rt = roomType || 'студия';
+        const items = allKitItems.filter(i => i.kit_type === kitType && i.room_type === rt && (i.quantity || 0) > 0);
+
+        if (!items.length) {
+            container.innerHTML = `<div class="lnd-checklist-block"><div class="lnd-checklist-title"><i class="fa-solid fa-gift" style="margin-right:6px;color:${color};"></i>Гостевой набор — <span style="color:${color};">${kitType}</span></div><div style="padding:8px;opacity:.4;font-size:12px;">Позиции не заполнены</div></div>`;
+            return;
+        }
+
+        const checkItems = items.map((item, idx) => {
+            const checked = savedChecks?.[idx] ? 'checked' : '';
+            return `<label class="lnd-chk-item"><input type="checkbox" class="lnd-kit-guest" data-idx="${idx}" ${checked}> ${item.item_name} — ${item.quantity} шт</label>`;
+        }).join('');
+
+        container.innerHTML = `<div class="lnd-checklist-block">
+            <div class="lnd-checklist-title"><i class="fa-solid fa-gift" style="margin-right:6px;color:${color};"></i>Гостевой набор — <span style="color:${color};font-weight:700;">${kitType}</span> (${rt})</div>
+            ${checkItems}
+        </div>`;
     }
 
     // Load kit items when laundry tab opens
@@ -4169,7 +4220,6 @@
         el.addEventListener('click', () => { if (!allKitItems.length) loadKitItems(); });
     });
 
-    document.getElementById('kits-filter-type')?.addEventListener('change', renderKitsTable);
     document.getElementById('kits-filter-room')?.addEventListener('change', renderKitsTable);
 
     // ── Financial Reports & Payouts (from Google Sheets) ─────────────
