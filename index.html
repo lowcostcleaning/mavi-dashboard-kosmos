@@ -58,7 +58,7 @@
                     <span>Брони</span>
                 </a>
                 <a href="#" class="nav-item" data-view="laundry" data-label="Laundry">
-                    <i class="fa-solid fa-shirt"></i>
+                    <i class="fa-solid fa-jug-detergent"></i>
                     <span>Laundry</span>
                 </a>
                 <a href="#" class="nav-item" data-view="reports" data-label="Отчеты">
@@ -73,9 +73,9 @@
                     <i class="fa-solid fa-building"></i>
                     <span>Апартаменты</span>
                 </a>
-                <a href="#" class="nav-item" data-view="contracts" data-label="Договора">
+                <a href="#" class="nav-item" data-view="contracts" data-label="Договоры">
                     <i class="fa-solid fa-file-signature"></i>
-                    <span>Договора</span>
+                    <span>Договоры</span>
                 </a>
                 <a href="#" class="nav-item" data-view="kb" data-label="База Знаний">
                     <i class="fa-solid fa-database"></i>
@@ -612,7 +612,7 @@
 
                             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                                 <div>
-                                    <label style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:5px;"><i class="fa-solid fa-coins" style="margin-right:5px;"></i>Зарплата (₾)</label>
+                                    <label style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:5px;"><i class="fa-solid fa-coins" style="margin-right:5px;"></i>Ставка (₾)</label>
                                     <input type="number" id="sched-cost" class="mavi-input" placeholder="40" style="width:100%;font-size:13px;padding:8px 12px;">
                                 </div>
                                 <div>
@@ -1028,7 +1028,11 @@
                                     </select>
                                 </div>
                                 <div><label class="emp-label">Тип апартамента</label><input class="mavi-input" id="apt-form-apt-type" placeholder="Студия / 1+1 / 1+2"></div>
-                                <div><label class="emp-label">Менеджер</label><input class="mavi-input" id="apt-form-manager" placeholder="Марина"></div>
+                                <div><label class="emp-label">Менеджер</label>
+                                    <select class="mavi-input" id="apt-form-manager">
+                                        <option value="">— не назначен —</option>
+                                    </select>
+                                </div>
                                 <div><label class="emp-label">Стратегия</label><input class="mavi-input" id="apt-form-strategy" placeholder="70/30"></div>
                                 <div><label class="emp-label">Доход/мес (GEL)</label><input class="mavi-input" id="apt-form-revenue" type="number" placeholder="2500"></div>
                             </div>
@@ -1080,7 +1084,7 @@
                 <!-- View: Contracts -->
                 <section class="view" data-view="contracts">
                     <div class="content-header">
-                        <h2>Договора</h2>
+                        <h2>Договоры</h2>
                         <div class="date-filter">
                             <button class="action-btn" type="button" data-action="new-contract">Создать договор</button>
                         </div>
@@ -1734,7 +1738,14 @@
         f('apt-form-name',        a?.name);
         f('apt-form-status',      a?.status      || 'free');
         f('apt-form-apt-type',    a?.apt_type);
-        f('apt-form-manager',     a?.manager);
+
+        // Populate manager dropdown from employees with role mbip
+        const managerSel = document.getElementById('apt-form-manager');
+        if (managerSel) {
+            const mbips = allEmployees.filter(e => e.role === 'mbip');
+            managerSel.innerHTML = '<option value="">— не назначен —</option>'
+                + mbips.map(e => `<option value="${e.full_name}" ${(a?.manager === e.full_name) ? 'selected' : ''}>${e.full_name}</option>`).join('');
+        }
         f('apt-form-strategy',    a?.strategy);
         f('apt-form-address',     a?.address);
         f('apt-form-complex',     a?.complex_name);
@@ -2794,7 +2805,7 @@
                 </div>
 
                 <div class="clean-detail-row">
-                    <span class="clean-detail-label"><i class="fa-solid fa-coins" style="margin-right:5px;opacity:.5;"></i>Зарплата</span>
+                    <span class="clean-detail-label"><i class="fa-solid fa-coins" style="margin-right:5px;opacity:.5;"></i>Ставка</span>
                     <span class="clean-detail-value" style="color:#ffcc33;font-weight:700;font-size:15px;">${t.cost ? t.cost + ' ₾' : '—'}</span>
                 </div>
 
