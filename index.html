@@ -2351,6 +2351,9 @@
             return;
         }
 
+        // Collect apartment IDs to fetch delivery statuses
+        const aptIds = [...new Set(tasks.map(t => t.apartment_id).filter(Boolean))];
+
         document.getElementById('cal-detail-list').innerHTML = tasks.map(t => {
             const st  = CLEAN_STATUS[t.status] || { label: t.status || '—', color: '#a0a4cc' };
             const emp = allEmployees.find(e => e.id === t.assigned_to);
@@ -2371,11 +2374,34 @@
                     ${matchBtn}
                 </div>
                 <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+                    <span class="cal-del-icon" data-apt-id="${t.apartment_id || ''}"></span>
                     ${time ? `<span style="font-size:11px;color:var(--text-secondary);">${time}</span>` : ''}
                     <span class="cal-status-badge" style="background:${st.color}22;border-color:${st.color}55;color:${st.color};">${st.label}</span>
                 </div>
             </div>`;
         }).join('');
+
+        // Async: load delivery icons for each apartment
+        if (aptIds.length) {
+            (async () => {
+                const from30 = lndISODate(new Date(Date.now() - 30*86400000));
+                const to30   = lndISODate(new Date(Date.now() + 30*86400000));
+                const { data: delAll } = await supa.from('tasks').select('apartment_id,status')
+                    .eq('type','delivery').in('apartment_id', aptIds)
+                    .gte('deadline', from30+'T00:00:00Z').lte('deadline', to30+'T23:59:59Z')
+                    .order('deadline', {ascending:false});
+                if (!delAll?.length) return;
+                const DEL_COL = { new:'#ef4444', in_progress:'#f59e0b', done:'#10b981' };
+                document.querySelectorAll('.cal-del-icon').forEach(el => {
+                    const aptId = el.dataset.aptId;
+                    if (!aptId) return;
+                    const del = delAll.find(d => d.apartment_id === aptId);
+                    if (!del) return;
+                    const c = DEL_COL[del.status] || '#6b7280';
+                    el.innerHTML = `<i class="fa-solid fa-truck-fast" style="color:${c};font-size:12px;" title="${del.status === 'done' ? 'Доставлено' : del.status === 'in_progress' ? 'В пути' : 'Ожидает'}"></i>`;
+                });
+            })();
+        }
     }
 
     function updateCalStats() {
