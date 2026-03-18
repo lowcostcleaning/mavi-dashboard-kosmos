@@ -292,6 +292,7 @@
                             <button class="emp-filter-btn" data-role="expeditor">Экспедиторы</button>
                             <button class="emp-filter-btn" data-role="complector">Комплектовщики</button>
                             <button class="emp-filter-btn" data-role="mbip">Менеджеры</button>
+                            <button class="emp-filter-btn" data-role="intern">Стажеры</button>
                             <button class="emp-filter-btn" data-role="ceo">Руководство</button>
                         </div>
                         <div id="employees-grid" class="emp-grid">
@@ -357,10 +358,21 @@
                                     <option value="expeditor">Экспедитор</option>
                                     <option value="complector">Комплектовщик</option>
                                     <option value="mbip">Менеджер</option>
+                                    <option value="intern">Стажер</option>
                                     <option value="ceo">CEO</option>
                                     <option value="cfo">Фин. директор</option>
                                     <option value="marketing_director">Маркетинг</option>
                                     <option value="methodologist">Методолог</option>
+                                </select>
+                            </div>
+                            <div id="emp-form-dept-wrap">
+                                <label class="emp-label">Подразделение</label>
+                                <select class="mavi-input" id="emp-form-department">
+                                    <option value="">— не выбрано —</option>
+                                    <option value="cleaner">Клинер</option>
+                                    <option value="expeditor">Экспедитор</option>
+                                    <option value="complector">Комплектовщик</option>
+                                    <option value="mbip">Менеджер</option>
                                 </select>
                             </div>
                             <div>
@@ -1491,8 +1503,8 @@
     const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzQxNjUxMjAwLCJleHAiOjIwNTY5MjQ4MDB9.Ab4P7JqPdB3xzkZv1Cr6lrOiUg-9HjUDEZ-Pdr7iigw';
     const supa = supabase.createClient(SUPA_URL, SUPA_KEY);
 
-    const ROLE_LABELS = { cleaner:'Клинер', expeditor:'Экспедитор', complector:'Комплектовщик', mbip:'Менеджер', ceo:'CEO', cfo:'Фин. директор', marketing_director:'Маркетинг', methodologist:'Методолог' };
-    const ROLE_COLORS = { cleaner:'#6366f1', expeditor:'#10b981', complector:'#a855f7', mbip:'#f59e0b', ceo:'#ef4444', cfo:'#0ea5e9', marketing_director:'#ec4899', methodologist:'#14b8a6' };
+    const ROLE_LABELS = { cleaner:'Клинер', expeditor:'Экспедитор', complector:'Комплектовщик', mbip:'Менеджер', intern:'Стажер', ceo:'CEO', cfo:'Фин. директор', marketing_director:'Маркетинг', methodologist:'Методолог' };
+    const ROLE_COLORS = { cleaner:'#6366f1', expeditor:'#10b981', complector:'#a855f7', mbip:'#f59e0b', intern:'#fb923c', ceo:'#ef4444', cfo:'#0ea5e9', marketing_director:'#ec4899', methodologist:'#14b8a6' };
     const STATUS_LABELS = { active:'Активен', inactive:'Неактивен', on_leave:'Отпуск' };
 
     let allEmployees = [];
@@ -1528,6 +1540,8 @@
                 ? `<span style="font-size:10px;color:#ffcc33;margin-left:4px;">★ ${e.rating}</span>` : '';
             const tariffBadge = (e.role === 'cleaner' && e.default_tariff)
                 ? `<span style="font-size:10px;color:#10b981;margin-left:4px;">${e.default_tariff}₾</span>` : '';
+            const deptBadge = (e.role === 'intern' && e.department)
+                ? `<span style="font-size:10px;color:${ROLE_COLORS[e.department]||'#888'};margin-left:4px;">${ROLE_LABELS[e.department]||e.department}</span>` : '';
             return `<div class="emp-card" data-id="${e.id}" style="--emp-color:${color};">
                 <div class="emp-card-status-badge ${isActive ? 'active' : 'offline'}">
                     <i class="fa-solid fa-${isActive ? 'signal' : 'clock'}"></i> ${status}
@@ -1536,7 +1550,7 @@
                     <div class="emp-avatar" style="border-color:${color};box-shadow:0 0 16px ${color}55;">${initials}</div>
                     <div class="emp-card-info">
                         <div class="emp-card-name">${e.full_name}</div>
-                        <div class="emp-card-role" style="color:${color};display:flex;align-items:center;flex-wrap:wrap;gap:2px;">${role}${ratingBadge}${tariffBadge}</div>
+                        <div class="emp-card-role" style="color:${color};display:flex;align-items:center;flex-wrap:wrap;gap:2px;">${role}${deptBadge}${ratingBadge}${tariffBadge}</div>
                     </div>
                 </div>
                 <div class="emp-card-btns">
@@ -1763,15 +1777,25 @@
         document.getElementById('emp-form-id').value       = e ? e.id : '';
         document.getElementById('emp-form-name').value     = e ? e.full_name : '';
         document.getElementById('emp-form-role').value     = e ? e.role : 'cleaner';
+        document.getElementById('emp-form-department').value = e ? (e.department || '') : '';
         document.getElementById('emp-form-phone').value    = e ? (e.phone || '') : '';
         document.getElementById('emp-form-telegram').value = e ? (e.telegram_id || '') : '';
         document.getElementById('emp-form-status').value   = e ? e.status : 'active';
         document.getElementById('emp-form-rating').value   = e ? (e.rating || '') : '';
         document.getElementById('emp-form-tariff').value   = e ? (e.default_tariff || '') : '';
         document.getElementById('emp-form-notes').value    = e ? (e.notes || '') : '';
+        // Show department only for intern
+        const deptWrap = document.getElementById('emp-form-dept-wrap');
+        if (deptWrap) deptWrap.style.display = (e?.role === 'intern' || !e) ? '' : 'none';
         document.getElementById('emp-profile-modal').hidden = true;
         document.getElementById('emp-form-modal').hidden = false;
     }
+
+    // Toggle department visibility when role changes
+    document.getElementById('emp-form-role')?.addEventListener('change', function() {
+        const deptWrap = document.getElementById('emp-form-dept-wrap');
+        if (deptWrap) deptWrap.style.display = this.value === 'intern' ? '' : 'none';
+    });
 
     async function saveEmployee() {
         const id       = document.getElementById('emp-form-id').value;
@@ -1784,6 +1808,7 @@
             rating:          parseFloat(document.getElementById('emp-form-rating').value) || null,
             default_tariff:  parseFloat(document.getElementById('emp-form-tariff').value) || null,
             notes:           document.getElementById('emp-form-notes').value.trim() || null,
+            department:      document.getElementById('emp-form-department').value || null,
         };
         if (!payload.full_name) { alert('Введите имя'); return; }
 
