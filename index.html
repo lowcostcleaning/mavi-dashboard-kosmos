@@ -23,6 +23,85 @@
 </head>
 
 <body>
+
+    <!-- ════════════ LOGIN SCREEN ════════════ -->
+    <div id="login-screen" style="position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;overflow:hidden;">
+        <!-- Background photo -->
+        <div style="position:absolute;inset:0;background:url('https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=1920&q=80') center/cover no-repeat;"></div>
+        <!-- Dark gradient overlay -->
+        <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(5,7,20,0.92) 0%,rgba(10,14,40,0.80) 50%,rgba(5,7,20,0.88) 100%);"></div>
+        <!-- Animated grid lines -->
+        <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(99,102,241,0.06) 1px,transparent 1px),linear-gradient(90deg,rgba(99,102,241,0.06) 1px,transparent 1px);background-size:60px 60px;"></div>
+
+        <!-- Card -->
+        <div id="login-card" style="position:relative;z-index:1;width:100%;max-width:420px;margin:0 16px;
+            background:rgba(12,14,35,0.75);border:1px solid rgba(99,102,241,0.25);
+            border-radius:20px;padding:40px 36px 36px;
+            backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+            box-shadow:0 0 60px rgba(99,102,241,0.12),0 24px 64px rgba(0,0,0,0.5);
+            animation:loginFadeIn .5s ease;">
+
+            <!-- Logo -->
+            <div style="text-align:center;margin-bottom:32px;">
+                <div style="font-family:'Orbitron',sans-serif;font-size:32px;font-weight:800;
+                    background:linear-gradient(135deg,#818cf8,#00f2ff,#a78bfa);
+                    -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+                    letter-spacing:4px;margin-bottom:6px;">MAVI</div>
+                <div style="font-size:13px;color:rgba(148,163,184,0.8);letter-spacing:1px;">Управление апартаментами</div>
+                <div style="width:48px;height:2px;background:linear-gradient(90deg,#6366f1,#00f2ff);margin:14px auto 0;border-radius:2px;"></div>
+            </div>
+
+            <!-- Form -->
+            <form id="login-form" autocomplete="off" style="display:flex;flex-direction:column;gap:14px;">
+                <!-- Login field -->
+                <div style="position:relative;">
+                    <i class="fa-solid fa-user" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:rgba(148,163,184,0.5);font-size:14px;pointer-events:none;"></i>
+                    <input id="login-name" type="text" placeholder="Имя пользователя" autocomplete="username"
+                        style="width:100%;box-sizing:border-box;padding:13px 14px 13px 40px;
+                        background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);
+                        border-radius:12px;color:#e2e8f0;font-size:14px;font-family:inherit;outline:none;transition:border-color .2s;"
+                        onfocus="this.style.borderColor='rgba(99,102,241,0.6)'"
+                        onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
+                </div>
+                <!-- Password field -->
+                <div style="position:relative;">
+                    <i class="fa-solid fa-lock" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:rgba(148,163,184,0.5);font-size:14px;pointer-events:none;"></i>
+                    <input id="login-pass" type="password" placeholder="Пароль" autocomplete="current-password"
+                        style="width:100%;box-sizing:border-box;padding:13px 44px 13px 40px;
+                        background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);
+                        border-radius:12px;color:#e2e8f0;font-size:14px;font-family:inherit;outline:none;transition:border-color .2s;"
+                        onfocus="this.style.borderColor='rgba(99,102,241,0.6)'"
+                        onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
+                    <button type="button" id="login-eye" onclick="(()=>{const i=document.getElementById('login-pass');const ic=document.getElementById('login-eye-ic');i.type=i.type==='password'?'text':'password';ic.className=i.type==='password'?'fa-solid fa-eye':'fa-solid fa-eye-slash';})()"
+                        style="position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:rgba(148,163,184,0.5);padding:0;">
+                        <i id="login-eye-ic" class="fa-solid fa-eye" style="font-size:14px;"></i>
+                    </button>
+                </div>
+
+                <!-- Error -->
+                <div id="login-error" hidden style="font-size:12px;color:#f87171;text-align:center;padding:6px 12px;background:rgba(239,68,68,0.1);border-radius:8px;border:1px solid rgba(239,68,68,0.2);">
+                    <i class="fa-solid fa-circle-exclamation" style="margin-right:6px;"></i>Неверный логин или пароль
+                </div>
+
+                <!-- Submit -->
+                <button type="submit" id="login-btn"
+                    style="margin-top:6px;padding:14px;border:none;border-radius:12px;cursor:pointer;font-size:14px;font-weight:600;font-family:inherit;letter-spacing:.5px;transition:all .2s;
+                    background:linear-gradient(135deg,#6366f1,#4f46e5);color:#fff;
+                    box-shadow:0 4px 20px rgba(99,102,241,0.4);"
+                    onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 6px 28px rgba(99,102,241,0.55)'"
+                    onmouseout="this.style.transform='';this.style.boxShadow='0 4px 20px rgba(99,102,241,0.4)'">
+                    Войти в систему
+                </button>
+            </form>
+
+            <!-- Footer -->
+            <div style="margin-top:24px;text-align:center;font-size:11px;color:rgba(148,163,184,0.4);letter-spacing:.5px;">
+                © 2025 MAVI · Управляющая компания
+            </div>
+        </div>
+    </div>
+    <!-- ═══════════════════════════════════════ -->
+
     <div class="stars-background"></div>
     <div class="container">
         <!-- Sidebar -->
@@ -92,6 +171,10 @@
                 <a href="/promo/" target="_blank" class="nav-item" data-label="Промо" style="margin-top:auto;border-top:1px solid #2a2e36;padding-top:14px;">
                     <i class="fa-solid fa-rocket"></i>
                     <span>Промо</span>
+                </a>
+                <a href="#" class="nav-item" data-label="Выйти" onclick="event.preventDefault();maviLogout();" style="border-top:1px solid #2a2e36;padding-top:14px;color:#f87171;" title="Выйти из системы">
+                    <i class="fa-solid fa-right-from-bracket" style="color:#f87171;"></i>
+                    <span id="sidebar-user-name" style="color:#f87171;">Выйти</span>
                 </a>
             </nav>
 
@@ -6313,6 +6396,106 @@
     <div id="sidebar-overlay" class="sidebar-overlay"></div>
     <!-- Mobile bottom nav -->
     <nav id="mob-nav" class="mob-nav"></nav>
+
+    <!-- ════════════ AUTH SCRIPT ════════════ -->
+    <script>
+    (function() {
+        const SESSION_KEY = 'mavi_auth_v1';
+        const USERS = [
+            { login: 'admin', password: 'admin', name: 'Администратор', role: 'admin' },
+        ];
+
+        const screen = document.getElementById('login-screen');
+        const form   = document.getElementById('login-form');
+        const errEl  = document.getElementById('login-error');
+        const btn    = document.getElementById('login-btn');
+
+        function hideLogin() {
+            screen.style.animation = 'loginFadeOut .35s ease forwards';
+            setTimeout(() => { screen.style.display = 'none'; }, 350);
+        }
+
+        // Check existing session
+        try {
+            const s = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null');
+            if (s && s.login) { hideLogin(); }
+        } catch(e) {}
+
+        // Submit
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            errEl.hidden = true;
+            const login = document.getElementById('login-name').value.trim();
+            const pass  = document.getElementById('login-pass').value;
+
+            btn.disabled = true;
+            btn.textContent = 'Проверяем...';
+
+            // Check hardcoded users first
+            const found = USERS.find(u => u.login === login && u.password === pass);
+            if (found) {
+                localStorage.setItem(SESSION_KEY, JSON.stringify({ login: found.login, name: found.name, role: found.role }));
+                hideLogin();
+                btn.disabled = false;
+                btn.textContent = 'Войти в систему';
+                return;
+            }
+
+            // Check employees by email (login = email)
+            try {
+                const url  = 'https://supabase.138.124.87.26.sslip.io';
+                const key  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRFA0NiK7ACcPe_UtPE0b8O-8GXJI4BzVPkCCKNPcbU';
+                const resp = await fetch(`${url}/rest/v1/employees?email=eq.${encodeURIComponent(login)}&select=id,full_name,role,status`, {
+                    headers: { 'apikey': key, 'Authorization': 'Bearer ' + key }
+                });
+                const data = await resp.json();
+                if (data && data.length > 0) {
+                    // Employee found by email — accept any password for now (no password field on employees)
+                    const emp = data[0];
+                    localStorage.setItem(SESSION_KEY, JSON.stringify({ login, name: emp.full_name, role: emp.role, emp_id: emp.id }));
+                    hideLogin();
+                    btn.disabled = false;
+                    btn.textContent = 'Войти в систему';
+                    return;
+                }
+            } catch(err) { console.warn('Employee auth check failed:', err); }
+
+            errEl.hidden = false;
+            btn.disabled = false;
+            btn.textContent = 'Войти в систему';
+        });
+
+        // Logout function (global)
+        window.maviLogout = function() {
+            localStorage.removeItem(SESSION_KEY);
+            location.reload();
+        };
+
+        // Expose current user
+        try {
+            window.maviUser = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null');
+        } catch(e) { window.maviUser = null; }
+
+        // Show user name in sidebar logout button
+        if (window.maviUser?.name) {
+            const el = document.getElementById('sidebar-user-name');
+            if (el) el.textContent = window.maviUser.name;
+        }
+    })();
+    </script>
+
+    <style>
+    @keyframes loginFadeIn {
+        from { opacity:0; transform:translateY(16px) scale(.97); }
+        to   { opacity:1; transform:translateY(0)    scale(1);   }
+    }
+    @keyframes loginFadeOut {
+        from { opacity:1; }
+        to   { opacity:0; }
+    }
+    #login-card { animation: loginFadeIn .5s cubic-bezier(.22,1,.36,1) both; }
+    </style>
+    <!-- ═══════════════════════════════════════ -->
 </body>
 
 </html>
