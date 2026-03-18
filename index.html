@@ -365,7 +365,7 @@
                                     <option value="methodologist">Методолог</option>
                                 </select>
                             </div>
-                            <div id="emp-form-dept-wrap">
+                            <div id="emp-form-dept-wrap" style="display:none;">
                                 <label class="emp-label">Подразделение</label>
                                 <select class="mavi-input" id="emp-form-department">
                                     <option value="">— не выбрано —</option>
@@ -404,8 +404,8 @@
                                 <input class="mavi-input" id="emp-form-notes" placeholder="Дополнительная информация">
                             </div>
                             <div style="display:flex;gap:10px;margin-top:4px;">
-                                <button class="action-btn" id="emp-form-save" style="flex:1;">Сохранить</button>
-                                <button class="mini-btn" id="emp-form-cancel" style="flex:1;">Отмена</button>
+                                <button type="button" class="action-btn" id="emp-form-save" style="flex:1;">Сохранить</button>
+                                <button type="button" class="mini-btn" id="emp-form-cancel" style="flex:1;">Отмена</button>
                             </div>
                         </div>
                     </div>
@@ -1324,7 +1324,7 @@
                             <div><label class="emp-label">Заметки</label><input class="mavi-input" id="apt-form-notes" placeholder="Дополнительно..."></div>
 
                             <div style="display:flex;gap:10px;margin-top:4px;">
-                                <button class="action-btn" id="apt-form-save" style="flex:1;"><i class="fa-solid fa-floppy-disk" style="margin-right:6px;"></i>Сохранить</button>
+                                <button type="button" class="action-btn" id="apt-form-save" style="flex:1;"><i class="fa-solid fa-floppy-disk" style="margin-right:6px;"></i>Сохранить</button>
                                 <button class="mini-btn" id="apt-form-cancel" style="flex:1;">Отмена</button>
                             </div>
                         </div>
@@ -1786,7 +1786,7 @@
         document.getElementById('emp-form-notes').value    = e ? (e.notes || '') : '';
         // Show department only for intern
         const deptWrap = document.getElementById('emp-form-dept-wrap');
-        if (deptWrap) deptWrap.style.display = (e?.role === 'intern' || !e) ? '' : 'none';
+        if (deptWrap) deptWrap.style.display = (e?.role === 'intern') ? '' : 'none';
         document.getElementById('emp-profile-modal').hidden = true;
         document.getElementById('emp-form-modal').hidden = false;
     }
@@ -1870,7 +1870,7 @@
         // Add button
         if (e.target.closest('#btn-add-employee')) { openForm(); return; }
         // Save
-        if (e.target.closest('#emp-form-save'))    { saveEmployee(); return; }
+        if (e.target.closest('#emp-form-save'))    { e.preventDefault(); e.stopPropagation(); saveEmployee(); return; }
         // Cancel form
         if (e.target.closest('#emp-form-cancel') || e.target.closest('#emp-form-close')) {
             document.getElementById('emp-form-modal').hidden = true; return;
