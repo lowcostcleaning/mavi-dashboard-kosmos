@@ -61,6 +61,10 @@
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width:1em;height:1em;vertical-align:-0.1em;"><path d="M18 2H6C4.9 2 4 2.9 4 4v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 18H6V8h12v12zm0-14H6V4h12v2zM8 5.5a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0zm2.5 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0z"/><path d="M12 9.5a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9zm0 7a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg>
                     <span>Laundry</span>
                 </a>
+                <a href="#" class="nav-item" data-view="expeditor" data-label="Экспедитор">
+                    <i class="fa-solid fa-truck-fast"></i>
+                    <span>Экспедитор</span>
+                </a>
                 <a href="#" class="nav-item" data-view="reports" data-label="Отчеты">
                     <i class="fa-solid fa-file-contract"></i>
                     <span>Отчеты</span>
@@ -997,6 +1001,56 @@
                         <div id="lnd-modal-msg" style="text-align:center;font-size:12px;margin-top:8px;min-height:18px;"></div>
                     </div>
                 </div>
+
+                <!-- View: Expeditor -->
+                <section class="view" data-view="expeditor">
+                    <div class="content-header">
+                        <h2>Экспедитор</h2>
+                        <div class="date-filter" style="gap:6px;">
+                            <input type="date" id="exp-date" class="mavi-input" style="font-size:13px;padding:5px 10px;width:auto;">
+                            <button class="date-btn" id="exp-today">Сегодня</button>
+                            <button class="date-btn" id="exp-refresh" title="Обновить"><i class="fa-solid fa-rotate-right"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- Stats -->
+                    <div class="stats-row" style="margin-bottom:16px;">
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <div class="stat-value" id="exp-stat-total">—</div>
+                                <div class="stat-icon"><i class="fa-solid fa-building"></i></div>
+                            </div>
+                            <div class="stat-label">Доставок на день</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <div class="stat-value" id="exp-stat-ready">—</div>
+                                <div class="stat-icon" style="color:#10b981;"><i class="fa-solid fa-circle-check"></i></div>
+                            </div>
+                            <div class="stat-label">Комплектов готово</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <div class="stat-value" id="exp-stat-pending">—</div>
+                                <div class="stat-icon" style="color:#f59e0b;"><i class="fa-solid fa-clock"></i></div>
+                            </div>
+                            <div class="stat-label">Ожидают сборки</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <div class="stat-value" id="exp-stat-delivered">—</div>
+                                <div class="stat-icon" style="color:#6366f1;"><i class="fa-solid fa-truck-fast"></i></div>
+                            </div>
+                            <div class="stat-label">Доставлено</div>
+                        </div>
+                    </div>
+
+                    <div id="exp-loading" style="padding:60px;text-align:center;opacity:.5;">
+                        <i class="fa-solid fa-spinner fa-spin" style="font-size:24px;margin-bottom:12px;display:block;"></i>
+                        Загружаем...
+                    </div>
+                    <div id="exp-board" style="display:none;"></div>
+                </section>
 
                 <!-- View: Reports -->
                 <section class="view" data-view="reports">
@@ -4308,6 +4362,197 @@
     });
 
     document.getElementById('kits-filter-room')?.addEventListener('change', renderKitsTable);
+
+    // ── Expeditor Dashboard ───────────────────────────────────────────
+    let expLoaded = false;
+
+    // Expeditor delivery task statuses
+    const EXP_STATUS = {
+        new:         { label: 'Ожидает',    color: '#a0a4cc' },
+        in_progress: { label: 'В пути',     color: '#f59e0b' },
+        done:        { label: 'Доставлено', color: '#10b981' },
+    };
+
+    async function loadExpeditor() {
+        document.getElementById('exp-loading').style.display = '';
+        document.getElementById('exp-board').style.display   = 'none';
+
+        const dateISO = document.getElementById('exp-date')?.value || lndISODate(new Date());
+
+        // Fetch cleanings for this date (these need kit delivery)
+        const { data: cleanings } = await supa.from('tasks')
+            .select('id, title, deadline, assigned_to, apartment_id, kit_type, apt_type_auto, cleaner2_id, status')
+            .eq('type', 'cleaning')
+            .gte('deadline', dateISO + 'T00:00:00Z')
+            .lte('deadline', dateISO + 'T23:59:59Z')
+            .order('deadline');
+
+        // Fetch kompl tasks (restocking) for these cleanings — deadline = cleaning date + 2
+        const toISO = lndISODate(new Date(new Date(dateISO + 'T12:00:00').getTime() + 2*86400000));
+        const { data: lndAll } = await supa.from('tasks')
+            .select('id, title, status, deadline, assigned_to, apartment_id, comment')
+            .eq('type', 'laundry')
+            .gte('deadline', dateISO + 'T00:00:00Z')
+            .lte('deadline', toISO   + 'T23:59:59Z');
+
+        // Fetch expeditor delivery tasks for this date
+        const { data: deliveries } = await supa.from('tasks')
+            .select('id, title, status, deadline, apartment_id, comment')
+            .eq('type', 'delivery')
+            .gte('deadline', dateISO + 'T00:00:00Z')
+            .lte('deadline', dateISO + 'T23:59:59Z');
+
+        renderExpeditor(dateISO, cleanings || [], lndAll || [], deliveries || []);
+    }
+
+    function renderExpeditor(dateISO, cleanings, lndAll, deliveries) {
+        const KIT_COLORS = { эконом: '#6366f1', стандарт: '#f59e0b', премиум: '#10b981' };
+
+        // For each cleaning, find its restocking laundry task
+        const rows = cleanings.map(c => {
+            const apt     = allApartments.find(a => a.id === c.apartment_id);
+            const cleaner = allEmployees.find(e => e.id === c.assigned_to);
+            const kitType = c.kit_type || '';
+            const aptType = c.apt_type_auto || apt?.apt_type || '';
+            const kitColor = KIT_COLORS[kitType] || '#a0a4cc';
+
+            // Restocking task (комплектация) for this cleaning
+            const restockDate = lndISODate(new Date(new Date(c.deadline).getTime() + 2*86400000));
+            const restockTask = lndAll.find(t =>
+                t.apartment_id === c.apartment_id &&
+                t.title?.startsWith('Комплектация') &&
+                t.deadline?.slice(0,10) === restockDate
+            );
+            const kitReady = restockTask?.status === 'done';
+
+            // Delivery task for this apartment on this date
+            const delivery = deliveries?.find(d => d.apartment_id === c.apartment_id);
+            const delStatus = delivery ? (EXP_STATUS[delivery.status] || EXP_STATUS.new) : null;
+
+            return { c, apt, cleaner, kitType, aptType, kitColor, kitReady, restockTask, delivery, delStatus };
+        });
+
+        // Stats
+        const total     = rows.length;
+        const ready     = rows.filter(r => r.kitReady).length;
+        const pending   = rows.filter(r => !r.kitReady).length;
+        const delivered = rows.filter(r => r.delStatus?.label === 'Доставлено').length;
+        document.getElementById('exp-stat-total').textContent     = total     || '—';
+        document.getElementById('exp-stat-ready').textContent     = ready     || '—';
+        document.getElementById('exp-stat-pending').textContent   = pending   || '—';
+        document.getElementById('exp-stat-delivered').textContent = delivered || '—';
+
+        if (!rows.length) {
+            document.getElementById('exp-board').innerHTML =
+                `<div style="text-align:center;opacity:.3;padding:60px;font-size:13px;"><i class="fa-solid fa-truck-fast" style="font-size:28px;display:block;margin-bottom:12px;"></i>Уборок на выбранный день нет</div>`;
+            document.getElementById('exp-loading').style.display = 'none';
+            document.getElementById('exp-board').style.display   = '';
+            return;
+        }
+
+        // Sort: not-ready first, then ready
+        rows.sort((a, b) => (b.kitReady ? 0 : 1) - (a.kitReady ? 0 : 1));
+
+        const cards = rows.map(({ c, apt, cleaner, kitType, aptType, kitColor, kitReady, restockTask, delivery, delStatus }) => {
+            const kitBadge = kitType
+                ? `<span style="background:${kitColor}22;color:${kitColor};padding:2px 8px;border-radius:10px;font-size:11px;">🎁 ${kitType}</span>`
+                : '';
+            const aptBadge = aptType
+                ? `<span style="background:rgba(99,102,241,.15);color:#a5b4fc;padding:2px 8px;border-radius:10px;font-size:11px;">${aptType}</span>`
+                : '';
+
+            const kitStatusHtml = kitReady
+                ? `<div style="display:flex;align-items:center;gap:6px;padding:8px 10px;background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.25);border-radius:8px;">
+                    <i class="fa-solid fa-circle-check" style="color:#10b981;font-size:16px;"></i>
+                    <span style="font-size:12px;color:#10b981;font-weight:600;">Комплект готов — можно везти</span>
+                   </div>`
+                : `<div style="display:flex;align-items:center;gap:6px;padding:8px 10px;background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.2);border-radius:8px;">
+                    <i class="fa-solid fa-clock" style="color:#f59e0b;font-size:16px;"></i>
+                    <span style="font-size:12px;color:#f59e0b;font-weight:600;">${restockTask ? 'Комплектуется...' : 'Ещё не начата сборка'}</span>
+                   </div>`;
+
+            const delBtnHtml = delivery
+                ? `<div style="display:flex;gap:6px;margin-top:8px;">
+                    <span style="font-size:11px;padding:5px 12px;border-radius:8px;background:${delStatus.color}22;color:${delStatus.color};border:1px solid ${delStatus.color}44;">
+                        <i class="fa-solid fa-truck-fast" style="margin-right:4px;"></i>${delStatus.label}
+                    </span>
+                    ${delivery.status !== 'done' ? `<button class="exp-deliver-btn action-btn" data-delivery-id="${delivery.id}" style="padding:5px 12px;font-size:11px;background:#10b981;border-color:#10b981;">
+                        <i class="fa-solid fa-check" style="margin-right:4px;"></i>Доставлено
+                    </button>` : ''}
+                   </div>`
+                : kitReady
+                ? `<button class="exp-create-delivery-btn action-btn" data-clean-id="${c.id}" data-apt-id="${c.apartment_id}" style="margin-top:8px;padding:5px 14px;font-size:11px;width:100%;justify-content:center;">
+                    <i class="fa-solid fa-truck-fast" style="margin-right:6px;"></i>Взять в доставку
+                   </button>`
+                : '';
+
+            return `<div class="lnd-apt-card" style="border-color:${kitReady ? 'rgba(16,185,129,.25)' : 'rgba(255,255,255,.08)'};">
+                <div class="lnd-apt-card-top">
+                    <div style="flex:1;min-width:0;">
+                        <div style="font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${apt?.name || c.title || '—'}</div>
+                        <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:5px;">
+                            ${cleaner ? `<span style="font-size:11px;color:var(--text-secondary);"><i class="fa-solid fa-broom" style="margin-right:3px;opacity:.5;"></i>${cleaner.full_name}</span>` : ''}
+                            ${aptBadge}${kitBadge}
+                        </div>
+                        ${apt?.address ? `<div style="font-size:11px;opacity:.4;margin-top:4px;"><i class="fa-solid fa-location-dot" style="margin-right:3px;"></i>${apt.address}</div>` : ''}
+                    </div>
+                </div>
+                ${kitStatusHtml}
+                ${delBtnHtml}
+            </div>`;
+        }).join('');
+
+        document.getElementById('exp-board').innerHTML = `<div class="lnd-cards-grid">${cards}</div>`;
+        document.getElementById('exp-loading').style.display = 'none';
+        document.getElementById('exp-board').style.display   = '';
+
+        // Wire "Взять в доставку" buttons
+        document.querySelectorAll('.exp-create-delivery-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const aptId = btn.dataset.aptId;
+                const dateISO = document.getElementById('exp-date')?.value;
+                const apt = allApartments.find(a => String(a.id) === String(aptId));
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+                await supa.from('tasks').insert({
+                    apartment_id: aptId,
+                    type:         'delivery',
+                    status:       'in_progress',
+                    deadline:     dateISO + 'T00:00:00Z',
+                    title:        'Доставка — ' + (apt?.name || ''),
+                    source:       'dashboard',
+                });
+                loadExpeditor();
+            });
+        });
+
+        // Wire "Доставлено" buttons
+        document.querySelectorAll('.exp-deliver-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+                await supa.from('tasks').update({ status: 'done', completed_at: new Date().toISOString() }).eq('id', btn.dataset.deliveryId);
+                loadExpeditor();
+            });
+        });
+    }
+
+    // Date controls
+    (function initExpDate() {
+        const el = document.getElementById('exp-date');
+        if (el) el.value = lndISODate(new Date());
+    })();
+    document.getElementById('exp-today')?.addEventListener('click', () => {
+        document.getElementById('exp-date').value = lndISODate(new Date());
+        loadExpeditor();
+    });
+    document.getElementById('exp-refresh')?.addEventListener('click', () => loadExpeditor());
+    document.getElementById('exp-date')?.addEventListener('change', () => loadExpeditor());
+
+    // Load when tab activated
+    document.querySelectorAll('.nav-item[data-view="expeditor"]').forEach(el => {
+        el.addEventListener('click', () => loadExpeditor());
+    });
 
     // ── Financial Reports & Payouts (from Google Sheets) ─────────────
     const FIN_SHEET_ID  = '1qmfEGEzq55Miu9ICDhpCdihk_TE402mpIao5KNbaYlA';
