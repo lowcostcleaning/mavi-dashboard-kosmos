@@ -4492,30 +4492,28 @@
         document.getElementById('exp-board').style.display   = 'none';
 
         const dateISO = document.getElementById('exp-date')?.value || lndISODate(new Date());
+        const fromISO = lndISODate(new Date(new Date(dateISO + 'T12:00:00').getTime() - 7*86400000));
+        const toISO   = lndISODate(new Date(new Date(dateISO + 'T12:00:00').getTime() + 7*86400000));
 
-        // Fetch cleanings for this date (these need kit delivery)
-        const { data: cleanings } = await supa.from('tasks')
-            .select('id, title, deadline, assigned_to, apartment_id, kit_type, apt_type_auto, cleaner2_id, status')
-            .eq('type', 'cleaning')
-            .gte('deadline', dateISO + 'T00:00:00Z')
-            .lte('deadline', dateISO + 'T23:59:59Z')
-            .order('deadline');
-
-        // Fetch kompl tasks (restocking) — wide range so date of assembly doesn't matter
-        const fromISO = lndISODate(new Date(new Date(dateISO + 'T12:00:00').getTime() - 30*86400000));
-        const toISO   = lndISODate(new Date(new Date(dateISO + 'T12:00:00').getTime() + 30*86400000));
-        const { data: lndAll } = await supa.from('tasks')
-            .select('id, title, status, deadline, assigned_to, apartment_id, comment')
-            .eq('type', 'laundry')
-            .gte('deadline', fromISO + 'T00:00:00Z')
-            .lte('deadline', toISO   + 'T23:59:59Z');
-
-        // Fetch expeditor delivery tasks for this date
-        const { data: deliveries } = await supa.from('tasks')
-            .select('id, title, status, deadline, apartment_id, comment')
-            .eq('type', 'delivery')
-            .gte('deadline', dateISO + 'T00:00:00Z')
-            .lte('deadline', dateISO + 'T23:59:59Z');
+        // Parallel fetch — all 3 queries at once
+        const [{ data: cleanings }, { data: lndAll }, { data: deliveries }] = await Promise.all([
+            supa.from('tasks')
+                .select('id, title, deadline, assigned_to, apartment_id, kit_type, apt_type_auto, cleaner2_id, status')
+                .eq('type', 'cleaning')
+                .gte('deadline', dateISO + 'T00:00:00Z')
+                .lte('deadline', dateISO + 'T23:59:59Z')
+                .order('deadline'),
+            supa.from('tasks')
+                .select('id, title, status, deadline, assigned_to, apartment_id, comment')
+                .eq('type', 'laundry')
+                .gte('deadline', fromISO + 'T00:00:00Z')
+                .lte('deadline', toISO   + 'T23:59:59Z'),
+            supa.from('tasks')
+                .select('id, title, status, deadline, apartment_id, comment')
+                .eq('type', 'delivery')
+                .gte('deadline', dateISO + 'T00:00:00Z')
+                .lte('deadline', dateISO + 'T23:59:59Z'),
+        ]);
 
         renderExpeditor(dateISO, cleanings || [], lndAll || [], deliveries || []);
     }
