@@ -875,6 +875,26 @@
                                 </button>
                             </div>
                             <div id="lnd-log-list" style="margin-top:12px;"></div>
+
+                            <!-- Приём белья & Стирка for selected date -->
+                            <div style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:12px;" id="lnd-log-stages-grid">
+                                <div>
+                                    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#6366f1;margin-bottom:8px;display:flex;align-items:center;gap:6px;">
+                                        <i class="fa-solid fa-box-open"></i> Приём белья
+                                    </div>
+                                    <div id="lnd-log-collection" style="display:flex;flex-direction:column;gap:6px;">
+                                        <div style="opacity:.3;font-size:12px;">выберите дату</div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#f59e0b;margin-bottom:8px;display:flex;align-items:center;gap:6px;">
+                                        <i class="fa-solid fa-shirt"></i> Стирка
+                                    </div>
+                                    <div id="lnd-log-washing" style="display:flex;flex-direction:column;gap:6px;">
+                                        <div style="opacity:.3;font-size:12px;">выберите дату</div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -3580,6 +3600,8 @@
         lndLoaded = true;
         renderLaundry();
         renderLaundryLog();
+        const ld = document.getElementById('lnd-log-date')?.value;
+        if (ld) renderLndLogStages(ld);
     }
 
     // Find a laundry task for a given cleaning + stage
@@ -4089,11 +4111,62 @@
         const open    = body.style.display !== 'none';
         body.style.display    = open ? 'none' : '';
         chevron.style.transform = open ? '' : 'rotate(180deg)';
+        if (!open) {
+            const d = document.getElementById('lnd-log-date')?.value;
+            if (d) renderLndLogStages(d);
+        }
     });
 
     // Init log date to today
     const lndLogDateEl = document.getElementById('lnd-log-date');
-    if (lndLogDateEl) lndLogDateEl.value = new Date().toISOString().slice(0, 10);
+    if (lndLogDateEl) {
+        lndLogDateEl.value = new Date().toISOString().slice(0, 10);
+        lndLogDateEl.addEventListener('change', () => renderLndLogStages(lndLogDateEl.value));
+    }
+
+    // Render Приём белья & Стирка task lists for a given date
+    function renderLndLogStages(dateISO) {
+        if (!dateISO) return;
+
+        const renderBlock = (containerId, stageIdx) => {
+            const stage = LND_STAGES[stageIdx];
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            // For collection (idx=0): cleanings on this date
+            // For washing   (idx=1): cleanings on date-1 (since washing is +1 day after cleaning)
+            const targetCleanDate = new Date(dateISO + 'T12:00:00');
+            targetCleanDate.setDate(targetCleanDate.getDate() - stage.dayOffset);
+            const cleanDateKey = lndISODate(targetCleanDate);
+
+            const cleanings = lndCleanings.filter(c => lndISODate(new Date(c.deadline)) === cleanDateKey);
+
+            if (!cleanings.length) {
+                container.innerHTML = `<div style="opacity:.3;font-size:12px;padding:4px 0;">уборок нет</div>`;
+                return;
+            }
+
+            container.innerHTML = cleanings.map(c => {
+                const apt  = allApartments.find(a => a.id === c.apartment_id);
+                const task = findLndTask(c, stage);
+                const st   = task ? (LND_STATUS[task.status] || LND_STATUS.new) : null;
+                const stageDate = new Date(c.deadline);
+                stageDate.setDate(stageDate.getDate() + stage.dayOffset);
+
+                const btn = task
+                    ? `class="lnd-stage-btn lnd-stage-exists" data-lnd-task="${task.id}" data-lnd-clean-id="${c.id}"`
+                    : `class="lnd-stage-btn lnd-stage-empty" data-lnd-apt-id="${c.apartment_id}" data-lnd-clean-id="${c.id}" data-lnd-date="${lndISODate(stageDate)}" data-lnd-prefix="${stage.prefix}"`;
+
+                return `<div ${btn} style="border-color:${stage.color}44;background:${stage.color}11;padding:7px 10px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:8px;border:1px solid ${stage.color}33;">
+                    <div style="flex:1;font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${apt?.name || c.title || '—'}</div>
+                    <div style="font-size:11px;color:${st ? st.color : 'rgba(255,255,255,.25)'};">${st ? st.label : '+ создать'}</div>
+                </div>`;
+            }).join('');
+        };
+
+        renderBlock('lnd-log-collection', 0);
+        renderBlock('lnd-log-washing',    1);
+    }
 
     // Load when tab activated
     document.querySelectorAll('.nav-item[data-view="laundry"]').forEach(el => {
