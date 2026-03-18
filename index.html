@@ -1562,10 +1562,20 @@
         };
         if (!payload.full_name) { alert('Введите имя'); return; }
 
-        if (id) {
-            await supa.from('employees').update(payload).eq('id', id);
-        } else {
-            await supa.from('employees').insert(payload);
+        const btn = document.getElementById('emp-form-save');
+        btn.disabled = true;
+        btn.textContent = 'Сохраняем...';
+
+        const { error } = id
+            ? await supa.from('employees').update(payload).eq('id', id)
+            : await supa.from('employees').insert(payload);
+
+        btn.disabled = false;
+        btn.textContent = 'Сохранить';
+
+        if (error) {
+            alert('Ошибка сохранения: ' + error.message);
+            return;
         }
         document.getElementById('emp-form-modal').hidden = true;
         await loadEmployees();
