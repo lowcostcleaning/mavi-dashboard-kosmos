@@ -3139,120 +3139,78 @@
         let tbody = '';
         visApts.forEach(apt => {
             const aptEvents = bkAllEvents.filter(ev => ev.aptId === apt.id);
-
-            // Build cells with colspan spans
             const cells = [];
             let skip = 0;
+
+            const dayMs = d => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+            const fmtD  = dd => `${dd.getDate()} ${BK_MONTHS_SHORT[dd.getMonth()]}`;
+            const makeTip = ev => encodeURIComponent(`Бронь||${fmtD(ev.start)} — ${fmtD(new Date(ev.end.getTime()-86400000))}`);
+
+            // Push checkin cell + middle cells for ev (NOT checkout — handled by main loop)
+            // Returns number of additional days after current i to skip (not including checkout day)
+            const pushCheckinMiddle = (ev, fromIdx, isStart) => {
+                const evEndMs = dayMs(ev.end);
+                let cnt = 0;
+                for (let j = fromIdx; j < days.length; j++) {
+                    if (dayMs(days[j]) < evEndMs) cnt++;
+                    else break;
+                }
+                if (cnt === 0) return -1;
+                const tip = makeTip(ev);
+                const an  = apt.name;
+                if (isStart) {
+                    cells.push(`<td class="bk-cell bk-booked" data-bk-tip="${tip}" data-bk-apt="${an}">
+                        <div class="bk-bar" style="margin-left:62.5%;border-radius:6px 0 0 6px;"></div>
+                    </td>`);
+                    cnt--;
+                }
+                if (cnt > 0) {
+                    const rL = isStart ? '0' : '6px';
+                    const lbl = cnt > 3 ? '<span class="bk-bar-text">Бронь</span>' : '';
+                    cells.push(`<td class="bk-cell bk-booked" colspan="${cnt}" data-bk-tip="${tip}" data-bk-apt="${an}">
+                        <div class="bk-bar" style="border-radius:${rL} 0 0 ${rL};">${lbl}</div>
+                    </td>`);
+                }
+                // original cnt before decrement = cnt + (isStart?1:0), skip = that - 1
+                return (isStart ? cnt + 1 : cnt) - 1;
+            };
+
             for (let i = 0; i < days.length; i++) {
                 if (skip > 0) { skip--; continue; }
-                const d = days[i];
-                const dStart = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+                const d    = days[i];
+                const dMs  = dayMs(d);
                 const isToday = bkDateKey(d) === todayKey;
                 const isWe    = d.getDay() === 0 || d.getDay() === 6;
 
-                // Find event that STARTS on this day OR started before but first visible day
-                let ev = aptEvents.find(ev => {
-                    const evStart = new Date(ev.start.getFullYear(), ev.start.getMonth(), ev.start.getDate()).getTime();
-                    return evStart === dStart;
-                });
-                // If no event starts here, check if an event started before the visible range and this is the first day
-                if (!ev && i === 0) {
-                    ev = aptEvents.find(ev => ev.start.getTime() < dStart && ev.end.getTime() > dStart);
-                }
+                const checkin  = aptEvents.find(ev => dayMs(ev.start) === dMs);
+                const checkout = aptEvents.find(ev => dayMs(ev.end)   === dMs);
+                const inside   = !checkin && !checkout && aptEvents.find(ev => dMs > ev.start.getTime() && dMs < ev.end.getTime());
 
-                // Helper: build cells for a booking event starting from day index i
-                // checkout is at 12:00 (50%), checkin at 15:00 (62.5%)
-                const pushBookingCells = (event, fromIdx, isStart) => {
-                    const fmtD = dd => `${dd.getDate()} ${BK_MONTHS_SHORT[dd.getMonth()]}`;
-                    const endDisplay = new Date(event.end.getTime() - 86400000);
-                    const tip = encodeURIComponent(`Бронь||${fmtD(event.start)} — ${fmtD(endDisplay)}`);
-                    const evEndDayMs = new Date(event.end.getFullYear(), event.end.getMonth(), event.end.getDate()).getTime();
-
-                    // Count how many days from fromIdx are within booking (up to but not incl checkout day)
-                    let middleCount = 0;
-                    for (let j = fromIdx; j < days.length; j++) {
-                        const ddS = new Date(days[j].getFullYear(), days[j].getMonth(), days[j].getDate()).getTime();
-                        if (ddS < evEndDayMs) middleCount++;
-                        else break;
-                    }
-                    // Does the checkout day fall within visible range?
-                    const lastVisibleMs = new Date(days[days.length-1].getFullYear(), days[days.length-1].getMonth(), days[days.length-1].getDate()).getTime();
-                    const checkoutVisible = evEndDayMs <= lastVisibleMs;
-
-                    let totalSkip = middleCount + (checkoutVisible ? 1 : 0) - 1;
-
-                    if (isStart && middleCount === 1 && checkoutVisible) {
-                        // One-night booking: checkin cell + checkout cell (two separate <td>)
-                        cells.push(`<td class="bk-cell bk-booked" data-bk-tip="${tip}" data-bk-apt="${apt.name}">
-                            <div class="bk-bar" style="margin-left:62.5%;border-radius:6px 0 0 6px;"></div>
-                        </td>`);
-                        cells.push(`<td class="bk-cell bk-booked" data-bk-tip="${tip}" data-bk-apt="${apt.name}">
-                            <div class="bk-bar" style="width:50%;border-radius:0 6px 6px 0;"></div>
-                        </td>`);
-                        return 1; // skip checkout day (already pushed)
-                    }
-
-                    if (isStart && middleCount === 1 && !checkoutVisible) {
-                        // Checkin only visible, checkout outside range
-                        cells.push(`<td class="bk-cell bk-booked" data-bk-tip="${tip}" data-bk-apt="${apt.name}">
-                            <div class="bk-bar" style="margin-left:62.5%;border-radius:6px;"></div>
-                        </td>`);
-                        return 0;
-                    }
-
-                    // Checkin partial cell
-                    if (isStart && middleCount > 0) {
-                        cells.push(`<td class="bk-cell bk-booked" data-bk-tip="${tip}" data-bk-apt="${apt.name}">
-                            <div class="bk-bar" style="margin-left:62.5%;border-radius:6px 0 0 6px;"></div>
-                        </td>`);
-                        middleCount--; // first day consumed by checkin cell
-                    }
-
-                    // Middle full days (colspan)
-                    const middleLabel = middleCount > 3 ? '<span class="bk-bar-text">Бронь</span>' : '';
-                    if (middleCount > 0) {
-                        const rLeft  = isStart ? '0' : '6px';
-                        const rRight = checkoutVisible ? '0' : '6px';
-                        cells.push(`<td class="bk-cell bk-booked" colspan="${middleCount}" data-bk-tip="${tip}" data-bk-apt="${apt.name}">
-                            <div class="bk-bar" style="border-radius:${rLeft} ${rRight} ${rRight} ${rLeft};">${middleLabel}</div>
-                        </td>`);
-                    }
-
-                    // Checkout partial cell
-                    if (checkoutVisible) {
-                        cells.push(`<td class="bk-cell bk-booked" data-bk-tip="${tip}" data-bk-apt="${apt.name}">
-                            <div class="bk-bar" style="width:50%;border-radius:0 6px 6px 0;"></div>
-                        </td>`);
-                    }
-
-                    return totalSkip;
-                };
-
-                if (ev) {
-                    skip = pushBookingCells(ev, i, true);
+                if (checkin && checkout) {
+                    // Turnover: end of one booking + start of another on same day
+                    // Left 50% = checkout bar, right 37.5% = checkin bar
+                    const t1 = makeTip(checkout), t2 = makeTip(checkin), an = apt.name;
+                    cells.push(`<td class="bk-cell" style="position:relative;padding:3px 0;">
+                        <div class="bk-bar" style="position:absolute;inset:3px auto 3px 1px;width:calc(50% - 2px);border-radius:0 6px 6px 0;" data-bk-tip="${t1}" data-bk-apt="${an}"></div>
+                        <div class="bk-bar" style="position:absolute;inset:3px 1px 3px 62.5%;border-radius:6px 0 0 6px;" data-bk-tip="${t2}" data-bk-apt="${an}"></div>
+                    </td>`);
+                    // Continue with checkin event's middle days (checkin cell already shown in split)
+                    skip = pushCheckinMiddle(checkin, i + 1, false);
+                } else if (checkout) {
+                    // Only checkout — half bar ending at noon
+                    cells.push(`<td class="bk-cell bk-booked" data-bk-tip="${makeTip(checkout)}" data-bk-apt="${apt.name}">
+                        <div class="bk-bar" style="width:50%;border-radius:0 6px 6px 0;"></div>
+                    </td>`);
+                    skip = 0;
+                } else if (checkin) {
+                    // Checkin — bar starts at 15:00, middle days follow, checkout day handled later
+                    skip = pushCheckinMiddle(checkin, i, true);
+                } else if (inside) {
+                    // Inside a booking that started before visible range
+                    skip = pushCheckinMiddle(inside, i, false);
                 } else {
-                    // Check if we're INSIDE an event (not start)
-                    const inside = aptEvents.find(ev => dStart > ev.start.getTime() && dStart < ev.end.getTime());
-                    if (inside) {
-                        skip = pushBookingCells(inside, i, false);
-                    } else {
-                        // Also check if this is exactly the checkout day of a booking
-                        const checkout = aptEvents.find(ev => {
-                            const evEndDayMs = new Date(ev.end.getFullYear(), ev.end.getMonth(), ev.end.getDate()).getTime();
-                            return evEndDayMs === dStart;
-                        });
-                        if (checkout) {
-                            const fmtD = dd => `${dd.getDate()} ${BK_MONTHS_SHORT[dd.getMonth()]}`;
-                            const endDisplay = new Date(checkout.end.getTime() - 86400000);
-                            const tip = encodeURIComponent(`Бронь||${fmtD(checkout.start)} — ${fmtD(endDisplay)}`);
-                            cells.push(`<td class="bk-cell bk-booked" data-bk-tip="${tip}" data-bk-apt="${apt.name}">
-                                <div class="bk-bar" style="width:50%;border-radius:0 6px 6px 0;"></div>
-                            </td>`);
-                        } else {
-                            const cls = isToday ? 'bk-today-cell' : (isWe ? 'bk-we-cell' : '');
-                            cells.push(`<td class="bk-cell ${cls}"></td>`);
-                        }
-                    }
+                    const cls = isToday ? 'bk-today-cell' : (isWe ? 'bk-we-cell' : '');
+                    cells.push(`<td class="bk-cell ${cls}"></td>`);
                 }
             }
 
