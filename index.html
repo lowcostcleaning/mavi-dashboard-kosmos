@@ -3167,7 +3167,7 @@
         document.getElementById('clean-card-overlay').hidden = false;
     }
 
-    function renderCleaningCard(taskId) {
+    async function renderCleaningCard(taskId) {
         const t = calData.find(x => String(x.id) === String(taskId));
         if (!t) return;
 
@@ -3230,6 +3230,8 @@
                 </div>
                 <span class="cal-status-badge" style="background:${st.color}22;border-color:${st.color}55;color:${st.color};flex-shrink:0;">${st.label}</span>
             </div>
+
+            <div id="clean-kit-delivery-status" style="margin:0 0 10px 0;"></div>
 
             <div class="clean-detail-rows">
 
@@ -3406,6 +3408,54 @@
                 <div id="clean-save-msg" style="text-align:center;font-size:11px;margin-top:6px;height:14px;"></div>
             </div>
         `;
+
+        // Async: load kit + delivery status for this apartment
+        if (t.apartment_id) {
+            (async () => {
+                const today = lndISODate(new Date());
+                const from30 = lndISODate(new Date(Date.now() - 30*86400000));
+                const to30   = lndISODate(new Date(Date.now() + 30*86400000));
+
+                const [{ data: lndTasks2 }, { data: delTasks }] = await Promise.all([
+                    supa.from('tasks').select('id,title,status,deadline').eq('type','laundry').eq('apartment_id', t.apartment_id).gte('deadline', from30+'T00:00:00Z').lte('deadline', to30+'T23:59:59Z').order('deadline', {ascending:false}),
+                    supa.from('tasks').select('id,title,status,deadline').eq('type','delivery').eq('apartment_id', t.apartment_id).gte('deadline', from30+'T00:00:00Z').lte('deadline', to30+'T23:59:59Z').order('deadline', {ascending:false}),
+                ]);
+                const restockTask2 = (lndTasks2 || []).find(x => x.title?.startsWith('Комплектация'));
+                const delivery2    = (delTasks  || [])[0] || null;
+                const el = document.getElementById('clean-kit-delivery-status');
+                if (!el) return;
+                if (!restockTask2 && !delivery2) { el.innerHTML = ''; return; }
+
+                const KIT_ST = { new:'Сборка не начата', assigned:'Назначена', in_progress:'Комплектуется', done:'Комплект готов' };
+                const KIT_COL = { new:'#6b7280', assigned:'#6366f1', in_progress:'#f59e0b', done:'#10b981' };
+                const DEL_ST  = { new:'Доставка назначена', in_progress:'В пути', done:'Доставлено' };
+                const DEL_COL = { new:'#6366f1', in_progress:'#f59e0b', done:'#10b981' };
+
+                let html = '<div style="display:flex;flex-direction:column;gap:6px;">';
+                if (restockTask2) {
+                    const s = restockTask2.status || 'new';
+                    html += `<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:${KIT_COL[s]}18;border:1px solid ${KIT_COL[s]}44;border-radius:8px;">
+                        <i class="fa-solid ${s==='done'?'fa-circle-check':'fa-shirt'}" style="color:${KIT_COL[s]};font-size:14px;"></i>
+                        <div style="flex:1;">
+                            <div style="font-size:11px;color:var(--text-secondary);">Комплектация</div>
+                            <div style="font-size:12px;font-weight:600;color:${KIT_COL[s]};">${KIT_ST[s]||s}</div>
+                        </div>
+                    </div>`;
+                }
+                if (delivery2) {
+                    const s = delivery2.status || 'new';
+                    html += `<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:${DEL_COL[s]}18;border:1px solid ${DEL_COL[s]}44;border-radius:8px;">
+                        <i class="fa-solid ${s==='done'?'fa-circle-check':'fa-truck-fast'}" style="color:${DEL_COL[s]};font-size:14px;"></i>
+                        <div style="flex:1;">
+                            <div style="font-size:11px;color:var(--text-secondary);">Доставка</div>
+                            <div style="font-size:12px;font-weight:600;color:${DEL_COL[s]};">${DEL_ST[s]||s}</div>
+                        </div>
+                    </div>`;
+                }
+                html += '</div>';
+                el.innerHTML = html;
+            })();
+        }
 
         // Star rating interaction
         let selectedRating = curRating;
@@ -4472,30 +4522,46 @@
                 ? `<span style="background:rgba(99,102,241,.15);color:#a5b4fc;padding:2px 8px;border-radius:10px;font-size:11px;">${aptType}</span>`
                 : '';
 
-            const kitStatusHtml = kitReady
-                ? `<div style="display:flex;align-items:center;gap:6px;padding:8px 10px;background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.25);border-radius:8px;">
-                    <i class="fa-solid fa-circle-check" style="color:#10b981;font-size:16px;"></i>
-                    <span style="font-size:12px;color:#10b981;font-weight:600;">Комплект готов — можно везти</span>
-                   </div>`
-                : `<div style="display:flex;align-items:center;gap:6px;padding:8px 10px;background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.2);border-radius:8px;">
-                    <i class="fa-solid fa-clock" style="color:#f59e0b;font-size:16px;"></i>
-                    <span style="font-size:12px;color:#f59e0b;font-weight:600;">${restockTask ? 'Комплектуется...' : 'Ещё не начата сборка'}</span>
-                   </div>`;
-
             const deliveryDone = delivery?.status === 'done';
             const deliveryInProgress = delivery?.status === 'in_progress';
-            const cardBorder = deliveryDone ? 'rgba(99,102,241,.45)' : deliveryInProgress ? 'rgba(245,158,11,.45)' : kitReady ? 'rgba(16,185,129,.25)' : 'rgba(255,255,255,.08)';
+            const cardBorder = deliveryDone ? 'rgba(16,185,129,.5)' : deliveryInProgress ? 'rgba(245,158,11,.45)' : kitReady ? 'rgba(16,185,129,.25)' : 'rgba(255,255,255,.08)';
 
-            const deliveryStatusHtml = delivery
-                ? `<div style="display:flex;align-items:center;gap:6px;padding:8px 10px;margin-top:8px;background:${delStatus.color}18;border:1px solid ${delStatus.color}44;border-radius:8px;">
-                    <i class="fa-solid ${deliveryDone ? 'fa-circle-check' : 'fa-truck-fast'}" style="color:${delStatus.color};font-size:15px;"></i>
-                    <span style="font-size:12px;color:${delStatus.color};font-weight:600;">${delStatus.label}</span>
-                    ${!deliveryDone ? `<button class="exp-deliver-btn action-btn" data-delivery-id="${delivery.id}" style="margin-left:auto;padding:4px 12px;font-size:11px;background:#10b981;border-color:#10b981;">
-                        <i class="fa-solid fa-check" style="margin-right:4px;"></i>Доставлено
-                    </button>` : ''}
+            // Step-by-step status flow
+            const KIT_STEP = !restockTask ? 0 : restockTask.status === 'done' ? 2 : 1;
+            // 0 = not started, 1 = assembling, 2 = ready
+            // DEL_STEP: 0 = not taken, 1 = in transit, 2 = delivered
+
+            const stepBadge = (icon, label, color, active) =>
+                `<div style="display:flex;align-items:center;gap:7px;padding:7px 10px;border-radius:8px;background:${active ? color+'18' : 'rgba(255,255,255,.03)'};border:1px solid ${active ? color+'44' : 'rgba(255,255,255,.07)'};">
+                    <i class="fa-solid ${icon}" style="color:${active ? color : '#444'};font-size:13px;"></i>
+                    <span style="font-size:12px;font-weight:${active ? '600' : '400'};color:${active ? color : '#555'};">${label}</span>
+                </div>`;
+
+            const kitStatusHtml = deliveryDone
+                ? ''  // kit status hidden when delivery is done
+                : delivery
+                ? stepBadge('fa-circle-check', 'Комплект собран', '#10b981', true)
+                : KIT_STEP === 0
+                ? stepBadge('fa-clock', 'Сборка не начата', '#6b7280', false)
+                : KIT_STEP === 1
+                ? stepBadge('fa-shirt', 'Комплектуется...', '#f59e0b', true)
+                : stepBadge('fa-circle-check', 'Комплект готов — можно везти', '#10b981', true);
+
+            const deliveryStatusHtml = deliveryDone
+                ? `<div style="display:flex;align-items:center;gap:8px;padding:9px 12px;margin-top:8px;background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.4);border-radius:8px;">
+                    <i class="fa-solid fa-circle-check" style="color:#10b981;font-size:18px;"></i>
+                    <span style="font-size:13px;font-weight:700;color:#10b981;">Доставлено ✓</span>
                    </div>`
-                : kitReady
-                ? `<button class="exp-create-delivery-btn action-btn" data-exp-clean-id="${c.id}" data-apt-id="${c.apartment_id}" data-restock-id="${restockTask?.id || ''}" style="margin-top:8px;padding:7px 14px;font-size:12px;width:100%;justify-content:center;">
+                : deliveryInProgress
+                ? `<div style="display:flex;align-items:center;gap:8px;padding:9px 12px;margin-top:8px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.35);border-radius:8px;">
+                    <i class="fa-solid fa-truck-fast" style="color:#f59e0b;font-size:16px;"></i>
+                    <span style="font-size:12px;font-weight:600;color:#f59e0b;flex:1;">В пути к клиенту</span>
+                    <button class="exp-deliver-btn action-btn" data-delivery-id="${delivery.id}" style="padding:5px 14px;font-size:11px;background:#10b981;border-color:#10b981;flex-shrink:0;">
+                        <i class="fa-solid fa-check" style="margin-right:4px;"></i>Доставлено
+                    </button>
+                   </div>`
+                : KIT_STEP === 2
+                ? `<button class="exp-create-delivery-btn action-btn" data-exp-clean-id="${c.id}" data-apt-id="${c.apartment_id}" data-restock-id="${restockTask?.id || ''}" style="margin-top:8px;padding:8px 14px;font-size:12px;width:100%;justify-content:center;background:#6366f1;border-color:#6366f1;">
                     <i class="fa-solid fa-box-open" style="margin-right:6px;"></i>Забрать комплект
                    </button>`
                 : '';
