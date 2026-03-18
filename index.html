@@ -1936,19 +1936,21 @@
             btn.textContent = 'Сохраняем...';
 
             // Upload photo if selected
-            if (window._empPhotoFile) {
-                try {
-                    const empId = id || crypto.randomUUID();
-                    const ext = window._empPhotoFile.name.split('.').pop();
-                    const path = `employees/${empId}.${ext}`;
-                    const { error: upErr } = await supa.storage.from('avatars').upload(path, window._empPhotoFile, { upsert: true });
-                    if (upErr) { console.error('Photo upload error:', upErr); }
-                    else {
-                        const { data: urlData } = supa.storage.from('avatars').getPublicUrl(path);
-                        payload.photo_url = urlData.publicUrl + '?t=' + Date.now();
-                    }
-                    if (!id) payload.id = empId;
-                } catch(upEx) { console.error('Photo upload exception:', upEx); }
+            const photoInput = document.getElementById('emp-form-photo');
+            const photoFile = photoInput?.files?.[0];
+            if (photoFile) {
+                const empId = id || crypto.randomUUID();
+                const ext = photoFile.name.split('.').pop().toLowerCase();
+                const path = `employees/${empId}.${ext}`;
+                const { data: upData, error: upErr } = await supa.storage.from('avatars').upload(path, photoFile, { upsert: true, contentType: photoFile.type });
+                if (upErr) {
+                    alert('Ошибка загрузки фото: ' + upErr.message);
+                    btn.disabled = false; btn.textContent = 'Сохранить';
+                    return;
+                }
+                const { data: urlData } = supa.storage.from('avatars').getPublicUrl(path);
+                payload.photo_url = urlData.publicUrl + '?t=' + Date.now();
+                if (!id) payload.id = empId;
             } else if (window._empPhotoRemoved) {
                 payload.photo_url = null;
             }
