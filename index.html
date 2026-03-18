@@ -6519,8 +6519,10 @@
     function hideLogin() {
         const sc = document.getElementById('login-screen');
         sc.style.animation = 'loginFadeOut .35s ease forwards';
-        setTimeout(() => { sc.style.display='none'; }, 340);
+        setTimeout(() => { sc.style.display='none'; document.body.style.overflow=''; }, 340);
     }
+    // Block body scroll while login is visible
+    document.body.style.overflow = 'hidden';
     function saveSession(data) {
         localStorage.setItem(SESSION_KEY, JSON.stringify(data));
         window.maviUser = data;
