@@ -1935,22 +1935,27 @@
             btn.disabled = true;
             btn.textContent = 'Сохраняем...';
 
-            // Upload photo if selected
+            // Resize & store photo as base64 in DB (avoids CORS storage issues)
             const photoInput = document.getElementById('emp-form-photo');
             const photoFile = photoInput?.files?.[0];
             if (photoFile) {
-                const empId = id || crypto.randomUUID();
-                const ext = photoFile.name.split('.').pop().toLowerCase();
-                const path = `employees/${empId}.${ext}`;
-                const { data: upData, error: upErr } = await supa.storage.from('avatars').upload(path, photoFile, { upsert: true, contentType: photoFile.type });
-                if (upErr) {
-                    alert('Ошибка загрузки фото: ' + upErr.message);
-                    btn.disabled = false; btn.textContent = 'Сохранить';
-                    return;
-                }
-                const { data: urlData } = supa.storage.from('avatars').getPublicUrl(path);
-                payload.photo_url = urlData.publicUrl + '?t=' + Date.now();
-                if (!id) payload.id = empId;
+                payload.photo_url = await new Promise(resolve => {
+                    const img = new Image();
+                    const url = URL.createObjectURL(photoFile);
+                    img.onload = () => {
+                        const size = 200;
+                        const canvas = document.createElement('canvas');
+                        canvas.width = size; canvas.height = size;
+                        const ctx = canvas.getContext('2d');
+                        // Crop to square from center
+                        const min = Math.min(img.width, img.height);
+                        const sx = (img.width - min) / 2, sy = (img.height - min) / 2;
+                        ctx.drawImage(img, sx, sy, min, min, 0, 0, size, size);
+                        URL.revokeObjectURL(url);
+                        resolve(canvas.toDataURL('image/jpeg', 0.75));
+                    };
+                    img.src = url;
+                });
             } else if (window._empPhotoRemoved) {
                 payload.photo_url = null;
             }
