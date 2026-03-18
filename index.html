@@ -4553,11 +4553,16 @@
                 </button>`;
             } else if (flowStep === 3) {
                 kitStatusHtml = statusRow('fa-circle-check', 'Комплект забран', '#6366f1');
-                deliveryStatusHtml = statusRow('fa-truck-fast', 'В пути к клиенту', '#f59e0b',
-                    `<button class="exp-deliver-btn action-btn" data-delivery-id="${delivery.id}" style="padding:6px 16px;font-size:12px;font-weight:700;background:#10b981;border-color:#10b981;flex-shrink:0;">
+                deliveryStatusHtml = `<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;margin-top:8px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.35);border-radius:8px;">
+                    <i class="fa-solid fa-truck-fast" style="color:#f59e0b;font-size:14px;flex-shrink:0;"></i>
+                    <span style="font-size:12px;font-weight:600;color:#f59e0b;flex:1;">В пути к клиенту</span>
+                    <button class="exp-deliver-btn action-btn" data-delivery-id="${delivery.id}" style="padding:6px 16px;font-size:12px;font-weight:700;background:#10b981;border-color:#10b981;flex-shrink:0;">
                         <i class="fa-solid fa-check" style="margin-right:5px;"></i>Готово
-                    </button>`
-                );
+                    </button>
+                    <button class="exp-status-change-btn action-btn" data-delivery-id="${delivery.id}" style="padding:4px 8px;font-size:10px;background:transparent;border-color:rgba(255,255,255,.15);color:var(--text-secondary);flex-shrink:0;" title="Изменить статус">
+                        <i class="fa-solid fa-ellipsis-vertical"></i>
+                    </button>
+                </div>`;
             } else if (flowStep === 4) {
                 deliveryStatusHtml = `<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;margin-top:8px;background:rgba(16,185,129,.14);border:1px solid rgba(16,185,129,.45);border-radius:10px;">
                     <i class="fa-solid fa-circle-check" style="color:#10b981;font-size:20px;"></i>
