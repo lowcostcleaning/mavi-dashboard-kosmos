@@ -3160,49 +3160,98 @@
                     ev = aptEvents.find(ev => ev.start.getTime() < dStart && ev.end.getTime() > dStart);
                 }
 
-                if (ev) {
-                    // Calculate span within visible range
-                    let span = 0;
-                    for (let j = i; j < days.length; j++) {
-                        const dd = days[j];
-                        const ddS = new Date(dd.getFullYear(), dd.getMonth(), dd.getDate()).getTime();
-                        if (ddS < ev.end.getTime()) span++;
+                // Helper: build cells for a booking event starting from day index i
+                // checkout is at 12:00 (50%), checkin at 15:00 (62.5%)
+                const pushBookingCells = (event, fromIdx, isStart) => {
+                    const fmtD = dd => `${dd.getDate()} ${BK_MONTHS_SHORT[dd.getMonth()]}`;
+                    const endDisplay = new Date(event.end.getTime() - 86400000);
+                    const tip = encodeURIComponent(`Бронь||${fmtD(event.start)} — ${fmtD(endDisplay)}`);
+                    const evEndDayMs = new Date(event.end.getFullYear(), event.end.getMonth(), event.end.getDate()).getTime();
+
+                    // Count how many days from fromIdx are within booking (up to but not incl checkout day)
+                    let middleCount = 0;
+                    for (let j = fromIdx; j < days.length; j++) {
+                        const ddS = new Date(days[j].getFullYear(), days[j].getMonth(), days[j].getDate()).getTime();
+                        if (ddS < evEndDayMs) middleCount++;
                         else break;
                     }
-                    span = Math.max(1, span);
-                    const fmtD = dd => `${dd.getDate()} ${BK_MONTHS_SHORT[dd.getMonth()]}`;
-                    const endDisplay = new Date(ev.end.getTime() - 86400000);
-                    const tipText = encodeURIComponent(`Бронь||${fmtD(ev.start)} — ${fmtD(endDisplay)}`);
-                    const barClass = 'bk-bar';
-                    const cellClass = 'bk-cell bk-booked';
-                    const label = span > 3 ? '<span class="bk-bar-text">Бронь</span>' : '';
-                    cells.push(`<td class="${cellClass}" colspan="${span}" data-bk-tip="${tipText}" data-bk-apt="${apt.name}">
-                        <div class="${barClass}">${label}</div>
-                    </td>`);
-                    skip = span - 1;
+                    // Does the checkout day fall within visible range?
+                    const lastVisibleMs = new Date(days[days.length-1].getFullYear(), days[days.length-1].getMonth(), days[days.length-1].getDate()).getTime();
+                    const checkoutVisible = evEndDayMs <= lastVisibleMs;
+
+                    let totalSkip = middleCount + (checkoutVisible ? 1 : 0) - 1;
+
+                    if (isStart && middleCount === 1 && checkoutVisible) {
+                        // One-night booking: checkin cell + checkout cell (two separate <td>)
+                        cells.push(`<td class="bk-cell bk-booked" data-bk-tip="${tip}" data-bk-apt="${apt.name}">
+                            <div class="bk-bar" style="margin-left:62.5%;border-radius:6px 0 0 6px;"></div>
+                        </td>`);
+                        cells.push(`<td class="bk-cell bk-booked" data-bk-tip="${tip}" data-bk-apt="${apt.name}">
+                            <div class="bk-bar" style="width:50%;border-radius:0 6px 6px 0;"></div>
+                        </td>`);
+                        return 1; // skip checkout day (already pushed)
+                    }
+
+                    if (isStart && middleCount === 1 && !checkoutVisible) {
+                        // Checkin only visible, checkout outside range
+                        cells.push(`<td class="bk-cell bk-booked" data-bk-tip="${tip}" data-bk-apt="${apt.name}">
+                            <div class="bk-bar" style="margin-left:62.5%;border-radius:6px;"></div>
+                        </td>`);
+                        return 0;
+                    }
+
+                    // Checkin partial cell
+                    if (isStart && middleCount > 0) {
+                        cells.push(`<td class="bk-cell bk-booked" data-bk-tip="${tip}" data-bk-apt="${apt.name}">
+                            <div class="bk-bar" style="margin-left:62.5%;border-radius:6px 0 0 6px;"></div>
+                        </td>`);
+                        middleCount--; // first day consumed by checkin cell
+                    }
+
+                    // Middle full days (colspan)
+                    const middleLabel = middleCount > 3 ? '<span class="bk-bar-text">Бронь</span>' : '';
+                    if (middleCount > 0) {
+                        const rLeft  = isStart ? '0' : '6px';
+                        const rRight = checkoutVisible ? '0' : '6px';
+                        cells.push(`<td class="bk-cell bk-booked" colspan="${middleCount}" data-bk-tip="${tip}" data-bk-apt="${apt.name}">
+                            <div class="bk-bar" style="border-radius:${rLeft} ${rRight} ${rRight} ${rLeft};">${middleLabel}</div>
+                        </td>`);
+                    }
+
+                    // Checkout partial cell
+                    if (checkoutVisible) {
+                        cells.push(`<td class="bk-cell bk-booked" data-bk-tip="${tip}" data-bk-apt="${apt.name}">
+                            <div class="bk-bar" style="width:50%;border-radius:0 6px 6px 0;"></div>
+                        </td>`);
+                    }
+
+                    return totalSkip;
+                };
+
+                if (ev) {
+                    skip = pushBookingCells(ev, i, true);
                 } else {
-                    // Check if we're INSIDE an event (not start) — render bar from this point
+                    // Check if we're INSIDE an event (not start)
                     const inside = aptEvents.find(ev => dStart > ev.start.getTime() && dStart < ev.end.getTime());
                     if (inside) {
-                        let span = 0;
-                        for (let j = i; j < days.length; j++) {
-                            const ddS = new Date(days[j].getFullYear(), days[j].getMonth(), days[j].getDate()).getTime();
-                            if (ddS < inside.end.getTime()) span++;
-                            else break;
-                        }
-                        span = Math.max(1, span);
-                        const fmtD = dd => `${dd.getDate()} ${BK_MONTHS_SHORT[dd.getMonth()]}`;
-                        const endDisplay = new Date(inside.end.getTime() - 86400000);
-                        const tipText = encodeURIComponent(`Бронь||${fmtD(inside.start)} — ${fmtD(endDisplay)}`);
-                        const barClass = 'bk-bar';
-                        const label = span > 3 ? '<span class="bk-bar-text">Бронь</span>' : '';
-                        cells.push(`<td class="bk-cell bk-booked" colspan="${span}" data-bk-tip="${tipText}" data-bk-apt="${apt.name}">
-                            <div class="${barClass}">${label}</div>
-                        </td>`);
-                        skip = span - 1;
+                        skip = pushBookingCells(inside, i, false);
                     } else {
-                        const cls = isToday ? 'bk-today-cell' : (isWe ? 'bk-we-cell' : '');
-                        cells.push(`<td class="bk-cell ${cls}"></td>`);
+                        // Also check if this is exactly the checkout day of a booking
+                        const checkout = aptEvents.find(ev => {
+                            const evEndDayMs = new Date(ev.end.getFullYear(), ev.end.getMonth(), ev.end.getDate()).getTime();
+                            return evEndDayMs === dStart;
+                        });
+                        if (checkout) {
+                            const fmtD = dd => `${dd.getDate()} ${BK_MONTHS_SHORT[dd.getMonth()]}`;
+                            const endDisplay = new Date(checkout.end.getTime() - 86400000);
+                            const tip = encodeURIComponent(`Бронь||${fmtD(checkout.start)} — ${fmtD(endDisplay)}`);
+                            cells.push(`<td class="bk-cell bk-booked" data-bk-tip="${tip}" data-bk-apt="${apt.name}">
+                                <div class="bk-bar" style="width:50%;border-radius:0 6px 6px 0;"></div>
+                            </td>`);
+                        } else {
+                            const cls = isToday ? 'bk-today-cell' : (isWe ? 'bk-we-cell' : '');
+                            cells.push(`<td class="bk-cell ${cls}"></td>`);
+                        }
                     }
                 }
             }
