@@ -3658,22 +3658,14 @@
         if (ld) renderLndLogStages(ld);
     }
 
-    // Find a laundry task for a given cleaning + stage
+    // Find a laundry task for a given cleaning + stage (match by apartment + title prefix only)
     function findLndTask(cleaning, stage) {
-        if (!cleaning.deadline) return null;
-        const cleanDate = new Date(cleaning.deadline);
-        const targetDate = new Date(cleanDate);
-        targetDate.setDate(targetDate.getDate() + stage.dayOffset);
-        const targetKey = lndISODate(targetDate);
-
-        return lndTasks.find(t => {
-            if (t.apartment_id !== cleaning.apartment_id) return false;
-            if (!t.title || !t.title.startsWith(stage.prefix)) return false;
-            if (!t.deadline) return false;
-            // Match deadline within ±1 day of target
-            const diff = Math.abs(new Date(t.deadline.slice(0,10) + 'T00:00:00') - new Date(targetKey + 'T00:00:00'));
-            return diff <= 86400000;
-        });
+        const matches = lndTasks.filter(t =>
+            t.apartment_id === cleaning.apartment_id &&
+            t.title?.startsWith(stage.prefix)
+        );
+        // Return most recent by deadline
+        return matches.sort((a, b) => (b.deadline || '').localeCompare(a.deadline || ''))[0] || null;
     }
 
     function renderLaundry() {
@@ -4387,12 +4379,13 @@
             .lte('deadline', dateISO + 'T23:59:59Z')
             .order('deadline');
 
-        // Fetch kompl tasks (restocking) for these cleanings — deadline = cleaning date + 2
-        const toISO = lndISODate(new Date(new Date(dateISO + 'T12:00:00').getTime() + 2*86400000));
+        // Fetch kompl tasks (restocking) — wide range so date of assembly doesn't matter
+        const fromISO = lndISODate(new Date(new Date(dateISO + 'T12:00:00').getTime() - 30*86400000));
+        const toISO   = lndISODate(new Date(new Date(dateISO + 'T12:00:00').getTime() + 30*86400000));
         const { data: lndAll } = await supa.from('tasks')
             .select('id, title, status, deadline, assigned_to, apartment_id, comment')
             .eq('type', 'laundry')
-            .gte('deadline', dateISO + 'T00:00:00Z')
+            .gte('deadline', fromISO + 'T00:00:00Z')
             .lte('deadline', toISO   + 'T23:59:59Z');
 
         // Fetch expeditor delivery tasks for this date
@@ -4416,13 +4409,10 @@
             const aptType = c.apt_type_auto || apt?.apt_type || '';
             const kitColor = KIT_COLORS[kitType] || '#a0a4cc';
 
-            // Restocking task (комплектация) for this cleaning
-            const restockDate = lndISODate(new Date(new Date(c.deadline).getTime() + 2*86400000));
-            const restockTask = lndAll.find(t =>
-                t.apartment_id === c.apartment_id &&
-                t.title?.startsWith('Комплектация') &&
-                t.deadline?.slice(0,10) === restockDate
-            );
+            // Restocking task (комплектация) for this cleaning — match by apartment only
+            const restockTask = lndAll
+                .filter(t => t.apartment_id === c.apartment_id && t.title?.startsWith('Комплектация'))
+                .sort((a, b) => (b.deadline || '').localeCompare(a.deadline || ''))[0] || null;
             const kitReady = restockTask?.status === 'done';
 
             // Delivery task for this apartment on this date
