@@ -846,7 +846,7 @@
                             <span>Дневной учёт</span>
                             <i class="fa-solid fa-chevron-down lnd-log-chevron" id="lnd-log-chevron" style="margin-left:auto;font-size:11px;opacity:.5;transition:transform .2s;"></i>
                         </div>
-                        <div class="lnd-log-body" id="lnd-log-body" style="display:none;">
+                        <div class="lnd-log-body" id="lnd-log-body">
                             <div class="lnd-log-form">
                                 <div class="lnd-log-inputs">
                                     <div class="lnd-log-field">
@@ -4108,8 +4108,8 @@
     document.getElementById('lnd-log-toggle')?.addEventListener('click', () => {
         const body    = document.getElementById('lnd-log-body');
         const chevron = document.getElementById('lnd-log-chevron');
-        const open    = body.style.display !== 'none';
-        body.style.display    = open ? 'none' : '';
+        const open    = body.style.display === 'block';
+        body.style.display    = open ? 'none' : 'block';
         chevron.style.transform = open ? '' : 'rotate(180deg)';
         if (!open) {
             const d = document.getElementById('lnd-log-date')?.value;
