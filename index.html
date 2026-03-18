@@ -26,76 +26,134 @@
 
     <!-- ════════════ LOGIN SCREEN ════════════ -->
     <div id="login-screen" style="position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;overflow:hidden;">
-        <!-- Background photo -->
         <div style="position:absolute;inset:0;background:url('https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=1920&q=80') center/cover no-repeat;"></div>
-        <!-- Dark gradient overlay -->
-        <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(5,7,20,0.92) 0%,rgba(10,14,40,0.80) 50%,rgba(5,7,20,0.88) 100%);"></div>
-        <!-- Animated grid lines -->
+        <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(5,7,20,0.93) 0%,rgba(10,14,40,0.82) 50%,rgba(5,7,20,0.90) 100%);"></div>
         <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(99,102,241,0.06) 1px,transparent 1px),linear-gradient(90deg,rgba(99,102,241,0.06) 1px,transparent 1px);background-size:60px 60px;"></div>
 
-        <!-- Card -->
-        <div id="login-card" style="position:relative;z-index:1;width:100%;max-width:420px;margin:0 16px;
-            background:rgba(12,14,35,0.75);border:1px solid rgba(99,102,241,0.25);
-            border-radius:20px;padding:40px 36px 36px;
+        <div id="login-card" style="position:relative;z-index:1;width:100%;max-width:430px;margin:0 16px;
+            background:rgba(12,14,35,0.78);border:1px solid rgba(99,102,241,0.25);border-radius:20px;
             backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
-            box-shadow:0 0 60px rgba(99,102,241,0.12),0 24px 64px rgba(0,0,0,0.5);
-            animation:loginFadeIn .5s ease;">
+            box-shadow:0 0 60px rgba(99,102,241,0.12),0 24px 64px rgba(0,0,0,0.5);">
 
             <!-- Logo -->
-            <div style="text-align:center;margin-bottom:32px;">
+            <div style="text-align:center;padding:32px 36px 24px;">
                 <div style="font-family:'Orbitron',sans-serif;font-size:32px;font-weight:800;
                     background:linear-gradient(135deg,#818cf8,#00f2ff,#a78bfa);
                     -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
                     letter-spacing:4px;margin-bottom:6px;">MAVI</div>
                 <div style="font-size:13px;color:rgba(148,163,184,0.8);letter-spacing:1px;">Управление апартаментами</div>
-                <div style="width:48px;height:2px;background:linear-gradient(90deg,#6366f1,#00f2ff);margin:14px auto 0;border-radius:2px;"></div>
+                <div style="width:48px;height:2px;background:linear-gradient(90deg,#6366f1,#00f2ff);margin:12px auto 0;border-radius:2px;"></div>
             </div>
 
-            <!-- Form -->
-            <form id="login-form" autocomplete="off" style="display:flex;flex-direction:column;gap:14px;">
-                <!-- Login field -->
-                <div style="position:relative;">
-                    <i class="fa-solid fa-user" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:rgba(148,163,184,0.5);font-size:14px;pointer-events:none;"></i>
-                    <input id="login-name" type="text" placeholder="Имя пользователя" autocomplete="username"
-                        style="width:100%;box-sizing:border-box;padding:13px 14px 13px 40px;
-                        background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);
-                        border-radius:12px;color:#e2e8f0;font-size:14px;font-family:inherit;outline:none;transition:border-color .2s;"
-                        onfocus="this.style.borderColor='rgba(99,102,241,0.6)'"
-                        onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
-                </div>
-                <!-- Password field -->
-                <div style="position:relative;">
-                    <i class="fa-solid fa-lock" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:rgba(148,163,184,0.5);font-size:14px;pointer-events:none;"></i>
-                    <input id="login-pass" type="password" placeholder="Пароль" autocomplete="current-password"
-                        style="width:100%;box-sizing:border-box;padding:13px 44px 13px 40px;
-                        background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);
-                        border-radius:12px;color:#e2e8f0;font-size:14px;font-family:inherit;outline:none;transition:border-color .2s;"
-                        onfocus="this.style.borderColor='rgba(99,102,241,0.6)'"
-                        onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
-                    <button type="button" id="login-eye" onclick="(()=>{const i=document.getElementById('login-pass');const ic=document.getElementById('login-eye-ic');i.type=i.type==='password'?'text':'password';ic.className=i.type==='password'?'fa-solid fa-eye':'fa-solid fa-eye-slash';})()"
-                        style="position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:rgba(148,163,184,0.5);padding:0;">
-                        <i id="login-eye-ic" class="fa-solid fa-eye" style="font-size:14px;"></i>
-                    </button>
+            <!-- Tabs -->
+            <div style="display:flex;border-bottom:1px solid rgba(255,255,255,0.07);padding:0 36px;">
+                <button class="auth-tab active" id="tab-login" onclick="authShowTab('login')" style="flex:1;">Войти</button>
+                <button class="auth-tab" id="tab-register" onclick="authShowTab('register')" style="flex:1;">Регистрация</button>
+                <button class="auth-tab" id="tab-forgot" onclick="authShowTab('forgot')" style="flex:1;">Пароль</button>
+            </div>
+
+            <div style="padding:24px 36px 28px;">
+
+                <!-- ── LOGIN ── -->
+                <div id="auth-panel-login">
+                    <form id="login-form" autocomplete="off" style="display:flex;flex-direction:column;gap:12px;">
+                        <div class="auth-field">
+                            <i class="fa-solid fa-envelope auth-field-ic"></i>
+                            <input id="login-email" type="text" placeholder="Email или admin" autocomplete="username" class="auth-input">
+                        </div>
+                        <div class="auth-field">
+                            <i class="fa-solid fa-lock auth-field-ic"></i>
+                            <input id="login-pass" type="password" placeholder="Пароль" autocomplete="current-password" class="auth-input" style="padding-right:44px;">
+                            <button type="button" onclick="authTogglePass('login-pass','eye-login')" class="auth-eye"><i id="eye-login" class="fa-solid fa-eye"></i></button>
+                        </div>
+                        <div id="login-error" hidden class="auth-msg auth-msg-err"></div>
+                        <button type="submit" id="login-btn" class="auth-btn-primary">Войти в систему</button>
+                    </form>
+                    <!-- Admin hint -->
+                    <div style="margin-top:16px;padding:10px 14px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.2);border-radius:10px;font-size:11px;color:rgba(148,163,184,0.7);text-align:center;line-height:1.7;">
+                        <i class="fa-solid fa-circle-info" style="margin-right:5px;color:#818cf8;"></i>
+                        Пока карточки сотрудников не заполнены, используйте:<br>
+                        <span style="color:#a5b4fc;font-weight:600;">Логин:</span> <code style="color:#00f2ff;">admin</code>
+                        &nbsp;·&nbsp;
+                        <span style="color:#a5b4fc;font-weight:600;">Пароль:</span> <code style="color:#00f2ff;">admin</code>
+                    </div>
                 </div>
 
-                <!-- Error -->
-                <div id="login-error" hidden style="font-size:12px;color:#f87171;text-align:center;padding:6px 12px;background:rgba(239,68,68,0.1);border-radius:8px;border:1px solid rgba(239,68,68,0.2);">
-                    <i class="fa-solid fa-circle-exclamation" style="margin-right:6px;"></i>Неверный логин или пароль
+                <!-- ── REGISTER ── -->
+                <div id="auth-panel-register" hidden>
+                    <div style="font-size:12px;color:rgba(148,163,184,0.6);margin-bottom:14px;text-align:center;">
+                        Регистрация доступна только сотрудникам,<br>чья почта уже добавлена в систему
+                    </div>
+                    <!-- Step 1: email check -->
+                    <div id="reg-step1">
+                        <form id="reg-form-step1" autocomplete="off" style="display:flex;flex-direction:column;gap:12px;">
+                            <div class="auth-field">
+                                <i class="fa-solid fa-envelope auth-field-ic"></i>
+                                <input id="reg-email" type="email" placeholder="Ваш рабочий email" class="auth-input">
+                            </div>
+                            <div id="reg-error1" hidden class="auth-msg auth-msg-err"></div>
+                            <button type="submit" class="auth-btn-primary">Проверить email</button>
+                        </form>
+                    </div>
+                    <!-- Step 2: set password -->
+                    <div id="reg-step2" hidden>
+                        <div id="reg-emp-name" style="text-align:center;font-size:14px;font-weight:600;color:#a5b4fc;margin-bottom:14px;padding:8px;background:rgba(99,102,241,0.1);border-radius:8px;"></div>
+                        <form id="reg-form-step2" autocomplete="off" style="display:flex;flex-direction:column;gap:12px;">
+                            <div class="auth-field">
+                                <i class="fa-solid fa-lock auth-field-ic"></i>
+                                <input id="reg-pass" type="password" placeholder="Придумайте пароль" class="auth-input" style="padding-right:44px;">
+                                <button type="button" onclick="authTogglePass('reg-pass','eye-reg')" class="auth-eye"><i id="eye-reg" class="fa-solid fa-eye"></i></button>
+                            </div>
+                            <div class="auth-field">
+                                <i class="fa-solid fa-lock auth-field-ic"></i>
+                                <input id="reg-pass2" type="password" placeholder="Повторите пароль" class="auth-input">
+                            </div>
+                            <div id="reg-error2" hidden class="auth-msg auth-msg-err"></div>
+                            <button type="submit" class="auth-btn-primary">Зарегистрироваться</button>
+                            <button type="button" onclick="document.getElementById('reg-step1').hidden=false;document.getElementById('reg-step2').hidden=true;" class="auth-btn-ghost">← Назад</button>
+                        </form>
+                    </div>
                 </div>
 
-                <!-- Submit -->
-                <button type="submit" id="login-btn"
-                    style="margin-top:6px;padding:14px;border:none;border-radius:12px;cursor:pointer;font-size:14px;font-weight:600;font-family:inherit;letter-spacing:.5px;transition:all .2s;
-                    background:linear-gradient(135deg,#6366f1,#4f46e5);color:#fff;
-                    box-shadow:0 4px 20px rgba(99,102,241,0.4);"
-                    onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 6px 28px rgba(99,102,241,0.55)'"
-                    onmouseout="this.style.transform='';this.style.boxShadow='0 4px 20px rgba(99,102,241,0.4)'">
-                    Войти в систему
-                </button>
-            </form>
+                <!-- ── FORGOT ── -->
+                <div id="auth-panel-forgot" hidden>
+                    <div style="font-size:12px;color:rgba(148,163,184,0.6);margin-bottom:14px;text-align:center;">
+                        Введите email — если аккаунт существует,<br>мы сбросим пароль
+                    </div>
+                    <div id="forgot-step1">
+                        <form id="forgot-form" autocomplete="off" style="display:flex;flex-direction:column;gap:12px;">
+                            <div class="auth-field">
+                                <i class="fa-solid fa-envelope auth-field-ic"></i>
+                                <input id="forgot-email" type="email" placeholder="Ваш email" class="auth-input">
+                            </div>
+                            <div id="forgot-error" hidden class="auth-msg auth-msg-err"></div>
+                            <button type="submit" class="auth-btn-primary">Сбросить пароль</button>
+                        </form>
+                    </div>
+                    <div id="forgot-step2" hidden>
+                        <div class="auth-msg auth-msg-ok" style="display:block;margin-bottom:14px;">
+                            <i class="fa-solid fa-check-circle" style="margin-right:6px;"></i>
+                            Пароль сброшен. Установите новый:
+                        </div>
+                        <form id="forgot-form2" autocomplete="off" style="display:flex;flex-direction:column;gap:12px;">
+                            <div class="auth-field">
+                                <i class="fa-solid fa-lock auth-field-ic"></i>
+                                <input id="forgot-pass" type="password" placeholder="Новый пароль" class="auth-input" style="padding-right:44px;">
+                                <button type="button" onclick="authTogglePass('forgot-pass','eye-fp')" class="auth-eye"><i id="eye-fp" class="fa-solid fa-eye"></i></button>
+                            </div>
+                            <div class="auth-field">
+                                <i class="fa-solid fa-lock auth-field-ic"></i>
+                                <input id="forgot-pass2" type="password" placeholder="Повторите пароль" class="auth-input">
+                            </div>
+                            <div id="forgot-error2" hidden class="auth-msg auth-msg-err"></div>
+                            <button type="submit" class="auth-btn-primary">Сохранить пароль</button>
+                        </form>
+                    </div>
+                </div>
 
-            <!-- Footer -->
-            <div style="margin-top:24px;text-align:center;font-size:11px;color:rgba(148,163,184,0.4);letter-spacing:.5px;">
+            </div>
+
+            <div style="text-align:center;font-size:11px;color:rgba(148,163,184,0.35);padding:0 36px 20px;letter-spacing:.5px;">
                 © 2025 MAVI · Управляющая компания
             </div>
         </div>
@@ -6399,84 +6457,233 @@
 
     <!-- ════════════ AUTH SCRIPT ════════════ -->
     <script>
-    (function() {
-        const SESSION_KEY = 'mavi_auth_v1';
-        const USERS = [
-            { login: 'admin', password: 'admin', name: 'Администратор', role: 'admin' },
-        ];
+    const SUPA_URL_AUTH = 'https://supabase.138.124.87.26.sslip.io';
+    const SUPA_KEY_AUTH = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRFA0NiK7ACcPe_UtPE0b8O-8GXJI4BzVPkCCKNPcbU';
+    const SESSION_KEY = 'mavi_auth_v2';
 
-        const screen = document.getElementById('login-screen');
-        const form   = document.getElementById('login-form');
-        const errEl  = document.getElementById('login-error');
-        const btn    = document.getElementById('login-btn');
+    // ── helpers ──────────────────────────────────────────────────────
+    async function authHash(str) {
+        const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str + '_mavi25'));
+        return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+    }
+    async function dbGet(table, query) {
+        const r = await fetch(`${SUPA_URL_AUTH}/rest/v1/${table}?${query}&limit=1`, {
+            headers:{'apikey':SUPA_KEY_AUTH,'Authorization':'Bearer '+SUPA_KEY_AUTH}
+        });
+        const d = await r.json();
+        return Array.isArray(d) ? d[0] : null;
+    }
+    async function dbPost(table, body) {
+        const r = await fetch(`${SUPA_URL_AUTH}/rest/v1/${table}`, {
+            method:'POST',
+            headers:{'apikey':SUPA_KEY_AUTH,'Authorization':'Bearer '+SUPA_KEY_AUTH,'Content-Type':'application/json','Prefer':'return=representation'},
+            body:JSON.stringify(body)
+        });
+        const d = await r.json();
+        return Array.isArray(d) ? d[0] : d;
+    }
+    async function dbPatch(table, query, body) {
+        await fetch(`${SUPA_URL_AUTH}/rest/v1/${table}?${query}`, {
+            method:'PATCH',
+            headers:{'apikey':SUPA_KEY_AUTH,'Authorization':'Bearer '+SUPA_KEY_AUTH,'Content-Type':'application/json'},
+            body:JSON.stringify(body)
+        });
+    }
 
-        function hideLogin() {
-            screen.style.animation = 'loginFadeOut .35s ease forwards';
-            setTimeout(() => { screen.style.display = 'none'; }, 350);
+    function authShowTab(tab) {
+        ['login','register','forgot'].forEach(t => {
+            document.getElementById('auth-panel-'+t).hidden = t!==tab;
+            document.getElementById('tab-'+t).classList.toggle('active', t===tab);
+        });
+        // Reset forgot steps
+        if (tab==='forgot') { document.getElementById('forgot-step1').hidden=false; document.getElementById('forgot-step2').hidden=true; }
+        if (tab==='register') { document.getElementById('reg-step1').hidden=false; document.getElementById('reg-step2').hidden=true; }
+    }
+    function authTogglePass(inputId, iconId) {
+        const i = document.getElementById(inputId);
+        const ic = document.getElementById(iconId);
+        i.type = i.type==='password' ? 'text' : 'password';
+        ic.className = i.type==='password' ? 'fa-solid fa-eye' : 'fa-solid fa-eye-slash';
+    }
+    function authMsg(id, text, show=true) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.textContent = text;
+        el.hidden = !show;
+    }
+    function authBtnLoading(btn, loading, text='') {
+        btn.disabled = loading;
+        if (text) btn.textContent = loading ? 'Подождите...' : text;
+    }
+
+    function hideLogin() {
+        const sc = document.getElementById('login-screen');
+        sc.style.animation = 'loginFadeOut .35s ease forwards';
+        setTimeout(() => { sc.style.display='none'; }, 340);
+    }
+    function saveSession(data) {
+        localStorage.setItem(SESSION_KEY, JSON.stringify(data));
+        window.maviUser = data;
+    }
+
+    // ── LOGIN ─────────────────────────────────────────────────────────
+    document.getElementById('login-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        authMsg('login-error','',false);
+        const emailRaw = document.getElementById('login-email').value.trim();
+        const pass     = document.getElementById('login-pass').value;
+        const btn      = document.getElementById('login-btn');
+        authBtnLoading(btn, true, 'Войти в систему');
+
+        // Admin hardcoded
+        if ((emailRaw==='admin'||emailRaw==='admin@mavi.com') && pass==='admin') {
+            saveSession({ login:'admin', name:'Администратор', role:'admin' });
+            hideLogin();
+            authBtnLoading(btn, false, 'Войти в систему');
+            return;
         }
 
-        // Check existing session
         try {
-            const s = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null');
-            if (s && s.login) { hideLogin(); }
-        } catch(e) {}
-
-        // Submit
-        form.addEventListener('submit', async function(e) {
-            e.preventDefault();
-            errEl.hidden = true;
-            const login = document.getElementById('login-name').value.trim();
-            const pass  = document.getElementById('login-pass').value;
-
-            btn.disabled = true;
-            btn.textContent = 'Проверяем...';
-
-            // Check hardcoded users first
-            const found = USERS.find(u => u.login === login && u.password === pass);
-            if (found) {
-                localStorage.setItem(SESSION_KEY, JSON.stringify({ login: found.login, name: found.name, role: found.role }));
+            const hash = await authHash(pass);
+            const user = await dbGet('users', `email=eq.${encodeURIComponent(emailRaw)}&password_hash=eq.${hash}&select=id,email,name,role,employee_id`);
+            if (user) {
+                saveSession({ login: user.email, name: user.name, role: user.role, user_id: user.id, emp_id: user.employee_id });
                 hideLogin();
-                btn.disabled = false;
-                btn.textContent = 'Войти в систему';
+                authBtnLoading(btn, false, 'Войти в систему');
                 return;
             }
+        } catch(err) { console.warn('login err:', err); }
 
-            // Check employees by email (login = email)
-            try {
-                const url  = 'https://supabase.138.124.87.26.sslip.io';
-                const key  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRFA0NiK7ACcPe_UtPE0b8O-8GXJI4BzVPkCCKNPcbU';
-                const resp = await fetch(`${url}/rest/v1/employees?email=eq.${encodeURIComponent(login)}&select=id,full_name,role,status`, {
-                    headers: { 'apikey': key, 'Authorization': 'Bearer ' + key }
-                });
-                const data = await resp.json();
-                if (data && data.length > 0) {
-                    // Employee found by email — accept any password for now (no password field on employees)
-                    const emp = data[0];
-                    localStorage.setItem(SESSION_KEY, JSON.stringify({ login, name: emp.full_name, role: emp.role, emp_id: emp.id }));
-                    hideLogin();
-                    btn.disabled = false;
-                    btn.textContent = 'Войти в систему';
-                    return;
-                }
-            } catch(err) { console.warn('Employee auth check failed:', err); }
+        authMsg('login-error', '✕  Неверный email или пароль');
+        authBtnLoading(btn, false, 'Войти в систему');
+    });
 
-            errEl.hidden = false;
-            btn.disabled = false;
-            btn.textContent = 'Войти в систему';
-        });
+    // ── REGISTER step 1: check email ─────────────────────────────────
+    document.getElementById('reg-form-step1').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        authMsg('reg-error1','',false);
+        const email = document.getElementById('reg-email').value.trim().toLowerCase();
+        const btn   = e.submitter;
+        authBtnLoading(btn, true, 'Проверить email');
 
-        // Logout function (global)
-        window.maviLogout = function() {
-            localStorage.removeItem(SESSION_KEY);
-            location.reload();
-        };
-
-        // Expose current user
         try {
-            window.maviUser = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null');
-        } catch(e) { window.maviUser = null; }
+            // Check if already registered
+            const exists = await dbGet('users', `email=eq.${encodeURIComponent(email)}&select=id`);
+            if (exists) {
+                authMsg('reg-error1', '✕  Этот email уже зарегистрирован. Войдите или восстановите пароль.');
+                authBtnLoading(btn, false, 'Проверить email');
+                return;
+            }
+            // Check employees table
+            const emp = await dbGet('employees', `email=eq.${encodeURIComponent(email)}&select=id,full_name`);
+            if (!emp) {
+                authMsg('reg-error1', '✕  Email не найден в системе. Обратитесь к администратору.');
+                authBtnLoading(btn, false, 'Проверить email');
+                return;
+            }
+            // Found — show step 2
+            window._regEmail  = email;
+            window._regEmpId  = emp.id;
+            window._regEmpName = emp.full_name;
+            document.getElementById('reg-emp-name').textContent = '👋 ' + emp.full_name;
+            document.getElementById('reg-step1').hidden = true;
+            document.getElementById('reg-step2').hidden = false;
+        } catch(err) {
+            authMsg('reg-error1', '✕  Ошибка соединения. Попробуйте позже.');
+        }
+        authBtnLoading(btn, false, 'Проверить email');
+    });
 
-        // Show user name in sidebar logout button
+    // ── REGISTER step 2: set password ────────────────────────────────
+    document.getElementById('reg-form-step2').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        authMsg('reg-error2','',false);
+        const pass  = document.getElementById('reg-pass').value;
+        const pass2 = document.getElementById('reg-pass2').value;
+        const btn   = e.submitter;
+        if (pass.length < 6) { authMsg('reg-error2','✕  Пароль должен быть не менее 6 символов'); return; }
+        if (pass !== pass2)   { authMsg('reg-error2','✕  Пароли не совпадают'); return; }
+        authBtnLoading(btn, true, 'Зарегистрироваться');
+
+        try {
+            const hash = await authHash(pass);
+            const user = await dbPost('users', {
+                email: window._regEmail,
+                password_hash: hash,
+                employee_id: window._regEmpId,
+                name: window._regEmpName,
+                role: 'employee'
+            });
+            saveSession({ login: window._regEmail, name: window._regEmpName, role: 'employee', emp_id: window._regEmpId });
+            hideLogin();
+        } catch(err) {
+            authMsg('reg-error2', '✕  Ошибка при регистрации. Попробуйте позже.');
+        }
+        authBtnLoading(btn, false, 'Зарегистрироваться');
+    });
+
+    // ── FORGOT step 1: find account ──────────────────────────────────
+    document.getElementById('forgot-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        authMsg('forgot-error','',false);
+        const email = document.getElementById('forgot-email').value.trim().toLowerCase();
+        const btn   = e.submitter;
+        authBtnLoading(btn, true, 'Сбросить пароль');
+
+        try {
+            const user = await dbGet('users', `email=eq.${encodeURIComponent(email)}&select=id,name`);
+            if (!user) {
+                authMsg('forgot-error', '✕  Аккаунт с таким email не найден.');
+                authBtnLoading(btn, false, 'Сбросить пароль');
+                return;
+            }
+            window._forgotEmail = email;
+            window._forgotUserId = user.id;
+            document.getElementById('forgot-step1').hidden = true;
+            document.getElementById('forgot-step2').hidden = false;
+        } catch(err) {
+            authMsg('forgot-error', '✕  Ошибка соединения.');
+        }
+        authBtnLoading(btn, false, 'Сбросить пароль');
+    });
+
+    // ── FORGOT step 2: set new password ──────────────────────────────
+    document.getElementById('forgot-form2').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        authMsg('forgot-error2','',false);
+        const pass  = document.getElementById('forgot-pass').value;
+        const pass2 = document.getElementById('forgot-pass2').value;
+        const btn   = e.submitter;
+        if (pass.length < 6) { authMsg('forgot-error2','✕  Пароль должен быть не менее 6 символов'); return; }
+        if (pass !== pass2)   { authMsg('forgot-error2','✕  Пароли не совпадают'); return; }
+        authBtnLoading(btn, true, 'Сохранить пароль');
+
+        try {
+            const hash = await authHash(pass);
+            await dbPatch('users', `id=eq.${window._forgotUserId}`, { password_hash: hash });
+            // auto login
+            const user = await dbGet('users', `id=eq.${window._forgotUserId}&select=email,name,role,employee_id`);
+            if (user) {
+                saveSession({ login: user.email, name: user.name, role: user.role, emp_id: user.employee_id });
+                hideLogin();
+            } else {
+                authShowTab('login');
+            }
+        } catch(err) {
+            authMsg('forgot-error2', '✕  Ошибка при сохранении. Попробуйте позже.');
+        }
+        authBtnLoading(btn, false, 'Сохранить пароль');
+    });
+
+    // ── Init ─────────────────────────────────────────────────────────
+    (function() {
+        try {
+            const s = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null');
+            if (s && s.login) { window.maviUser = s; hideLogin(); }
+        } catch(e) {}
+
+        window.maviLogout = function() { localStorage.removeItem(SESSION_KEY); location.reload(); };
+
         if (window.maviUser?.name) {
             const el = document.getElementById('sidebar-user-name');
             if (el) el.textContent = window.maviUser.name;
@@ -6485,15 +6692,39 @@
     </script>
 
     <style>
-    @keyframes loginFadeIn {
-        from { opacity:0; transform:translateY(16px) scale(.97); }
-        to   { opacity:1; transform:translateY(0)    scale(1);   }
-    }
-    @keyframes loginFadeOut {
-        from { opacity:1; }
-        to   { opacity:0; }
-    }
+    @keyframes loginFadeIn  { from{opacity:0;transform:translateY(14px) scale(.97)} to{opacity:1;transform:none} }
+    @keyframes loginFadeOut { from{opacity:1} to{opacity:0} }
     #login-card { animation: loginFadeIn .5s cubic-bezier(.22,1,.36,1) both; }
+
+    .auth-tab {
+        background:none;border:none;cursor:pointer;font-family:inherit;font-size:13px;font-weight:500;
+        color:rgba(148,163,184,0.5);padding:12px 8px;border-bottom:2px solid transparent;
+        transition:color .2s,border-color .2s;
+    }
+    .auth-tab.active { color:#a5b4fc; border-bottom-color:#6366f1; }
+    .auth-tab:hover:not(.active) { color:rgba(148,163,184,0.8); }
+
+    .auth-field { position:relative; }
+    .auth-field-ic { position:absolute;left:14px;top:50%;transform:translateY(-50%);color:rgba(148,163,184,0.4);font-size:13px;pointer-events:none; }
+    .auth-input {
+        width:100%;box-sizing:border-box;padding:12px 14px 12px 40px;
+        background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);
+        border-radius:11px;color:#e2e8f0;font-size:14px;font-family:inherit;outline:none;transition:border-color .2s;
+    }
+    .auth-input:focus { border-color:rgba(99,102,241,0.6); }
+    .auth-eye { position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:rgba(148,163,184,0.4);padding:0;font-size:13px; }
+    .auth-btn-primary {
+        padding:13px;border:none;border-radius:11px;cursor:pointer;font-size:14px;font-weight:600;
+        font-family:inherit;background:linear-gradient(135deg,#6366f1,#4f46e5);color:#fff;
+        box-shadow:0 4px 20px rgba(99,102,241,0.35);transition:all .2s;
+    }
+    .auth-btn-primary:hover:not(:disabled) { transform:translateY(-1px);box-shadow:0 6px 28px rgba(99,102,241,0.5); }
+    .auth-btn-primary:disabled { opacity:.6;cursor:default;transform:none; }
+    .auth-btn-ghost { background:none;border:1px solid rgba(255,255,255,0.1);border-radius:11px;padding:11px;font-family:inherit;font-size:13px;color:rgba(148,163,184,0.6);cursor:pointer;transition:all .2s; }
+    .auth-btn-ghost:hover { border-color:rgba(255,255,255,0.2);color:rgba(148,163,184,0.9); }
+    .auth-msg { font-size:12px;padding:8px 12px;border-radius:8px;text-align:center; }
+    .auth-msg-err { color:#f87171;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2); }
+    .auth-msg-ok  { color:#34d399;background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.2); }
     </style>
     <!-- ═══════════════════════════════════════ -->
 </body>
