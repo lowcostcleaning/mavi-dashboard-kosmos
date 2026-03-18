@@ -1056,7 +1056,11 @@
                             </div>
                             <div><label class="emp-label">Адрес</label><input class="mavi-input" id="apt-form-address" placeholder="ул. Горгиладзе, 4"></div>
                             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-                                <div><label class="emp-label">Комплекс</label><input class="mavi-input" id="apt-form-complex" placeholder="Orbi Beach"></div>
+                                <div><label class="emp-label">Комплекс</label>
+                                    <select class="mavi-input" id="apt-form-complex">
+                                        <option value="">— выбрать —</option>
+                                    </select>
+                                </div>
                                 <div><label class="emp-label">Этаж</label><input class="mavi-input" id="apt-form-floor" type="number" placeholder="12"></div>
                             </div>
 
@@ -1766,7 +1770,14 @@
         }
         f('apt-form-strategy',    a?.strategy);
         f('apt-form-address',     a?.address);
-        f('apt-form-complex',     a?.complex_name);
+
+        // Populate complex dropdown from existing apartments
+        const complexSel2 = document.getElementById('apt-form-complex');
+        if (complexSel2) {
+            const complexes = [...new Set(allApartments.map(x => x.complex_name).filter(Boolean))].sort();
+            complexSel2.innerHTML = '<option value="">— выбрать —</option>'
+                + complexes.map(c => `<option value="${c}" ${c === (a?.complex_name || '') ? 'selected' : ''}>${c}</option>`).join('');
+        }
         f('apt-form-floor',       a?.floor);
         f('apt-form-revenue',     a?.monthly_revenue);
         f('apt-form-airbnb',      a?.link_airbnb);
