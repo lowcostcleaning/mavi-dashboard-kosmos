@@ -3375,21 +3375,42 @@
             if (el) el.textContent = total > 0 ? total + ' ₾' : '—';
         }
 
-        // Auto-fill cleaner rate from employee profile
+        // Auto-fill tariff type & cost from apartment type
+        function applyTariffType(tariffType) {
+            const sel = document.getElementById('clean-edit-tariff');
+            if (sel && tariffType) sel.value = tariffType;
+            const rate = allTariffRates.find(r => r.tariff_type === tariffType);
+            if (rate) {
+                const costEl = document.getElementById('clean-edit-cost');
+                if (costEl) costEl.value = rate.cleaning_price || '';
+            }
+            cardRecompute();
+        }
+
+        // Wire tariff type dropdown → auto-fill cost
+        document.getElementById('clean-edit-tariff')?.addEventListener('change', function() {
+            applyTariffType(this.value);
+        });
+
+        // On open: if no tariff_type saved yet, derive from apt_type_auto
+        if (!t.tariff_type && t.apt_type_auto) {
+            const typeMap = { 'студия': 'студия', '1+1': '1+1', '2+1': '2+1' };
+            const mapped = typeMap[t.apt_type_auto] || null;
+            if (mapped) applyTariffType(mapped);
+        }
+
+        // Auto-fill cleaner rate from employee profile (allow 0)
         document.getElementById('clean-edit-cleaner')?.addEventListener('change', function() {
             const emp = allEmployees.find(e => String(e.id) === String(this.value));
-            if (emp?.default_tariff) {
-                const rateEl = document.getElementById('clean-edit-rate');
-                if (rateEl) rateEl.value = emp.default_tariff;
-            }
+            const rateEl = document.getElementById('clean-edit-rate');
+            if (rateEl && emp) rateEl.value = emp.default_tariff != null ? emp.default_tariff : '';
             cardRecompute();
         });
         document.getElementById('clean-edit-cleaner2')?.addEventListener('change', function() {
             const emp = allEmployees.find(e => String(e.id) === String(this.value));
-            if (emp?.default_tariff) {
-                const rateEl = document.getElementById('clean-edit-rate2');
-                if (rateEl) rateEl.value = emp.default_tariff;
-            }
+            const rateEl = document.getElementById('clean-edit-rate2');
+            if (rateEl && emp) rateEl.value = emp.default_tariff != null ? emp.default_tariff : '';
+            else if (rateEl && !this.value) rateEl.value = '';
             cardRecompute();
         });
 
