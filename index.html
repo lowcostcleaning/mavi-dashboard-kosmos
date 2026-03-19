@@ -6604,37 +6604,12 @@
 
     <!-- ════════════ AUTH SCRIPT ════════════ -->
     <script>
-    const SUPA_URL_AUTH = 'https://supabase.138.124.87.26.sslip.io';
-    const SUPA_KEY_AUTH = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRFA0NiK7ACcPe_UtPE0b8O-8GXJI4BzVPkCCKNPcbU';
     const SESSION_KEY = 'mavi_auth_v2';
 
     // ── helpers ──────────────────────────────────────────────────────
     async function authHash(str) {
         const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str + '_mavi25'));
         return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
-    }
-    async function dbGet(table, query) {
-        const r = await fetch(`${SUPA_URL_AUTH}/rest/v1/${table}?${query}&limit=1`, {
-            headers:{'apikey':SUPA_KEY_AUTH,'Authorization':'Bearer '+SUPA_KEY_AUTH}
-        });
-        const d = await r.json();
-        return Array.isArray(d) ? d[0] : null;
-    }
-    async function dbPost(table, body) {
-        const r = await fetch(`${SUPA_URL_AUTH}/rest/v1/${table}`, {
-            method:'POST',
-            headers:{'apikey':SUPA_KEY_AUTH,'Authorization':'Bearer '+SUPA_KEY_AUTH,'Content-Type':'application/json','Prefer':'return=representation'},
-            body:JSON.stringify(body)
-        });
-        const d = await r.json();
-        return Array.isArray(d) ? d[0] : d;
-    }
-    async function dbPatch(table, query, body) {
-        await fetch(`${SUPA_URL_AUTH}/rest/v1/${table}?${query}`, {
-            method:'PATCH',
-            headers:{'apikey':SUPA_KEY_AUTH,'Authorization':'Bearer '+SUPA_KEY_AUTH,'Content-Type':'application/json'},
-            body:JSON.stringify(body)
-        });
     }
 
     function authShowTab(tab) {
@@ -6694,7 +6669,12 @@
 
         try {
             const hash = await authHash(pass);
-            const emp = await dbGet('employees', `email=eq.${encodeURIComponent(emailRaw)}&password_hash=eq.${hash}&select=id,email,full_name,role`);
+            const { data } = await supa.from('employees')
+                .select('id, email, full_name, role')
+                .eq('email', emailRaw)
+                .eq('password_hash', hash)
+                .limit(1);
+            const emp = data?.[0];
             if (emp) {
                 saveSession({ login: emp.email, name: emp.full_name, role: emp.role, emp_id: emp.id });
                 hideLogin();
@@ -6716,7 +6696,11 @@
         authBtnLoading(btn, true, 'Проверить email');
 
         try {
-            const emp = await dbGet('employees', `email=eq.${encodeURIComponent(email)}&select=id,full_name,password_hash`);
+            const { data } = await supa.from('employees')
+                .select('id, full_name, password_hash')
+                .eq('email', email)
+                .limit(1);
+            const emp = data?.[0];
             if (!emp) {
                 authMsg('reg-error1', '✕  Email не найден в системе. Обратитесь к администратору.');
                 authBtnLoading(btn, false, 'Проверить email');
@@ -6727,7 +6711,6 @@
                 authBtnLoading(btn, false, 'Проверить email');
                 return;
             }
-            // Found — show step 2
             window._regEmail  = email;
             window._regEmpId  = emp.id;
             window._regEmpName = emp.full_name;
@@ -6753,7 +6736,10 @@
 
         try {
             const hash = await authHash(pass);
-            await dbPatch('employees', `id=eq.${window._regEmpId}`, { password_hash: hash });
+            const { error } = await supa.from('employees')
+                .update({ password_hash: hash })
+                .eq('id', window._regEmpId);
+            if (error) throw error;
             saveSession({ login: window._regEmail, name: window._regEmpName, role: 'employee', emp_id: window._regEmpId });
             hideLogin();
         } catch(err) {
@@ -6771,7 +6757,11 @@
         authBtnLoading(btn, true, 'Сбросить пароль');
 
         try {
-            const emp = await dbGet('employees', `email=eq.${encodeURIComponent(email)}&select=id,full_name,password_hash`);
+            const { data } = await supa.from('employees')
+                .select('id, full_name, password_hash')
+                .eq('email', email)
+                .limit(1);
+            const emp = data?.[0];
             if (!emp || !emp.password_hash) {
                 authMsg('forgot-error', '✕  Аккаунт с таким email не найден. Сначала зарегистрируйтесь.');
                 authBtnLoading(btn, false, 'Сбросить пароль');
@@ -6801,7 +6791,10 @@
 
         try {
             const hash = await authHash(pass);
-            await dbPatch('employees', `id=eq.${window._forgotEmpId}`, { password_hash: hash });
+            const { error } = await supa.from('employees')
+                .update({ password_hash: hash })
+                .eq('id', window._forgotEmpId);
+            if (error) throw error;
             saveSession({ login: window._forgotEmail, name: window._forgotEmpName, role: 'employee', emp_id: window._forgotEmpId });
             hideLogin();
         } catch(err) {
