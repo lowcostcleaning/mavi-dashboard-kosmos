@@ -4219,7 +4219,7 @@
                 <div style="flex:1;min-width:0;">
                     <div class="clean-card-apt-name">${unmatchedCard ? '<i class="fa-solid fa-triangle-exclamation" style="color:#f59e0b;margin-right:5px;font-size:12px;"></i>' : ''}${aptCardLabel}</div>
                     <div class="clean-card-date"><span style="text-transform:capitalize;">${weekday}</span>, ${dateStr}</div>
-                    ${unmatchedCard ? `<button class="cal-match-btn" data-task-id="${t.id}" data-sheet-name="${(t.sheet_apt_name || '').replace(/"/g, '&quot;')}" style="margin-top:6px;"><i class="fa-solid fa-link" style="margin-right:4px;"></i>Сопоставить с апартаментом</button>` : ''}
+                    ${unmatchedCard && !(window.maviUser?.role === 'cleaner' || window.maviUser?.role === 'intern') ? `<button class="cal-match-btn" data-task-id="${t.id}" data-sheet-name="${(t.sheet_apt_name || '').replace(/"/g, '&quot;')}" style="margin-top:6px;"><i class="fa-solid fa-link" style="margin-right:4px;"></i>Сопоставить с апартаментом</button>` : ''}
                 </div>
                 <span class="cal-status-badge" style="background:${st.color}22;border-color:${st.color}55;color:${st.color};flex-shrink:0;">${st.label}</span>
             </div>
@@ -4317,8 +4317,36 @@
 
             </div>
 
-            <!-- Edit section (hidden for cleaners/interns) -->
-            <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.07);${window.maviUser?.role === 'cleaner' || window.maviUser?.role === 'intern' ? 'display:none;' : ''}">
+            <!-- Edit section -->
+            ${(window.maviUser?.role === 'cleaner' || window.maviUser?.role === 'intern') ? `
+            <!-- Cleaner: only status + comment -->
+            <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.07);">
+                <div style="margin-bottom:8px;">
+                    <label style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:3px;">Статус</label>
+                    <select id="clean-edit-status" class="mavi-input" style="font-size:12px;padding:6px 8px;width:100%;">${statusOptions}</select>
+                </div>
+                <div style="margin-bottom:8px;">
+                    <label style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:3px;">Комментарий</label>
+                    <textarea id="clean-edit-comment" class="mavi-input" rows="2" placeholder="Замечания..." style="width:100%;resize:vertical;font-size:12px;padding:6px 8px;line-height:1.4;">${t.comment || ''}</textarea>
+                </div>
+                <!-- Hidden inputs for save function compatibility -->
+                <input type="hidden" id="clean-edit-cleaner" value="${t.assigned_to || ''}">
+                <input type="hidden" id="clean-edit-cleaner2" value="${t.cleaner2_id || ''}">
+                <input type="hidden" id="clean-edit-kit" value="${t.kit_type || ''}">
+                <input type="hidden" id="clean-edit-tariff" value="${t.tariff_type || ''}">
+                <input type="hidden" id="clean-edit-cost" value="${t.cost || ''}">
+                <input type="hidden" id="clean-edit-rate" value="${t.cleaner_rate || ''}">
+                <input type="hidden" id="clean-edit-rate2" value="${t.cleaner2_rate || ''}">
+                <input type="hidden" id="clean-edit-long-stay-amount" value="${t.long_stay_amount || ''}">
+                <span id="clean-edit-long-stay" data-checked="${t.long_stay ? '1' : ''}"></span>
+                <button id="clean-save-btn" class="action-btn" style="width:100%;justify-content:center;padding:8px;">
+                    <i class="fa-solid fa-floppy-disk" style="margin-right:6px;"></i>Сохранить
+                </button>
+                <div id="clean-save-msg" style="text-align:center;font-size:11px;margin-top:6px;height:14px;"></div>
+            </div>
+            ` : `
+            <!-- Full edit for managers/admins -->
+            <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.07);">
                 <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text-secondary);margin-bottom:8px;font-weight:600;">Редактировать</div>
 
                 <!-- Статус -->
@@ -4356,7 +4384,7 @@
                     </div>
                 </div>
 
-                <!-- Auto-info bar: тип апартамента, тариф, бонусы -->
+                <!-- Auto-info bar -->
                 <div id="clean-auto-info" style="background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.2);border-radius:8px;padding:8px 12px;margin-bottom:8px;font-size:12px;">
                     <div style="display:flex;flex-wrap:wrap;gap:10px;">
                         <span style="color:var(--text-secondary);">🏠 Тип: <strong id="clean-info-type" style="color:#a5b4fc;">${apt?.apt_type || t.apt_type_auto || '—'}</strong></span>
@@ -4366,7 +4394,7 @@
                     </div>
                 </div>
 
-                <!-- Hidden auto-filled inputs (used by save function) -->
+                <!-- Hidden auto-filled inputs -->
                 <input type="hidden" id="clean-edit-tariff" value="${t.tariff_type || ''}">
                 <input type="hidden" id="clean-edit-cost" value="${t.cost || ''}">
                 <input type="hidden" id="clean-edit-rate" value="${t.cleaner_rate || ''}">
@@ -4400,6 +4428,7 @@
                 </button>
                 <div id="clean-save-msg" style="text-align:center;font-size:11px;margin-top:6px;height:14px;"></div>
             </div>
+            `}
         `;
 
         // Async: load kit + delivery status for this apartment
@@ -4555,7 +4584,8 @@
         const newRate2     = parseFloat(document.getElementById('clean-edit-rate2').value) || null;      // тариф клинера 2
         const newTariff    = document.getElementById('clean-edit-tariff').value || null;
         const newKit       = document.getElementById('clean-edit-kit').value || null;
-        const newLongStay  = document.getElementById('clean-edit-long-stay').checked;
+        const lsEl = document.getElementById('clean-edit-long-stay');
+        const newLongStay  = lsEl?.checked ?? (lsEl?.dataset?.checked === '1');
         const newLsAmt     = parseFloat(document.getElementById('clean-edit-long-stay-amount').value) || null;
         const newComment   = document.getElementById('clean-edit-comment').value.trim() || null;
         const newRating    = rating || null;
