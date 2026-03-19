@@ -6694,9 +6694,9 @@
 
         try {
             const hash = await authHash(pass);
-            const user = await dbGet('users', `email=eq.${encodeURIComponent(emailRaw)}&password_hash=eq.${hash}&select=id,email,name,role,employee_id`);
-            if (user) {
-                saveSession({ login: user.email, name: user.name, role: user.role, user_id: user.id, emp_id: user.employee_id });
+            const emp = await dbGet('employees', `email=eq.${encodeURIComponent(emailRaw)}&password_hash=eq.${hash}&select=id,email,full_name,role`);
+            if (emp) {
+                saveSession({ login: emp.email, name: emp.full_name, role: emp.role, emp_id: emp.id });
                 hideLogin();
                 authBtnLoading(btn, false, 'Войти в систему');
                 return;
@@ -6716,17 +6716,14 @@
         authBtnLoading(btn, true, 'Проверить email');
 
         try {
-            // Check if already registered
-            const exists = await dbGet('users', `email=eq.${encodeURIComponent(email)}&select=id`);
-            if (exists) {
-                authMsg('reg-error1', '✕  Этот email уже зарегистрирован. Войдите или восстановите пароль.');
+            const emp = await dbGet('employees', `email=eq.${encodeURIComponent(email)}&select=id,full_name,password_hash`);
+            if (!emp) {
+                authMsg('reg-error1', '✕  Email не найден в системе. Обратитесь к администратору.');
                 authBtnLoading(btn, false, 'Проверить email');
                 return;
             }
-            // Check employees table
-            const emp = await dbGet('employees', `email=eq.${encodeURIComponent(email)}&select=id,full_name`);
-            if (!emp) {
-                authMsg('reg-error1', '✕  Email не найден в системе. Обратитесь к администратору.');
+            if (emp.password_hash) {
+                authMsg('reg-error1', '✕  Этот email уже зарегистрирован. Войдите или восстановите пароль.');
                 authBtnLoading(btn, false, 'Проверить email');
                 return;
             }
@@ -6734,7 +6731,7 @@
             window._regEmail  = email;
             window._regEmpId  = emp.id;
             window._regEmpName = emp.full_name;
-            document.getElementById('reg-emp-name').textContent = '👋 ' + emp.full_name;
+            document.getElementById('reg-emp-name').textContent = emp.full_name;
             document.getElementById('reg-step1').hidden = true;
             document.getElementById('reg-step2').hidden = false;
         } catch(err) {
@@ -6756,13 +6753,7 @@
 
         try {
             const hash = await authHash(pass);
-            const user = await dbPost('users', {
-                email: window._regEmail,
-                password_hash: hash,
-                employee_id: window._regEmpId,
-                name: window._regEmpName,
-                role: 'employee'
-            });
+            await dbPatch('employees', `id=eq.${window._regEmpId}`, { password_hash: hash });
             saveSession({ login: window._regEmail, name: window._regEmpName, role: 'employee', emp_id: window._regEmpId });
             hideLogin();
         } catch(err) {
@@ -6780,14 +6771,15 @@
         authBtnLoading(btn, true, 'Сбросить пароль');
 
         try {
-            const user = await dbGet('users', `email=eq.${encodeURIComponent(email)}&select=id,name`);
-            if (!user) {
-                authMsg('forgot-error', '✕  Аккаунт с таким email не найден.');
+            const emp = await dbGet('employees', `email=eq.${encodeURIComponent(email)}&select=id,full_name,password_hash`);
+            if (!emp || !emp.password_hash) {
+                authMsg('forgot-error', '✕  Аккаунт с таким email не найден. Сначала зарегистрируйтесь.');
                 authBtnLoading(btn, false, 'Сбросить пароль');
                 return;
             }
             window._forgotEmail = email;
-            window._forgotUserId = user.id;
+            window._forgotEmpId = emp.id;
+            window._forgotEmpName = emp.full_name;
             document.getElementById('forgot-step1').hidden = true;
             document.getElementById('forgot-step2').hidden = false;
         } catch(err) {
@@ -6809,15 +6801,9 @@
 
         try {
             const hash = await authHash(pass);
-            await dbPatch('users', `id=eq.${window._forgotUserId}`, { password_hash: hash });
-            // auto login
-            const user = await dbGet('users', `id=eq.${window._forgotUserId}&select=email,name,role,employee_id`);
-            if (user) {
-                saveSession({ login: user.email, name: user.name, role: user.role, emp_id: user.employee_id });
-                hideLogin();
-            } else {
-                authShowTab('login');
-            }
+            await dbPatch('employees', `id=eq.${window._forgotEmpId}`, { password_hash: hash });
+            saveSession({ login: window._forgotEmail, name: window._forgotEmpName, role: 'employee', emp_id: window._forgotEmpId });
+            hideLogin();
         } catch(err) {
             authMsg('forgot-error2', '✕  Ошибка при сохранении. Попробуйте позже.');
         }
