@@ -3832,23 +3832,41 @@
     // ── Schedule Cleaning Modal ──────────────────────────────────────
     let schedAptId = null;
 
-    function openSchedModal(aptId, aptName) {
+    async function updateCleanerOpts(dateVal) {
+        const cleaners = allEmployees.filter(e => e.role === 'cleaner' || (e.role === 'intern' && e.department === 'cleaner'));
+        let unavailIds = new Set();
+        if (dateVal && cleaners.length) {
+            const { data } = await supa.from('employee_unavailability')
+                .select('employee_id')
+                .eq('unavailable_date', dateVal)
+                .in('employee_id', cleaners.map(e => e.id));
+            if (data) unavailIds = new Set(data.map(d => d.employee_id));
+        }
+        const sel1 = document.getElementById('sched-cleaner');
+        const sel2 = document.getElementById('sched-cleaner2');
+        const prev1 = sel1.value, prev2 = sel2.value;
+        const opts = '<option value="">— не назначен —</option>'
+            + cleaners
+                .filter(e => !unavailIds.has(e.id))
+                .map(e => `<option value="${e.id}" data-tariff="${e.default_tariff || ''}">${e.full_name}${e.role === 'intern' ? ' (стажер)' : ''}</option>`)
+                .join('');
+        sel1.innerHTML = opts;
+        sel2.innerHTML = opts;
+        sel1.value = prev1; sel2.value = prev2;
+    }
+
+    async function openSchedModal(aptId, aptName) {
         schedAptId = aptId;
         document.getElementById('sched-apt-name').textContent = aptName;
 
         // Default date = tomorrow
         const tomorrow = new Date();
         tomorrow.setDate(tomorrow.getDate() + 1);
-        document.getElementById('sched-date').value = tomorrow.toISOString().slice(0, 10);
+        const dateVal = tomorrow.toISOString().slice(0, 10);
+        document.getElementById('sched-date').value = dateVal;
 
-        // Populate cleaner dropdowns
-        const cleanerOpts = '<option value="">— не назначен —</option>'
-            + allEmployees
-                .filter(e => e.role === 'cleaner' || (e.role === 'intern' && e.department === 'cleaner'))
-                .map(e => `<option value="${e.id}" data-tariff="${e.default_tariff || ''}">${e.full_name}${e.role === 'intern' ? ' (стажер)' : ''}</option>`)
-                .join('');
-        document.getElementById('sched-cleaner').innerHTML = cleanerOpts;
-        document.getElementById('sched-cleaner2').innerHTML = cleanerOpts;
+        // Populate cleaner dropdowns (excluding unavailable on selected date)
+        await updateCleanerOpts(dateVal);
 
         // Helper: recompute total
         function schedRecompute() {
@@ -3868,21 +3886,16 @@
             const opt = this.options[this.selectedIndex];
             if (opt.value && opt.dataset.tariff) document.getElementById('sched-cleaner-rate').value = opt.dataset.tariff;
             schedRecompute();
-            checkCleanerUnavail(this.value, document.getElementById('sched-date').value, this);
         };
         document.getElementById('sched-cleaner2').onchange = function() {
             const opt = this.options[this.selectedIndex];
             if (opt.value && opt.dataset.tariff) document.getElementById('sched-cleaner2-rate').value = opt.dataset.tariff;
             schedRecompute();
-            checkCleanerUnavail(this.value, document.getElementById('sched-date').value, this);
         };
 
-        // Re-check unavailability when date changes
+        // Refresh cleaner list when date changes (excludes unavailable cleaners)
         document.getElementById('sched-date').onchange = function() {
-            const c1 = document.getElementById('sched-cleaner');
-            const c2 = document.getElementById('sched-cleaner2');
-            if (c1.value) checkCleanerUnavail(c1.value, this.value, c1);
-            if (c2.value) checkCleanerUnavail(c2.value, this.value, c2);
+            updateCleanerOpts(this.value);
         };
 
         // Toggle долгий срок amount
@@ -3959,28 +3972,6 @@
             document.getElementById('sched-msg').textContent = 'Выберите дату';
             document.getElementById('sched-msg').style.color = '#ef4444';
             return;
-        }
-
-        // Блокируем назначение на выходной день клинера
-        if (cleaner && dateVal) {
-            const { data: u1 } = await supa.from('employee_unavailability')
-                .select('id').eq('employee_id', cleaner).eq('unavailable_date', dateVal).limit(1);
-            if (u1 && u1.length) {
-                const empName = allEmployees.find(e => e.id === cleaner)?.full_name || 'Клинер';
-                document.getElementById('sched-msg').textContent = empName + ' — выходной ' + dateVal;
-                document.getElementById('sched-msg').style.color = '#ef4444';
-                return;
-            }
-        }
-        if (cleaner2 && dateVal) {
-            const { data: u2 } = await supa.from('employee_unavailability')
-                .select('id').eq('employee_id', cleaner2).eq('unavailable_date', dateVal).limit(1);
-            if (u2 && u2.length) {
-                const empName = allEmployees.find(e => e.id === cleaner2)?.full_name || 'Клинер 2';
-                document.getElementById('sched-msg').textContent = empName + ' — выходной ' + dateVal;
-                document.getElementById('sched-msg').style.color = '#ef4444';
-                return;
-            }
         }
 
         const apt = allApartments.find(a => a.id === aptId);
