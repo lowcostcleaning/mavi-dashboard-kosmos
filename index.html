@@ -3249,6 +3249,7 @@
     async function loadDashboard() {
         const { data: tasks } = await supa.from('tasks')
             .select('id, status, assigned_to, type')
+            .eq('type', 'task')
             .neq('status', 'cancelled');
         if (!tasks) return;
 
