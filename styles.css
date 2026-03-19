@@ -3576,3 +3576,28 @@ body.mob-sidebar-open {
         padding: 16px;
     }
 }
+
+/* ── Pie chart widget ── */
+.pie-chart-wrapper {
+    position: relative;
+    width: 160px;
+    height: 160px;
+    margin: 16px auto;
+}
+.pie-chart-wrapper canvas {
+    width: 160px !important;
+    height: 160px !important;
+}
+.chart-center-text {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+.chart-center-text span {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
