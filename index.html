@@ -1689,14 +1689,12 @@
                     <label class="tk-field-label">Приоритет
                         <select class="mavi-input" id="tk-priority">
                             <option value="low">Низкий</option>
-                            <option value="normal" selected>Обычный</option>
-                            <option value="high">Высокий</option>
+                            <option value="planned" selected>Обычный</option>
+                            <option value="today">Высокий</option>
                             <option value="urgent">Срочно</option>
                         </select>
                     </label>
-                    <label class="tk-field-label">Апартаменты
-                        <select class="mavi-input" id="tk-apartment"><option value="">— не указан —</option></select>
-                    </label>
+                    <input type="hidden" id="tk-apartment" value="">
                 </div>
                 <label class="tk-field-label" id="tk-status-row" style="display:none;">Статус
                     <select class="mavi-input" id="tk-status">
@@ -5982,7 +5980,7 @@
         document.getElementById('tk-modal-title-label').textContent = t ? 'Редактировать задачу' : 'Новая задача';
         document.getElementById('tk-title').value    = t?.title   || '';
         document.getElementById('tk-comment').value  = t?.comment || '';
-        document.getElementById('tk-priority').value = t?.priority || 'normal';
+        document.getElementById('tk-priority').value = t?.priority || 'planned';
         document.getElementById('tk-deadline').value = t?.deadline ? t.deadline.slice(0,10) : '';
         document.getElementById('tk-status').value   = t?.status  || 'new';
         document.getElementById('tk-status-row').style.display = t ? '' : 'none';
