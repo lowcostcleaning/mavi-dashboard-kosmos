@@ -3244,6 +3244,70 @@
         if (e.target === e.currentTarget) document.getElementById('match-modal').hidden = true;
     });
 
+    // ── Dashboard task pie chart ────────────────────────────────────
+    let _statusChartInstance = null;
+    async function loadDashboard() {
+        const { data: tasks } = await supa.from('tasks')
+            .select('id, status, assigned_to, type')
+            .neq('status', 'cancelled');
+        if (!tasks) return;
+
+        const waiting  = tasks.filter(t => ['new','assigned','blocked','needs_repair','on_review'].includes(t.status)).length;
+        const doing    = tasks.filter(t => ['in_progress','on_the_way','partial'].includes(t.status)).length;
+        const done     = tasks.filter(t => ['done','accepted'].includes(t.status)).length;
+        const total    = waiting + doing + done;
+        const donePct  = total ? Math.round(done / total * 100) : 0;
+
+        const pct = n => total ? Math.round(n / total * 100) : 0;
+        const el = s => document.querySelector(s);
+        if (el('.js-task-percent'))      el('.js-task-percent').textContent      = donePct + '%';
+        if (el('.js-task-legend-wait'))  el('.js-task-legend-wait').textContent  = `В ожидании (${pct(waiting)}%)`;
+        if (el('.js-task-legend-doing')) el('.js-task-legend-doing').textContent = `В работе (${pct(doing)}%)`;
+        if (el('.js-task-legend-done'))  el('.js-task-legend-done').textContent  = `Готово (${pct(done)}%)`;
+
+        const canvas = document.getElementById('statusChart');
+        if (canvas) {
+            if (_statusChartInstance) _statusChartInstance.destroy();
+            _statusChartInstance = new Chart(canvas, {
+                type: 'doughnut',
+                data: {
+                    datasets: [{ data: [waiting, doing, done],
+                        backgroundColor: ['#f59e0b','#f97316','#10b981'],
+                        borderWidth: 0, hoverOffset: 4 }]
+                },
+                options: { cutout: '72%', plugins: { legend: { display: false }, tooltip: { enabled: false } }, animation: { duration: 600 } }
+            });
+        }
+
+        // Employee performance list
+        const teamEl = document.querySelector('.js-task-team-list');
+        if (teamEl && allEmployees?.length) {
+            const byEmp = {};
+            tasks.forEach(t => {
+                if (!t.assigned_to) return;
+                if (!byEmp[t.assigned_to]) byEmp[t.assigned_to] = { done: 0, total: 0 };
+                byEmp[t.assigned_to].total++;
+                if (['done','accepted'].includes(t.status)) byEmp[t.assigned_to].done++;
+            });
+            const rows = Object.entries(byEmp)
+                .map(([id, s]) => ({ emp: allEmployees.find(e => String(e.id) === id), ...s }))
+                .filter(r => r.emp)
+                .sort((a, b) => b.done - a.done)
+                .slice(0, 6);
+            teamEl.innerHTML = rows.map(r => {
+                const p = r.total ? Math.round(r.done / r.total * 100) : 0;
+                return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                    <span style="flex:1;font-size:12px;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.emp.full_name}</span>
+                    <div style="flex:2;background:rgba(255,255,255,.07);border-radius:4px;height:6px;overflow:hidden;">
+                        <div style="width:${p}%;height:100%;background:#10b981;border-radius:4px;"></div>
+                    </div>
+                    <span style="font-size:11px;color:var(--text-secondary);width:32px;text-align:right;">${p}%</span>
+                </div>`;
+            }).join('') || '<span style="font-size:12px;color:var(--text-muted);">Нет данных</span>';
+        }
+    }
+    loadDashboard();
+
     loadCleanings();
     // Prefetch bookings in background so the tab opens instantly
     setTimeout(() => loadBookings({ background: true }), 300);
