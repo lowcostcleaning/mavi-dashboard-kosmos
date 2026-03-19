@@ -4171,13 +4171,24 @@
         }
 
         const isCleanerRole = e => e.role === 'cleaner' || (e.role === 'intern' && e.department === 'cleaner');
+        // Exclude cleaners unavailable on this task's date
+        const taskDate = t.deadline ? t.deadline.slice(0, 10) : null;
+        let unavailIds = new Set();
+        if (taskDate) {
+            const cleanerIds = allEmployees.filter(isCleanerRole).map(e => e.id);
+            const { data: uData } = await supa.from('employee_unavailability')
+                .select('employee_id')
+                .eq('unavailable_date', taskDate)
+                .in('employee_id', cleanerIds);
+            if (uData) unavailIds = new Set(uData.map(d => d.employee_id));
+        }
         const cleanerOptions = `<option value="">— не назначен —</option>`
-            + allEmployees.filter(isCleanerRole).map(e =>
-                `<option value="${e.id}" data-tariff="${e.default_tariff || ''}" ${e.id === t.assigned_to ? 'selected' : ''}>${e.full_name}${e.role === 'intern' ? ' (стажер)' : ''}</option>`
+            + allEmployees.filter(e => isCleanerRole(e) && (!unavailIds.has(e.id) || e.id === t.assigned_to)).map(e =>
+                `<option value="${e.id}" data-tariff="${e.default_tariff || ''}" ${e.id === t.assigned_to ? 'selected' : ''}>${e.full_name}${e.role === 'intern' ? ' (стажер)' : ''}${unavailIds.has(e.id) ? ' ⛔' : ''}</option>`
             ).join('');
         const cleaner2Options = `<option value="">— не назначен —</option>`
-            + allEmployees.filter(isCleanerRole).map(e =>
-                `<option value="${e.id}" data-tariff="${e.default_tariff || ''}" ${e.id === t.cleaner2_id ? 'selected' : ''}>${e.full_name}${e.role === 'intern' ? ' (стажер)' : ''}</option>`
+            + allEmployees.filter(e => isCleanerRole(e) && (!unavailIds.has(e.id) || e.id === t.cleaner2_id)).map(e =>
+                `<option value="${e.id}" data-tariff="${e.default_tariff || ''}" ${e.id === t.cleaner2_id ? 'selected' : ''}>${e.full_name}${e.role === 'intern' ? ' (стажер)' : ''}${unavailIds.has(e.id) ? ' ⛔' : ''}</option>`
             ).join('');
         const emp2 = allEmployees.find(e => e.id === t.cleaner2_id);
         const initials2 = emp2 ? (emp2.full_name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() : null;
