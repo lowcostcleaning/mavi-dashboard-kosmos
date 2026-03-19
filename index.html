@@ -4820,8 +4820,8 @@
         // Determine status
         let status = complector ? 'assigned' : 'new';
         if (stageKey === 'restocking') {
-            const transferred = document.getElementById('lnd-chk-transferred')?.checked;
-            if (transferred) status = 'done';
+            // Saving комплектация always means the kit is assembled and ready for pickup
+            status = 'done';
         }
 
         btn.disabled = true;
