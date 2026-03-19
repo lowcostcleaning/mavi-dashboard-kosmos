@@ -2994,6 +2994,28 @@
         return raw ? new Date(raw) : null;
     }
 
+    // Global: cleaner unavailability days for calendar display
+    let _calUnavailDates = new Set();
+
+    // Global: check cleaner unavailability when assigning
+    async function checkCleanerUnavail(cleanerId, dateStr, selectEl) {
+        if (!cleanerId || !dateStr) return;
+        const { data } = await supa.from('employee_unavailability')
+            .select('id, reason')
+            .eq('employee_id', cleanerId)
+            .eq('unavailable_date', dateStr)
+            .limit(1);
+        if (data && data.length) {
+            const reason = data[0].reason ? ` (${data[0].reason})` : '';
+            selectEl.style.borderColor = '#ef4444';
+            selectEl.title = 'Клинер недоступен в этот день' + reason;
+            alert('Внимание: этот клинер отметил ' + dateStr + ' как выходной' + reason);
+        } else {
+            selectEl.style.borderColor = '';
+            selectEl.title = '';
+        }
+    }
+
     async function loadCleanings() {
         // fetch all cleaning tasks (no date filter — filter client-side for flexibility)
         const { data, error } = await supa
@@ -3005,10 +3027,18 @@
         if (error) { console.warn('cleanings:', error.message); calData = []; }
         else {
             let tasks = data || [];
-            // Cleaners see only their own tasks
             const u = window.maviUser;
             if (u && (u.role === 'cleaner' || u.role === 'intern') && u.emp_id) {
                 tasks = tasks.filter(t => t.assigned_to === u.emp_id || t.cleaner2_id === u.emp_id);
+                // Load own unavailability for calendar highlighting
+                const monStart = `${calYear}-${String(calMonth+1).padStart(2,'0')}-01`;
+                const monEnd = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${new Date(calYear, calMonth+1, 0).getDate()}`;
+                const { data: uDays } = await supa.from('employee_unavailability')
+                    .select('unavailable_date')
+                    .eq('employee_id', u.emp_id)
+                    .gte('unavailable_date', monStart)
+                    .lte('unavailable_date', monEnd);
+                _calUnavailDates = new Set((uDays || []).map(d => new Date(d.unavailable_date).getDate()));
             }
             calData = tasks;
         }
@@ -3057,6 +3087,8 @@
             const isToday = isCurrentMonth && today.getDate() === d;
             const isSel   = calSelDay === d;
 
+            const isUnavail = _calUnavailDates.has(d);
+
             let dotColor = '', dotStyle = '';
             if      (cnt === 0) { dotColor = ''; }
             else if (cnt <= 2)  { dotColor = '#10b981'; }
@@ -3065,8 +3097,9 @@
 
             if (dotColor) dotStyle = `background:${dotColor}22;border-color:${dotColor}55;color:${dotColor};`;
 
-            html += `<div class="cal-cell${isToday ? ' cal-today' : ''}${isSel ? ' cal-sel' : ''}" data-cal-day="${d}">
+            html += `<div class="cal-cell${isToday ? ' cal-today' : ''}${isSel ? ' cal-sel' : ''}${isUnavail ? ' cal-unavail' : ''}" data-cal-day="${d}">
                 <span class="cal-day-n${isToday ? ' cal-today-n' : ''}">${d}</span>
+                ${isUnavail ? '<span class="cal-unavail-badge">выходной</span>' : ''}
                 ${cnt ? `<span class="cal-cnt" style="${dotStyle}">${cnt}</span>` : ''}
             </div>`;
         }
@@ -3162,29 +3195,43 @@
     }
 
     // Calendar nav events
-    document.getElementById('cal-prev')?.addEventListener('click', () => {
-        calMonth--; if (calMonth < 0) { calMonth = 11; calYear--; }
+    async function reloadCalUnavail() {
+        const u = window.maviUser;
+        if (u && (u.role === 'cleaner' || u.role === 'intern') && u.emp_id) {
+            const monStart = `${calYear}-${String(calMonth+1).padStart(2,'0')}-01`;
+            const monEnd = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${new Date(calYear, calMonth+1, 0).getDate()}`;
+            const { data: uDays } = await supa.from('employee_unavailability')
+                .select('unavailable_date')
+                .eq('employee_id', u.emp_id)
+                .gte('unavailable_date', monStart)
+                .lte('unavailable_date', monEnd);
+            _calUnavailDates = new Set((uDays || []).map(d => new Date(d.unavailable_date).getDate()));
+        } else {
+            _calUnavailDates = new Set();
+        }
+    }
+
+    function calMonthNav() {
         calSelDay = null;
         document.getElementById('cal-detail-date').textContent = 'Выберите день';
         document.getElementById('cal-detail-count').textContent = '';
         document.getElementById('cal-detail-legend').style.display = '';
         document.getElementById('cal-detail-list').innerHTML =
             '<div style="text-align:center;opacity:.3;padding:30px 0;font-size:13px;">Кликните на день<br>чтобы увидеть уборки</div>';
-        renderCalendar(); updateCalStats();
+        reloadCalUnavail().then(() => { renderCalendar(); updateCalStats(); });
+    }
+
+    document.getElementById('cal-prev')?.addEventListener('click', () => {
+        calMonth--; if (calMonth < 0) { calMonth = 11; calYear--; }
+        calMonthNav();
     });
     document.getElementById('cal-next')?.addEventListener('click', () => {
         calMonth++; if (calMonth > 11) { calMonth = 0; calYear++; }
-        calSelDay = null;
-        document.getElementById('cal-detail-date').textContent = 'Выберите день';
-        document.getElementById('cal-detail-count').textContent = '';
-        document.getElementById('cal-detail-legend').style.display = '';
-        document.getElementById('cal-detail-list').innerHTML =
-            '<div style="text-align:center;opacity:.3;padding:30px 0;font-size:13px;">Кликните на день<br>чтобы увидеть уборки</div>';
-        renderCalendar(); updateCalStats();
+        calMonthNav();
     });
     document.getElementById('cal-today')?.addEventListener('click', () => {
         calYear = new Date().getFullYear(); calMonth = new Date().getMonth();
-        calSelDay = null; renderCalendar(); updateCalStats();
+        calMonthNav();
     });
 
     document.addEventListener('click', e => {
@@ -3815,25 +3862,6 @@
         ['sched-cost','sched-cleaner-rate','sched-cleaner2-rate','sched-long-stay-amount'].forEach(id => {
             document.getElementById(id)?.addEventListener('input', schedRecompute);
         });
-
-        // Check cleaner unavailability and warn
-        async function checkCleanerUnavail(cleanerId, dateStr, selectEl) {
-            if (!cleanerId || !dateStr) return;
-            const { data } = await supa.from('employee_unavailability')
-                .select('id, reason')
-                .eq('employee_id', cleanerId)
-                .eq('unavailable_date', dateStr)
-                .limit(1);
-            if (data && data.length) {
-                const reason = data[0].reason ? ` (${data[0].reason})` : '';
-                selectEl.style.borderColor = '#ef4444';
-                selectEl.title = 'Клинер недоступен в этот день' + reason;
-                alert('Внимание: этот клинер отметил ' + dateStr + ' как выходной' + reason);
-            } else {
-                selectEl.style.borderColor = '';
-                selectEl.title = '';
-            }
-        }
 
         // Auto-fill тариф клинера on cleaner select
         document.getElementById('sched-cleaner').onchange = function() {
