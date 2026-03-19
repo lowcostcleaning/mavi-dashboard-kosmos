@@ -336,7 +336,7 @@
                                 <button class="dots-btn"><i class="fa-solid fa-ellipsis"></i></button>
                             </div>
                             <div class="pie-chart-wrapper">
-                                <canvas id="statusChart"></canvas>
+                                <canvas id="statusChart" width="160" height="160"></canvas>
                                 <div class="chart-center-text">
                                     <span class="js-task-percent">--%</span>
                                 </div>
@@ -3276,7 +3276,7 @@
                         backgroundColor: ['#f59e0b','#f97316','#10b981'],
                         borderWidth: 0, hoverOffset: 4 }]
                 },
-                options: { cutout: '72%', plugins: { legend: { display: false }, tooltip: { enabled: false } }, animation: { duration: 600 } }
+                options: { responsive: false, cutout: '72%', plugins: { legend: { display: false }, tooltip: { enabled: false } }, animation: { duration: 600 } }
             });
         }
 

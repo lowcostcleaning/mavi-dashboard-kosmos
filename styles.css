@@ -3585,8 +3585,7 @@ body.mob-sidebar-open {
     margin: 16px auto;
 }
 .pie-chart-wrapper canvas {
-    width: 160px !important;
-    height: 160px !important;
+    display: block;
 }
 .chart-center-text {
     position: absolute;
