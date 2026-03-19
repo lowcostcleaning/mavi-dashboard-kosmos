@@ -6025,8 +6025,8 @@
 
         const payload = {
             title, comment,
-            assigned_to:  assignee ? Number(assignee) : null,
-            apartment_id: aptId    ? Number(aptId)    : null,
+            assigned_to:  assignee || null,
+            apartment_id: aptId    || null,
             priority,
             deadline: deadline ? deadline + 'T00:00:00Z' : null,
             status:   taskModalEditId ? status : (assignee ? 'assigned' : 'new'),
