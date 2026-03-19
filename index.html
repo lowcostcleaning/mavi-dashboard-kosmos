@@ -5161,8 +5161,8 @@
 
         const KIT_COLORS = { эконом: '#6366f1', стандарт: '#f59e0b', премиум: '#10b981' };
         const color = KIT_COLORS[kitType] || '#a5b4fc';
-        const rt = roomType || 'студия';
-        const items = allKitItems.filter(i => i.kit_type === kitType && i.room_type === rt && (i.quantity || 0) > 0);
+        const rt = (roomType || 'студия').toLowerCase();
+        const items = allKitItems.filter(i => i.kit_type === kitType && i.room_type.toLowerCase() === rt && (i.quantity || 0) > 0);
 
         if (!items.length) {
             container.innerHTML = `<div class="lnd-checklist-block"><div class="lnd-checklist-title"><i class="fa-solid fa-gift" style="margin-right:6px;color:${color};"></i>Гостевой набор — <span style="color:${color};">${kitType}</span></div><div style="padding:8px;opacity:.4;font-size:12px;">Позиции не заполнены</div></div>`;
