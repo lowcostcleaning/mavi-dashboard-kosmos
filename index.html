@@ -526,6 +526,10 @@
                                 <input class="mavi-input" id="emp-form-email" type="email" placeholder="name@example.com">
                             </div>
                             <div>
+                                <label class="emp-label">Дата рождения</label>
+                                <input class="mavi-input" id="emp-form-birth" type="date">
+                            </div>
+                            <div>
                                 <label class="emp-label">Telegram ID</label>
                                 <input class="mavi-input" id="emp-form-telegram" placeholder="123456789">
                             </div>
@@ -1957,6 +1961,10 @@
                         <div class="emp-stat-label">Email</div>
                         <div class="emp-stat-value" style="color:#f59e0b;font-size:12px;word-break:break-all;">${e.email ? `<a href="mailto:${e.email}" style="color:#f59e0b;text-decoration:none;">${e.email}</a>` : '—'}</div>
                     </div>
+                    <div class="emp-stat-card" style="border-color:#e879f955;">
+                        <div class="emp-stat-label">Дата рождения</div>
+                        <div class="emp-stat-value" style="color:#e879f9;font-size:13px;">${e.birth_date ? new Date(e.birth_date).toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'}) : '—'}</div>
+                    </div>
                     <div class="emp-stat-card" style="border-color:#ffcc3355;">
                         <div class="emp-stat-label">Рейтинг</div>
                         <div class="emp-stat-value" style="color:#ffcc33;">${e.rating ? e.rating + ' / 5' : '—'}</div>
@@ -2000,6 +2008,7 @@
         document.getElementById('emp-form-department').value = e ? (e.department || '') : '';
         document.getElementById('emp-form-phone').value    = e ? (e.phone || '') : '';
         document.getElementById('emp-form-email').value    = e ? (e.email || '') : '';
+        document.getElementById('emp-form-birth').value    = e ? (e.birth_date || '') : '';
         document.getElementById('emp-form-telegram').value = e ? (e.telegram_id || '') : '';
         document.getElementById('emp-form-status').value   = e ? e.status : 'active';
         document.getElementById('emp-form-rating').value   = e ? (e.rating || '') : '';
@@ -2059,6 +2068,7 @@
                 role:        document.getElementById('emp-form-role').value,
                 phone:       document.getElementById('emp-form-phone').value.trim() || null,
                 email:       document.getElementById('emp-form-email').value.trim() || null,
+                birth_date:  document.getElementById('emp-form-birth').value || null,
                 telegram_id: document.getElementById('emp-form-telegram').value.trim() || null,
                 status:      document.getElementById('emp-form-status').value,
                 rating:          parseFloat(document.getElementById('emp-form-rating').value) || null,
