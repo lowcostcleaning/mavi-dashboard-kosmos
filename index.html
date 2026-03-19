@@ -257,6 +257,9 @@
                 <section class="view active" data-view="dashboard">
                     <div class="content-header">
                         <h2 id="dash-greeting">Дашборд Обзор</h2>
+                        <button id="admin-settings-btn" class="filter-btn" title="Настройки видимости" style="display:none;margin-left:10px;" onclick="openVisibilitySettings()">
+                            <i class="fa-solid fa-gear"></i>
+                        </button>
                         <div class="date-filter">
                             <button class="date-btn" type="button"><i class="fa-regular fa-clock"></i> <span
                                     class="js-current-date">--</span> <i class="fa-solid fa-chevron-down"></i></button>
@@ -6612,6 +6615,118 @@
     <!-- Mobile bottom nav -->
     <nav id="mob-nav" class="mob-nav"></nav>
 
+    <!-- ════════════ VISIBILITY SETTINGS ════════════ -->
+    <div class="emp-modal-backdrop" id="vis-settings-modal" hidden>
+        <div class="emp-modal" style="max-width:440px;">
+            <div class="emp-modal-header">
+                <h3>Настройки видимости</h3>
+                <button class="emp-modal-close" onclick="document.getElementById('vis-settings-modal').hidden=true"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div style="padding:20px;display:grid;gap:16px;">
+                <label class="emp-label">Роль
+                    <select class="mavi-input" id="vis-role-select" onchange="loadRoleVisibility(this.value)"></select>
+                </label>
+                <div id="vis-checks-list" style="display:grid;gap:8px;"></div>
+                <div style="display:flex;gap:10px;align-items:center;">
+                    <button class="action-btn" id="vis-save-btn" style="flex:1;" onclick="saveRoleVisibility()">Сохранить</button>
+                    <span id="vis-save-msg" style="font-size:12px;color:#10b981;"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    const VIS_SECTIONS = [
+        { view: 'dashboard',  label: 'Дашборд',      icon: 'fa-chart-pie' },
+        { view: 'employees',  label: 'Сотрудники',    icon: 'fa-users' },
+        { view: 'tasks',      label: 'Задачи',        icon: 'fa-list-check' },
+        { view: 'cleanings',  label: 'Уборки',        icon: 'fa-broom' },
+        { view: 'bookings',   label: 'Брони',         icon: 'fa-calendar-days' },
+        { view: 'laundry',    label: 'Прачечная',     icon: 'fa-shirt' },
+        { view: 'expeditor',  label: 'Экспедитор',    icon: 'fa-truck' },
+        { view: 'reports',    label: 'Отчёты',        icon: 'fa-chart-line' },
+        { view: 'payments',   label: 'Платежи',       icon: 'fa-wallet' },
+        { view: 'apartments', label: 'Апартаменты',   icon: 'fa-building' },
+        { view: 'owners',     label: 'Собственники',  icon: 'fa-user-tie' },
+        { view: 'contracts',  label: 'Договоры',      icon: 'fa-file-contract' },
+    ];
+
+    function openVisibilitySettings() {
+        const sel = document.getElementById('vis-role-select');
+        sel.innerHTML = Object.entries(ROLE_LABELS).map(([k,v]) => `<option value="${k}">${v}</option>`).join('');
+        document.getElementById('vis-settings-modal').hidden = false;
+        loadRoleVisibility(sel.value);
+    }
+
+    async function loadRoleVisibility(role) {
+        const { data } = await supa.from('role_nav_visibility').select('view_name, visible').eq('role', role);
+        const map = {};
+        (data || []).forEach(r => { map[r.view_name] = r.visible; });
+        document.getElementById('vis-checks-list').innerHTML = VIS_SECTIONS.map(s => {
+            const checked = map[s.view] !== false ? 'checked' : '';
+            return `<label style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:rgba(255,255,255,.04);border-radius:8px;cursor:pointer;">
+                <input type="checkbox" class="vis-chk" data-view="${s.view}" ${checked} style="width:18px;height:18px;accent-color:#6366f1;">
+                <i class="fa-solid ${s.icon}" style="width:18px;text-align:center;color:var(--text-muted);"></i>
+                <span style="font-size:13px;color:var(--text-primary);">${s.label}</span>
+            </label>`;
+        }).join('');
+    }
+
+    async function saveRoleVisibility() {
+        const role = document.getElementById('vis-role-select').value;
+        const btn = document.getElementById('vis-save-btn');
+        const msg = document.getElementById('vis-save-msg');
+        btn.disabled = true;
+        const checks = document.querySelectorAll('.vis-chk');
+        for (const chk of checks) {
+            await supa.from('role_nav_visibility').upsert(
+                { role, view_name: chk.dataset.view, visible: chk.checked },
+                { onConflict: 'role,view_name' }
+            );
+        }
+        btn.disabled = false;
+        msg.textContent = 'Сохранено';
+        setTimeout(() => { msg.textContent = ''; }, 2000);
+    }
+
+    // Apply nav visibility based on role
+    async function loadNavVisibility(role) {
+        const adminBtn = document.getElementById('admin-settings-btn');
+        if (role === 'admin') {
+            if (adminBtn) adminBtn.style.display = '';
+            return;
+        }
+        if (adminBtn) adminBtn.style.display = 'none';
+
+        const { data } = await supa.from('role_nav_visibility').select('view_name, visible').eq('role', role);
+        const rules = data || [];
+        // Cache
+        try {
+            const s = JSON.parse(localStorage.getItem('mavi_auth_v2') || '{}');
+            s.nav_visibility = rules;
+            localStorage.setItem('mavi_auth_v2', JSON.stringify(s));
+        } catch(e) {}
+        applyNavVisibility(rules);
+    }
+
+    function applyNavVisibility(rules) {
+        if (!rules || !rules.length) return;
+        const hidden = rules.filter(r => !r.visible).map(r => r.view_name);
+        if (!hidden.length) return;
+
+        hidden.forEach(view => {
+            document.querySelectorAll(`.nav-item[data-view="${view}"]`).forEach(el => el.style.display = 'none');
+            document.querySelectorAll(`.mob-nav-item[data-view="${view}"]`).forEach(el => el.style.display = 'none');
+        });
+
+        // If active view is hidden, switch to dashboard
+        const activeView = document.querySelector('.nav-item.active')?.dataset?.view;
+        if (activeView && hidden.includes(activeView)) {
+            document.querySelector('.nav-item[data-view="dashboard"]')?.click();
+        }
+    }
+    </script>
+
     <!-- ════════════ AUTH SCRIPT ════════════ -->
     <script>
     const SESSION_KEY = 'mavi_auth_v2';
@@ -6652,6 +6767,11 @@
         const sc = document.getElementById('login-screen');
         sc.style.animation = 'loginFadeOut .35s ease forwards';
         setTimeout(() => { sc.style.display='none'; document.body.style.overflow=''; }, 340);
+        // Apply role visibility after login
+        setTimeout(() => {
+            const role = window.maviUser?.role;
+            if (role) loadNavVisibility(role);
+        }, 100);
     }
     // Block body scroll while login is visible
     document.body.style.overflow = 'hidden';
@@ -6834,6 +6954,13 @@
             const el = document.getElementById('sidebar-user-name');
             if (el) el.textContent = window.maviUser.name;
             updateGreeting(window.maviUser.name);
+            // Apply cached nav visibility
+            if (window.maviUser.role === 'admin') {
+                const ab = document.getElementById('admin-settings-btn');
+                if (ab) ab.style.display = '';
+            } else if (window.maviUser.nav_visibility) {
+                setTimeout(() => applyNavVisibility(window.maviUser.nav_visibility), 200);
+            }
         }
     })();
     </script>
