@@ -635,6 +635,7 @@
                                 <button class="cal-mode-btn active" id="cal-mode-calendar" type="button"><i class="fa-regular fa-calendar" style="margin-right:5px;"></i>Календарь</button>
                                 <button class="cal-mode-btn" id="cal-mode-list" type="button"><i class="fa-solid fa-list" style="margin-right:5px;"></i>Список</button>
                             </div>
+                            <button class="cal-mode-btn" id="cleaner-unavail-btn" type="button" style="display:none;" onclick="openUnavailModal()"><i class="fa-solid fa-calendar-xmark" style="margin-right:5px;"></i>Мои выходные</button>
                             <!-- Calendar nav (shown in calendar mode) -->
                             <div id="cal-nav-controls" style="display:flex;align-items:center;gap:6px;">
                                 <button class="date-btn" type="button" id="cal-prev"><i class="fa-solid fa-chevron-left"></i></button>
@@ -3002,7 +3003,15 @@
             .order('deadline', { ascending: true });
 
         if (error) { console.warn('cleanings:', error.message); calData = []; }
-        else calData = data || [];
+        else {
+            let tasks = data || [];
+            // Cleaners see only their own tasks
+            const u = window.maviUser;
+            if (u && (u.role === 'cleaner' || u.role === 'intern') && u.emp_id) {
+                tasks = tasks.filter(t => t.assigned_to === u.emp_id || t.cleaner2_id === u.emp_id);
+            }
+            calData = tasks;
+        }
 
         renderCalendar();
         updateCalStats();
@@ -3807,16 +3816,45 @@
             document.getElementById(id)?.addEventListener('input', schedRecompute);
         });
 
+        // Check cleaner unavailability and warn
+        async function checkCleanerUnavail(cleanerId, dateStr, selectEl) {
+            if (!cleanerId || !dateStr) return;
+            const { data } = await supa.from('employee_unavailability')
+                .select('id, reason')
+                .eq('employee_id', cleanerId)
+                .eq('unavailable_date', dateStr)
+                .limit(1);
+            if (data && data.length) {
+                const reason = data[0].reason ? ` (${data[0].reason})` : '';
+                selectEl.style.borderColor = '#ef4444';
+                selectEl.title = 'Клинер недоступен в этот день' + reason;
+                alert('Внимание: этот клинер отметил ' + dateStr + ' как выходной' + reason);
+            } else {
+                selectEl.style.borderColor = '';
+                selectEl.title = '';
+            }
+        }
+
         // Auto-fill тариф клинера on cleaner select
         document.getElementById('sched-cleaner').onchange = function() {
             const opt = this.options[this.selectedIndex];
             if (opt.value && opt.dataset.tariff) document.getElementById('sched-cleaner-rate').value = opt.dataset.tariff;
             schedRecompute();
+            checkCleanerUnavail(this.value, document.getElementById('sched-date').value, this);
         };
         document.getElementById('sched-cleaner2').onchange = function() {
             const opt = this.options[this.selectedIndex];
             if (opt.value && opt.dataset.tariff) document.getElementById('sched-cleaner2-rate').value = opt.dataset.tariff;
             schedRecompute();
+            checkCleanerUnavail(this.value, document.getElementById('sched-date').value, this);
+        };
+
+        // Re-check unavailability when date changes
+        document.getElementById('sched-date').onchange = function() {
+            const c1 = document.getElementById('sched-cleaner');
+            const c2 = document.getElementById('sched-cleaner2');
+            if (c1.value) checkCleanerUnavail(c1.value, this.value, c1);
+            if (c2.value) checkCleanerUnavail(c2.value, this.value, c2);
         };
 
         // Toggle долгий срок amount
@@ -6614,6 +6652,96 @@
     <div id="sidebar-overlay" class="sidebar-overlay"></div>
     <!-- Mobile bottom nav -->
     <nav id="mob-nav" class="mob-nav"></nav>
+
+    <!-- ════════════ UNAVAILABILITY MODAL ════════════ -->
+    <div class="emp-modal-backdrop" id="unavail-modal" hidden>
+        <div class="emp-modal" style="max-width:400px;">
+            <div class="emp-modal-header">
+                <h3>Мои выходные / недоступность</h3>
+                <button class="emp-modal-close" onclick="document.getElementById('unavail-modal').hidden=true"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div style="padding:20px;display:grid;gap:14px;">
+                <div style="display:flex;gap:8px;">
+                    <input class="mavi-input" id="unavail-date" type="date" style="flex:1;">
+                    <input class="mavi-input" id="unavail-reason" placeholder="Причина (необязательно)" style="flex:2;">
+                    <button class="action-btn" onclick="addUnavailDay()" style="white-space:nowrap;"><i class="fa-solid fa-plus"></i></button>
+                </div>
+                <div id="unavail-list" style="max-height:300px;overflow-y:auto;display:grid;gap:6px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // Show "Мои выходные" button for cleaners
+    (function() {
+        const check = () => {
+            const u = window.maviUser;
+            if (u && (u.role === 'cleaner' || u.role === 'intern')) {
+                const btn = document.getElementById('cleaner-unavail-btn');
+                if (btn) btn.style.display = '';
+            }
+        };
+        check();
+        setTimeout(check, 500);
+    })();
+
+    let _unavailDays = [];
+
+    async function openUnavailModal() {
+        const empId = window.maviUser?.emp_id;
+        if (!empId) return;
+        document.getElementById('unavail-modal').hidden = false;
+        // Default to tomorrow
+        const tom = new Date(); tom.setDate(tom.getDate() + 1);
+        document.getElementById('unavail-date').value = tom.toISOString().slice(0,10);
+        document.getElementById('unavail-reason').value = '';
+        await loadUnavailDays(empId);
+    }
+
+    async function loadUnavailDays(empId) {
+        const { data } = await supa.from('employee_unavailability')
+            .select('id, unavailable_date, reason')
+            .eq('employee_id', empId)
+            .gte('unavailable_date', new Date().toISOString().slice(0,10))
+            .order('unavailable_date');
+        _unavailDays = data || [];
+        renderUnavailList();
+    }
+
+    function renderUnavailList() {
+        const el = document.getElementById('unavail-list');
+        if (!_unavailDays.length) { el.innerHTML = '<span style="font-size:12px;color:var(--text-muted);text-align:center;">Нет запланированных выходных</span>'; return; }
+        el.innerHTML = _unavailDays.map(d => {
+            const dt = new Date(d.unavailable_date);
+            const label = dt.toLocaleDateString('ru-RU', { weekday:'short', day:'numeric', month:'short' });
+            return `<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;">
+                <i class="fa-solid fa-calendar-xmark" style="color:#ef4444;"></i>
+                <span style="flex:1;font-size:13px;color:var(--text-primary);">${label}</span>
+                <span style="font-size:11px;color:var(--text-muted);flex:1;">${d.reason || ''}</span>
+                <button onclick="removeUnavailDay(${d.id})" style="background:none;border:none;color:#ef4444;cursor:pointer;padding:4px;"><i class="fa-solid fa-xmark"></i></button>
+            </div>`;
+        }).join('');
+    }
+
+    async function addUnavailDay() {
+        const empId = window.maviUser?.emp_id;
+        const date = document.getElementById('unavail-date').value;
+        const reason = document.getElementById('unavail-reason').value.trim();
+        if (!empId || !date) return;
+        const { error } = await supa.from('employee_unavailability').upsert(
+            { employee_id: empId, unavailable_date: date, reason: reason || null },
+            { onConflict: 'employee_id,unavailable_date' }
+        );
+        if (error) { alert('Ошибка: ' + error.message); return; }
+        document.getElementById('unavail-reason').value = '';
+        await loadUnavailDays(empId);
+    }
+
+    async function removeUnavailDay(id) {
+        await supa.from('employee_unavailability').delete().eq('id', id);
+        await loadUnavailDays(window.maviUser?.emp_id);
+    }
+    </script>
 
     <!-- ════════════ VISIBILITY SETTINGS ════════════ -->
     <div class="emp-modal-backdrop" id="vis-settings-modal" hidden>
