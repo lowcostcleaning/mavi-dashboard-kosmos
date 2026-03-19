@@ -1694,8 +1694,9 @@
                             <option value="urgent">Срочно</option>
                         </select>
                     </label>
-                    <input type="hidden" id="tk-apartment" value="">
                 </div>
+                <input type="hidden" id="tk-type" value="task">
+                <input type="hidden" id="tk-apartment" value="">
                 <label class="tk-field-label" id="tk-status-row" style="display:none;">Статус
                     <select class="mavi-input" id="tk-status">
                         <option value="new">Новая</option>
@@ -6008,6 +6009,7 @@
         const assignee = document.getElementById('tk-assignee').value || null;
         const aptId    = document.getElementById('tk-apartment').value || null;
         const priority = document.getElementById('tk-priority').value;
+        const taskType = document.getElementById('tk-type').value;
         const deadline = document.getElementById('tk-deadline').value;
         const status   = document.getElementById('tk-status').value;
         const btn      = document.getElementById('tk-modal-save');
@@ -6028,7 +6030,7 @@
             priority,
             deadline: deadline ? deadline + 'T00:00:00Z' : null,
             status:   taskModalEditId ? status : (assignee ? 'assigned' : 'new'),
-            type:     'task',
+            type:     taskType,
             source:   'manual',
         };
 
