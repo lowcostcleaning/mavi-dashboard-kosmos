@@ -335,11 +335,8 @@
                                 <h3>Исполнение задач <i class="fa-solid fa-chevron-down"></i></h3>
                                 <button class="dots-btn"><i class="fa-solid fa-ellipsis"></i></button>
                             </div>
-                            <div class="pie-chart-wrapper">
-                                <canvas id="statusChart" width="160" height="160"></canvas>
-                                <div class="chart-center-text">
-                                    <span class="js-task-percent">--%</span>
-                                </div>
+                            <div class="pie-chart-wrapper" id="pie-chart-wrapper">
+                                <!-- SVG donut rendered by JS -->
                             </div>
                             <div class="chart-legend">
                                 <div class="legend-item"><span class="dot yellow"></span> <span
@@ -3244,8 +3241,7 @@
         if (e.target === e.currentTarget) document.getElementById('match-modal').hidden = true;
     });
 
-    // ── Dashboard task pie chart ────────────────────────────────────
-    let _statusChartInstance = null;
+    // ── Dashboard task pie chart (SVG donut) ───────────────────────
     async function loadDashboard() {
         const { data: tasks } = await supa.from('tasks')
             .select('id, status, assigned_to, type')
@@ -3261,23 +3257,38 @@
 
         const pct = n => total ? Math.round(n / total * 100) : 0;
         const el = s => document.querySelector(s);
-        if (el('.js-task-percent'))      el('.js-task-percent').textContent      = donePct + '%';
         if (el('.js-task-legend-wait'))  el('.js-task-legend-wait').textContent  = `В ожидании (${pct(waiting)}%)`;
         if (el('.js-task-legend-doing')) el('.js-task-legend-doing').textContent = `В работе (${pct(doing)}%)`;
         if (el('.js-task-legend-done'))  el('.js-task-legend-done').textContent  = `Готово (${pct(done)}%)`;
 
-        const canvas = document.getElementById('statusChart');
-        if (canvas) {
-            if (_statusChartInstance) _statusChartInstance.destroy();
-            _statusChartInstance = new Chart(canvas, {
-                type: 'doughnut',
-                data: {
-                    datasets: [{ data: [waiting, doing, done],
-                        backgroundColor: ['#f59e0b','#f97316','#10b981'],
-                        borderWidth: 0, hoverOffset: 4 }]
-                },
-                options: { responsive: false, cutout: '72%', plugins: { legend: { display: false }, tooltip: { enabled: false } }, animation: { duration: 600 } }
-            });
+        // SVG donut chart
+        const wrap = document.getElementById('pie-chart-wrapper');
+        if (wrap) {
+            const R = 60, stroke = 14, C = 2 * Math.PI * R;
+            const segments = [
+                { val: waiting, color: '#f59e0b' },
+                { val: doing,   color: '#f97316' },
+                { val: done,    color: '#10b981' },
+            ];
+            let offset = 0;
+            let arcs = '';
+            if (total === 0) {
+                arcs = `<circle cx="80" cy="80" r="${R}" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="${stroke}"/>`;
+            } else {
+                segments.forEach(s => {
+                    if (s.val === 0) return;
+                    const len = (s.val / total) * C;
+                    arcs += `<circle cx="80" cy="80" r="${R}" fill="none" stroke="${s.color}" stroke-width="${stroke}"
+                        stroke-dasharray="${len} ${C - len}" stroke-dashoffset="${-offset}"
+                        transform="rotate(-90 80 80)" stroke-linecap="round"/>`;
+                    offset += len;
+                });
+            }
+            wrap.innerHTML = `<svg width="160" height="160" viewBox="0 0 160 160">
+                ${arcs}
+                <text x="80" y="80" text-anchor="middle" dominant-baseline="central"
+                    fill="var(--text-primary)" font-size="28" font-weight="700">${donePct}%</text>
+            </svg>`;
         }
 
         // Employee performance list
