@@ -3242,6 +3242,14 @@
     });
 
     // ── Dashboard task pie chart (SVG donut) ───────────────────────
+    // Set current date on dashboard
+    const dateLabel = document.querySelector('.js-current-date');
+    if (dateLabel) {
+        const d = new Date();
+        const months = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+        dateLabel.textContent = `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+    }
+
     async function loadDashboard() {
         const { data: tasks } = await supa.from('tasks')
             .select('id, status, assigned_to, type')
@@ -3317,6 +3325,47 @@
                 </div>`;
             }).join('') || '<span style="font-size:12px;color:var(--text-muted);">Нет данных</span>';
         }
+
+        // ── Financial summary ────────────────────────────────────────
+        const now = new Date();
+        const monStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+        const monEnd   = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
+
+        const [{ data: payments }, { data: bookings }] = await Promise.all([
+            supa.from('payments').select('type, amount').gte('paid_at', monStart).lte('paid_at', monEnd),
+            supa.from('bookings').select('total_amount, check_in, check_out, status')
+                .neq('status', 'cancelled')
+                .gte('check_in', monStart).lte('check_in', monEnd),
+        ]);
+
+        const revenue  = (bookings || []).reduce((s, b) => s + (parseFloat(b.total_amount) || 0), 0);
+        const expenses = (payments || []).filter(p => p.type !== 'income').reduce((s, p) => s + (parseFloat(p.amount) || 0), 0);
+        const income   = revenue + (payments || []).filter(p => p.type === 'income').reduce((s, p) => s + (parseFloat(p.amount) || 0), 0);
+        const opIncome = income - expenses;
+        const salaries = (payments || []).filter(p => p.type === 'salary').reduce((s, p) => s + (parseFloat(p.amount) || 0), 0);
+        const net      = opIncome - salaries;
+
+        const totalApts = allApartments?.length || 1;
+        const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+        const bookedDays  = (bookings || []).reduce((s, b) => {
+            const ci = new Date(b.check_in), co = new Date(b.check_out);
+            return s + Math.max(1, Math.round((co - ci) / 86400000));
+        }, 0);
+        const occ = Math.min(100, Math.round(bookedDays / (totalApts * daysInMonth) * 100));
+
+        const fmt = v => v ? v.toLocaleString('ru-RU') : '0';
+        const qf = s => document.querySelector(s);
+        if (qf('.js-fin-rev'))   qf('.js-fin-rev').textContent   = fmt(income);
+        if (qf('.js-fin-oprev')) qf('.js-fin-oprev').textContent = fmt(opIncome);
+        if (qf('.js-fin-net'))   qf('.js-fin-net').textContent   = fmt(net);
+        if (qf('.js-fin-occ'))   qf('.js-fin-occ').textContent   = occ + '%';
+
+        // Top stat cards
+        const byId = id => document.getElementById(id);
+        if (byId('db-stat-revenue')) byId('db-stat-revenue').textContent = fmt(income);
+        if (byId('db-stat-net'))     byId('db-stat-net').textContent     = fmt(net);
+        if (byId('db-stat-occ'))     byId('db-stat-occ').textContent    = occ + '%';
+        if (byId('db-stat-apts'))    byId('db-stat-apts').textContent   = totalApts;
     }
     loadDashboard();
 
@@ -6514,13 +6563,35 @@
             });
         }
 
-        // Sync mob-nav active state when desktop nav is clicked
+        // Desktop nav: switch views + sync mob-nav
         document.querySelectorAll('.nav-item[data-view]').forEach(item => {
-            item.addEventListener('click', () => {
+            item.addEventListener('click', e => {
+                e.preventDefault();
                 const view = item.dataset.view;
+                // Switch active nav
+                document.querySelectorAll('.nav-item[data-view]').forEach(n => {
+                    n.classList.toggle('active', n.dataset.view === view);
+                });
+                // Switch active view
+                document.querySelectorAll('.view').forEach(v => {
+                    v.classList.toggle('active', v.dataset.view === view);
+                });
+                // Sync mob-nav
                 document.querySelectorAll('.mob-nav-item').forEach(b => {
                     b.classList.toggle('active', b.dataset.view === view);
                 });
+                // Trigger data load
+                if (view === 'dashboard') loadDashboard?.();
+                if (view === 'tasks') loadTasks?.();
+                if (view === 'cleanings') loadCleanings?.();
+                if (view === 'bookings') loadBookings?.();
+                if (view === 'laundry') loadLaundry?.();
+                if (view === 'reports') loadReports?.();
+                if (view === 'payments') loadPayouts?.();
+                if (view === 'employees') loadEmployees?.();
+                if (view === 'apartments') loadApartments?.();
+                if (view === 'owners') loadOwners?.();
+                if (view === 'expeditor') loadExpeditor?.();
             });
         });
     })();
