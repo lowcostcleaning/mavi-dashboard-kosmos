@@ -3961,6 +3961,28 @@
             return;
         }
 
+        // Блокируем назначение на выходной день клинера
+        if (cleaner && dateVal) {
+            const { data: u1 } = await supa.from('employee_unavailability')
+                .select('id').eq('employee_id', cleaner).eq('unavailable_date', dateVal).limit(1);
+            if (u1 && u1.length) {
+                const empName = allEmployees.find(e => e.id === cleaner)?.full_name || 'Клинер';
+                document.getElementById('sched-msg').textContent = empName + ' — выходной ' + dateVal;
+                document.getElementById('sched-msg').style.color = '#ef4444';
+                return;
+            }
+        }
+        if (cleaner2 && dateVal) {
+            const { data: u2 } = await supa.from('employee_unavailability')
+                .select('id').eq('employee_id', cleaner2).eq('unavailable_date', dateVal).limit(1);
+            if (u2 && u2.length) {
+                const empName = allEmployees.find(e => e.id === cleaner2)?.full_name || 'Клинер 2';
+                document.getElementById('sched-msg').textContent = empName + ' — выходной ' + dateVal;
+                document.getElementById('sched-msg').style.color = '#ef4444';
+                return;
+            }
+        }
+
         const apt = allApartments.find(a => a.id === aptId);
         const btn = document.getElementById('sched-save');
         const msg = document.getElementById('sched-msg');
