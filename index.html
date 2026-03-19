@@ -6719,10 +6719,17 @@
             document.querySelectorAll(`.mob-nav-item[data-view="${view}"]`).forEach(el => el.style.display = 'none');
         });
 
-        // If active view is hidden, switch to dashboard
+        // If active view is hidden, switch to the first visible section
         const activeView = document.querySelector('.nav-item.active')?.dataset?.view;
         if (activeView && hidden.includes(activeView)) {
-            document.querySelector('.nav-item[data-view="dashboard"]')?.click();
+            // Deactivate current
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.querySelectorAll('.nav-item[data-view]').forEach(n => n.classList.remove('active'));
+            // Find first visible nav item and activate it
+            const firstVisible = document.querySelector('.nav-item[data-view]:not([style*="display: none"])');
+            if (firstVisible) {
+                firstVisible.click();
+            }
         }
     }
     </script>
