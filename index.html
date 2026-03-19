@@ -4317,8 +4317,8 @@
 
             </div>
 
-            <!-- Edit section -->
-            <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.07);">
+            <!-- Edit section (hidden for cleaners/interns) -->
+            <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.07);${window.maviUser?.role === 'cleaner' || window.maviUser?.role === 'intern' ? 'display:none;' : ''}">
                 <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text-secondary);margin-bottom:8px;font-weight:600;">Редактировать</div>
 
                 <!-- Статус -->
