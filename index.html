@@ -4493,6 +4493,22 @@
             </div>
             ` : ''}
 
+            ${t.extra_equipment ? `
+            <div style="margin-top:12px;padding:10px 12px;border-radius:10px;background:rgba(168,85,247,0.06);border:1px solid rgba(168,85,247,0.15);">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                    <div style="font-size:12px;font-weight:600;color:var(--text-primary);"><i class="fa-solid fa-box-open" style="margin-right:6px;color:#a855f7;"></i>Доп. комплектация</div>
+                    <span style="font-size:11px;padding:2px 8px;border-radius:10px;background:${t.extra_equipment_done ? 'rgba(16,185,129,0.15);color:#10b981;' : 'rgba(245,158,11,0.15);color:#f59e0b;'}">${t.extra_equipment_done ? '✅ Укомплектовано' : '⏳ Ожидает'}</span>
+                </div>
+                <div style="font-size:13px;color:var(--text-secondary);line-height:1.5;white-space:pre-line;">${t.extra_equipment}</div>
+                ${window.maviUser?.role === 'complector' ? `
+                <label style="display:flex;align-items:center;gap:8px;margin-top:8px;cursor:pointer;padding:6px 0;">
+                    <input type="checkbox" ${t.extra_equipment_done ? 'checked' : ''} onchange="toggleExtraEquipDone(this.checked,'${t.id}')" style="width:16px;height:16px;accent-color:#a855f7;cursor:pointer;">
+                    <span style="font-size:12px;color:var(--text-secondary);">Отметить как укомплектовано</span>
+                </label>
+                ` : ''}
+            </div>
+            ` : ''}
+
             <!-- Edit section -->
             ${(window.maviUser?.role === 'cleaner' || window.maviUser?.role === 'intern') ? `
             <!-- Cleaner: only status + comment -->
@@ -4514,6 +4530,7 @@
                 <input type="hidden" id="clean-edit-rate" value="${t.cleaner_rate || ''}">
                 <input type="hidden" id="clean-edit-rate2" value="${t.cleaner2_rate || ''}">
                 <input type="hidden" id="clean-edit-long-stay-amount" value="${t.long_stay_amount || ''}">
+                <input type="hidden" id="clean-edit-extra-equip" value="${t.extra_equipment || ''}">
                 <span id="clean-edit-long-stay" data-checked="${t.long_stay ? '1' : ''}"></span>
                 <button id="clean-save-btn" class="action-btn" style="width:100%;justify-content:center;padding:8px;">
                     <i class="fa-solid fa-floppy-disk" style="margin-right:6px;"></i>Сохранить
@@ -4558,6 +4575,12 @@
                         <input type="checkbox" id="clean-edit-long-stay" ${t.long_stay?'checked':''} style="width:15px;height:15px;accent-color:#6366f1;cursor:pointer;">
                         <label for="clean-edit-long-stay" style="font-size:12px;color:var(--text-secondary);cursor:pointer;white-space:nowrap;">Долгий срок</label>
                     </div>
+                </div>
+
+                <!-- Доп. комплектация -->
+                <div style="margin-bottom:8px;">
+                    <label style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:3px;"><i class="fa-solid fa-box-open" style="margin-right:4px;opacity:.5;"></i>Доп. комплектация</label>
+                    <textarea id="clean-edit-extra-equip" class="mavi-input" rows="2" placeholder="Чайник, утюг, доп. полотенца..." style="width:100%;resize:vertical;font-size:12px;padding:6px 8px;line-height:1.4;">${t.extra_equipment || ''}</textarea>
                 </div>
 
                 <!-- Auto-info bar -->
@@ -4764,6 +4787,7 @@
         const newLongStay  = lsEl?.checked ?? (lsEl?.dataset?.checked === '1');
         const newLsAmt     = parseFloat(document.getElementById('clean-edit-long-stay-amount').value) || null;
         const newComment   = document.getElementById('clean-edit-comment').value.trim() || null;
+        const newExtraEquip = document.getElementById('clean-edit-extra-equip')?.value?.trim() || null;
         const newRating    = rating || null;
 
         const btn = document.getElementById('clean-save-btn');
@@ -4783,6 +4807,7 @@
             long_stay:        newLongStay,
             long_stay_amount: newLsAmt,
             comment:          newComment,
+            extra_equipment:  newExtraEquip,
             rating:           newRating,
         }).eq('id', taskId);
 
@@ -4801,6 +4826,7 @@
             t.long_stay        = newLongStay;
             t.long_stay_amount = newLsAmt;
             t.comment          = newComment;
+            t.extra_equipment  = newExtraEquip;
             t.rating           = newRating;
             msg.textContent = 'Сохранено ✓';
             msg.style.color = '#10b981';
@@ -4812,6 +4838,13 @@
 
         btn.disabled = false;
         btn.innerHTML = '<i class="fa-solid fa-floppy-disk" style="margin-right:6px;"></i>Сохранить изменения';
+    }
+
+    async function toggleExtraEquipDone(checked, taskId) {
+        await supa.from('tasks').update({ extra_equipment_done: checked }).eq('id', taskId);
+        const t = calData.find(x => String(x.id) === String(taskId));
+        if (t) t.extra_equipment_done = checked;
+        renderCleaningCard(taskId);
     }
 
     function closeCleaningCard() {
