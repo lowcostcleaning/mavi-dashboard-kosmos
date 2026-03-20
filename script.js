@@ -344,7 +344,9 @@ document.addEventListener('DOMContentLoaded', function () {
         chart.update();
     }
 
-    const ctxStatus = document.getElementById('statusChart').getContext('2d');
+    const statusChartEl = document.getElementById('statusChart');
+    if (!statusChartEl) return;
+    const ctxStatus = statusChartEl.getContext('2d');
     const statusChart = new Chart(ctxStatus, {
         type: 'doughnut',
         data: {

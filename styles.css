@@ -3621,6 +3621,31 @@ body.mob-sidebar-open {
     color: var(--text-primary);
 }
 
+/* ── Video play icon in gallery ── */
+.apt-gallery-item {
+    position: relative;
+}
+.apt-gallery-play-icon {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+.apt-gallery-play-icon i {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.6);
+    color: #fff;
+    border-radius: 50%;
+    font-size: 14px;
+    backdrop-filter: blur(4px);
+}
+
 /* ── Telegram notification toggle ── */
 .tg-toggle {
     position: relative;

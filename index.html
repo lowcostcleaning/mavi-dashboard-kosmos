@@ -2312,9 +2312,10 @@
             : '';
 
         const galleryItems = media.map((m, idx) => `
-            <div class="apt-gallery-item">
+            <div class="apt-gallery-item" data-media-type="${m.type || 'image'}">
                 ${m.type === 'video'
-                    ? `<video src="${m.url}" style="width:100%;height:100%;object-fit:cover;" muted playsinline></video>`
+                    ? `<video src="${m.url}" style="width:100%;height:100%;object-fit:cover;" muted playsinline preload="metadata"></video>
+                       <div class="apt-gallery-play-icon"><i class="fa-solid fa-play"></i></div>`
                     : `<img src="${m.url}" style="width:100%;height:100%;object-fit:cover;" loading="lazy">`}
                 <button class="apt-gallery-del-btn" data-del-idx="${idx}" data-del-apt="${id}" title="Удалить"><i class="fa-solid fa-xmark"></i></button>
             </div>`).join('');
@@ -2454,25 +2455,66 @@
             const files = Array.from(this.files);
             if (!files.length) return;
             const currentMedia = Array.isArray(a.media) ? [...a.media] : [];
-            for (const file of files) {
+
+            // Progress bar
+            let progressEl = document.getElementById('apt-upload-progress');
+            if (!progressEl) {
+                progressEl = document.createElement('div');
+                progressEl.id = 'apt-upload-progress';
+                progressEl.style.cssText = 'position:fixed;top:0;left:0;height:4px;background:linear-gradient(90deg,#6366f1,#00f2ff);z-index:99999;transition:width .2s;width:0;';
+                document.body.appendChild(progressEl);
+            }
+            progressEl.style.width = '0';
+            progressEl.style.display = 'block';
+
+            for (let fi = 0; fi < files.length; fi++) {
+                const file = files[fi];
+                const baseProgress = (fi / files.length) * 100;
+                const fileShare = 100 / files.length;
+
                 if (file.type.startsWith('image/')) {
+                    progressEl.style.width = baseProgress + fileShare * 0.5 + '%';
                     const url = await resizeImgBase64(file, 900);
                     currentMedia.push({ type:'image', url, name:file.name });
+                    progressEl.style.width = baseProgress + fileShare + '%';
                 } else if (file.type.startsWith('video/')) {
-                    if (file.size > 50*1024*1024) { alert('Видео должно быть менее 50 МБ'); continue; }
+                    if (file.size > 100*1024*1024) { alert('Видео должно быть менее 100 МБ'); continue; }
                     const ext = file.name.split('.').pop() || 'mp4';
                     const path = `${id}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
                     try {
-                        const { data: upData, error: upErr } = await supa.storage.from('apartment-media').upload(path, file, { contentType: file.type, upsert: false });
-                        if (upErr) { alert('Ошибка загрузки видео: ' + (upErr.message || JSON.stringify(upErr))); continue; }
-                        const { data: urlData } = supa.storage.from('apartment-media').getPublicUrl(path);
-                        currentMedia.push({ type:'video', url: urlData.publicUrl, name:file.name, storagePath: path });
+                        const publicUrl = await new Promise((resolve, reject) => {
+                            const xhr = new XMLHttpRequest();
+                            xhr.open('POST', `${SUPA_URL}/storage/v1/object/apartment-media/${path}`);
+                            xhr.setRequestHeader('apikey', SUPA_KEY);
+                            xhr.setRequestHeader('Authorization', 'Bearer ' + SUPA_KEY);
+                            xhr.setRequestHeader('Content-Type', file.type);
+                            xhr.upload.onprogress = e => {
+                                if (e.lengthComputable) {
+                                    progressEl.style.width = baseProgress + fileShare * (e.loaded / e.total) + '%';
+                                }
+                            };
+                            xhr.onload = () => {
+                                if (xhr.status >= 200 && xhr.status < 300) {
+                                    const { data: urlData } = supa.storage.from('apartment-media').getPublicUrl(path);
+                                    resolve(urlData.publicUrl);
+                                } else {
+                                    reject(new Error('Ошибка ' + xhr.status + ': ' + xhr.responseText));
+                                }
+                            };
+                            xhr.onerror = () => reject(new Error('Сетевая ошибка при загрузке'));
+                            xhr.send(file);
+                        });
+                        currentMedia.push({ type:'video', url: publicUrl, name:file.name, storagePath: path });
                     } catch(uploadCatchErr) {
-                        alert('Видео не загружено: ' + uploadCatchErr.message + '\nРазмер: ' + (file.size/1024/1024).toFixed(1) + ' МБ');
+                        alert('Видео не загружено: ' + uploadCatchErr.message);
                         continue;
                     }
                 }
             }
+
+            progressEl.style.width = '100%';
+            setTimeout(() => { progressEl.style.display = 'none'; }, 500);
+
             const { error } = await supa.from('apartments').update({ media: currentMedia }).eq('id', id);
             if (error) { alert('Ошибка: '+error.message); return; }
             const apt = allApartments.find(x=>x.id===id);
@@ -2501,14 +2543,23 @@
         document.getElementById(`apt-gallery-${id}`)?.addEventListener('click', async e => {
             const item = e.target.closest('.apt-gallery-item');
             if (!item || e.target.closest('.apt-gallery-del-btn')) return;
-            const img = item.querySelector('img');
-            if (img) {
-                const ov = document.createElement('div');
-                ov.style.cssText='position:fixed;inset:0;background:#000c;z-index:9999;display:flex;align-items:center;justify-content:center;cursor:zoom-out;';
-                ov.innerHTML=`<img src="${img.src}" style="max-width:90vw;max-height:90vh;border-radius:8px;box-shadow:0 0 60px #000;">`;
-                ov.onclick=()=>ov.remove();
-                document.body.appendChild(ov);
+            const ov = document.createElement('div');
+            ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;display:flex;align-items:center;justify-content:center;cursor:zoom-out;';
+            const isVideo = item.dataset.mediaType === 'video';
+            if (isVideo) {
+                const vid = item.querySelector('video');
+                if (vid) {
+                    ov.innerHTML=`<video src="${vid.src}" controls autoplay style="max-width:90vw;max-height:90vh;border-radius:8px;box-shadow:0 0 60px #000;"></video>`;
+                    ov.onclick = e => { if (e.target === ov) ov.remove(); };
+                }
+            } else {
+                const img = item.querySelector('img');
+                if (img) {
+                    ov.innerHTML=`<img src="${img.src}" style="max-width:90vw;max-height:90vh;border-radius:8px;box-shadow:0 0 60px #000;">`;
+                    ov.onclick=()=>ov.remove();
+                }
             }
+            if (ov.innerHTML) document.body.appendChild(ov);
         });
 
         // Event filter pills
