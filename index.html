@@ -634,6 +634,7 @@
                 <section class="view" data-view="cleanings">
                     <div class="content-header">
                         <h2>Уборки</h2>
+                        <button id="bulk-match-btn" class="action-btn" style="font-size:12px;padding:6px 12px;background:#f59e0b;border-color:#f59e0b;margin-left:8px;" onclick="openBulkMatchModal()"><i class="fa-solid fa-link" style="margin-right:5px;"></i>Сопоставить все</button>
                         <div class="date-filter" id="cal-header-controls">
                             <!-- Mode toggle -->
                             <div class="cal-mode-toggle">
@@ -948,6 +949,21 @@
                         <input type="hidden" id="match-task-id">
                         <input type="text" id="match-search" class="mavi-input" placeholder="Поиск апартамента..." style="width:100%;margin-bottom:10px;padding:8px 12px;font-size:13px;">
                         <div id="match-apt-list" style="max-height:280px;overflow-y:auto;border:1px solid var(--border);border-radius:10px;"></div>
+                    </div>
+                </div>
+
+                <!-- Bulk Match Modal -->
+                <div id="bulk-match-modal" class="clean-card-overlay" hidden>
+                    <div class="clean-card-modal" style="max-width:520px;max-height:90vh;overflow-y:auto;">
+                        <button class="clean-card-close" onclick="document.getElementById('bulk-match-modal').hidden=true"><i class="fa-solid fa-xmark"></i></button>
+                        <div class="clean-card-header">
+                            <div class="clean-card-apt-icon" style="background:linear-gradient(135deg,#f59e0b,#ef4444);"><i class="fa-solid fa-link"></i></div>
+                            <div style="flex:1;min-width:0;">
+                                <div class="clean-card-apt-name">Сопоставить апартаменты</div>
+                                <div class="clean-card-date" id="bulk-match-count"></div>
+                            </div>
+                        </div>
+                        <div id="bulk-match-list" style="margin-top:12px;"></div>
                     </div>
                 </div>
 
@@ -3539,6 +3555,80 @@
     document.getElementById('match-modal')?.addEventListener('click', e => {
         if (e.target === e.currentTarget) document.getElementById('match-modal').hidden = true;
     });
+
+    // ── Bulk Match ──────────────────────────────────────────────────
+    function openBulkMatchModal() {
+        const unmatched = calData.filter(t => !t.apartment_id && t.sheet_apt_name);
+        // Group by unique sheet_apt_name
+        const byName = {};
+        unmatched.forEach(t => {
+            if (!byName[t.sheet_apt_name]) byName[t.sheet_apt_name] = [];
+            byName[t.sheet_apt_name].push(t);
+        });
+        const names = Object.keys(byName).sort();
+        document.getElementById('bulk-match-count').textContent = `${names.length} несопоставленных названий (${unmatched.length} уборок)`;
+
+        if (!names.length) {
+            document.getElementById('bulk-match-list').innerHTML = '<div style="text-align:center;padding:30px;opacity:.4;"><i class="fa-solid fa-circle-check" style="font-size:24px;display:block;margin-bottom:8px;color:#10b981;"></i>Все апартаменты сопоставлены!</div>';
+            document.getElementById('bulk-match-modal').hidden = false;
+            return;
+        }
+
+        const aptOpts = allApartments.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+
+        document.getElementById('bulk-match-list').innerHTML = names.map(name => `
+            <div class="bulk-match-row" data-sheet-name="${name.replace(/"/g,'&quot;')}" style="padding:10px 12px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;background:rgba(255,255,255,.02);">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                    <div style="font-size:13px;font-weight:600;color:#f59e0b;"><i class="fa-solid fa-triangle-exclamation" style="margin-right:5px;font-size:11px;"></i>${name}</div>
+                    <span style="font-size:10px;color:var(--text-muted);">${byName[name].length} уб.</span>
+                </div>
+                <div style="display:flex;gap:6px;">
+                    <select class="mavi-input bulk-match-select" style="flex:1;font-size:12px;padding:6px 8px;">
+                        <option value="">— выбрать апартамент —</option>
+                        ${aptOpts}
+                    </select>
+                    <button class="action-btn bulk-match-save" style="font-size:11px;padding:5px 10px;white-space:nowrap;" onclick="bulkMatchOne(this)"><i class="fa-solid fa-check" style="margin-right:4px;"></i>ОК</button>
+                </div>
+            </div>
+        `).join('');
+
+        document.getElementById('bulk-match-modal').hidden = false;
+    }
+
+    async function bulkMatchOne(btn) {
+        const row = btn.closest('.bulk-match-row');
+        const sheetName = row.dataset.sheetName;
+        const select = row.querySelector('.bulk-match-select');
+        const aptId = select.value;
+        if (!aptId) { select.style.borderColor = '#ef4444'; return; }
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+
+        // Save alias
+        await supa.from('apartment_aliases').upsert({ apartment_id: aptId, alias: sheetName }, { onConflict: 'alias' });
+
+        // Update all tasks
+        await supa.from('tasks').update({ apartment_id: aptId })
+            .eq('sheet_apt_name', sheetName).is('apartment_id', null);
+
+        // Update local
+        calData.filter(t => t.sheet_apt_name === sheetName && !t.apartment_id).forEach(t => { t.apartment_id = aptId; });
+
+        // Mark done
+        row.style.borderColor = '#10b98155';
+        row.style.opacity = '.5';
+        row.innerHTML = `<div style="display:flex;align-items:center;gap:8px;padding:4px;"><i class="fa-solid fa-circle-check" style="color:#10b981;"></i><span style="color:var(--text-secondary);font-size:13px;">${sheetName}</span><span style="color:#10b981;font-size:12px;">→ ${allApartments.find(a=>a.id===aptId)?.name || ''}</span></div>`;
+
+        // Update counter
+        const remaining = document.querySelectorAll('.bulk-match-row:not([style*="opacity"])').length;
+        document.getElementById('bulk-match-count').textContent = remaining
+            ? `Осталось: ${remaining}`
+            : 'Все сопоставлены!';
+
+        // Re-render calendar
+        renderCalendar(); updateCalStats();
+    }
 
     // ── Dashboard task pie chart (SVG donut) ───────────────────────
     // Set current date on dashboard
