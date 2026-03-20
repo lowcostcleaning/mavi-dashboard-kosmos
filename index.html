@@ -226,7 +226,12 @@
                     <i class="fa-solid fa-database"></i>
                     <span>База Знаний</span>
                 </a>
-                <a href="/promo/" target="_blank" class="nav-item" data-label="Промо" style="margin-top:auto;border-top:1px solid #2a2e36;padding-top:14px;">
+                <a href="https://t.me/clinermavi_bot" target="_blank" class="nav-item" id="tg-bot-link" data-label="Telegram Бот" style="margin-top:auto;border-top:1px solid #2a2e36;padding-top:14px;">
+                    <i class="fa-brands fa-telegram"></i>
+                    <span>Telegram Бот</span>
+                    <span id="tg-bot-status" style="margin-left:auto;font-size:10px;display:none;"></span>
+                </a>
+                <a href="/promo/" target="_blank" class="nav-item" data-label="Промо">
                     <i class="fa-solid fa-rocket"></i>
                     <span>Промо</span>
                 </a>
@@ -1953,9 +1958,22 @@
                 </div>
 
                 <div class="emp-profile-stats">
-                    <div class="emp-stat-card" style="border-color:${color}55;">
-                        <div class="emp-stat-label">Telegram ID</div>
-                        <div class="emp-stat-value" style="color:${color};font-size:13px;">${e.telegram_id || '—'}</div>
+                    <div class="emp-stat-card" style="border-color:${e.telegram_id ? '#10b98155' : '#ef444455'};">
+                        <div class="emp-stat-label">Telegram</div>
+                        <div class="emp-stat-value" style="color:${e.telegram_id ? '#10b981' : '#ef4444'};font-size:13px;">
+                            ${e.telegram_id
+                                ? `<i class="fa-brands fa-telegram" style="margin-right:4px;"></i>${e.telegram_username ? '@' + e.telegram_username : 'Подключён'}`
+                                : '<i class="fa-solid fa-link-slash" style="margin-right:4px;"></i>Не подключён'}
+                        </div>
+                    </div>
+                    <div class="emp-stat-card" style="border-color:#6366f155;">
+                        <div class="emp-stat-label">Уведомления</div>
+                        <div class="emp-stat-value" style="font-size:13px;">
+                            <label class="tg-toggle" style="margin:0;">
+                                <input type="checkbox" ${e.telegram_notifications !== false ? 'checked' : ''} onchange="toggleTgNotifications('${e.id}', this.checked)" ${!e.telegram_id ? 'disabled title="Сначала подключите Telegram бота"' : ''}>
+                                <span class="tg-slider"></span>
+                            </label>
+                        </div>
                     </div>
                     <div class="emp-stat-card" style="border-color:#00f2ff55;">
                         <div class="emp-stat-label">Телефон</div>
@@ -6989,7 +7007,37 @@
             const role = window.maviUser?.role;
             if (role) loadNavVisibility(role);
         }, 100);
+        // Set Telegram bot deep link with emp_id
+        updateTgBotLink();
     }
+
+    async function updateTgBotLink() {
+        const link = document.getElementById('tg-bot-link');
+        const statusEl = document.getElementById('tg-bot-status');
+        if (!link || !window.maviUser?.emp_id) return;
+        const empId = window.maviUser.emp_id;
+        link.href = `https://t.me/clinermavi_bot?start=${empId}`;
+        // Check if telegram is already connected
+        const { data } = await supa.from('employees').select('telegram_id, telegram_notifications').eq('id', empId).single();
+        if (data?.telegram_id) {
+            statusEl.textContent = '● Подключён';
+            statusEl.style.color = '#10b981';
+            statusEl.style.display = 'inline';
+        } else {
+            statusEl.textContent = '○ Не подключён';
+            statusEl.style.color = '#94a3b8';
+            statusEl.style.display = 'inline';
+        }
+    }
+
+    async function toggleTgNotifications(empId, enabled) {
+        const { error } = await supa.from('employees').update({ telegram_notifications: enabled }).eq('id', empId);
+        if (error) {
+            alert('Ошибка: ' + error.message);
+            return;
+        }
+    }
+
     // Block body scroll while login is visible
     document.body.style.overflow = 'hidden';
     function saveSession(data) {

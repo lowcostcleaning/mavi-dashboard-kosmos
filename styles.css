@@ -3620,3 +3620,45 @@ body.mob-sidebar-open {
     font-weight: 700;
     color: var(--text-primary);
 }
+
+/* ── Telegram notification toggle ── */
+.tg-toggle {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 22px;
+    cursor: pointer;
+}
+.tg-toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+.tg-slider {
+    position: absolute;
+    inset: 0;
+    background: #374151;
+    border-radius: 22px;
+    transition: .25s;
+}
+.tg-slider::before {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    left: 3px;
+    bottom: 3px;
+    background: #fff;
+    border-radius: 50%;
+    transition: .25s;
+}
+.tg-toggle input:checked + .tg-slider {
+    background: #10b981;
+}
+.tg-toggle input:checked + .tg-slider::before {
+    transform: translateX(18px);
+}
+.tg-toggle input:disabled + .tg-slider {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
