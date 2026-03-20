@@ -5893,13 +5893,6 @@
                 if (linenItems.length) sections.push(`<div style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">🛏 Бельё</div>${linenItems.join('')}`);
                 if (guestItems.length) sections.push(`<div style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px;margin:10px 0 4px;">🎁 Гостевой набор</div>${guestItems.join('')}`);
                 // Extra equipment from cleaning task
-                const cleanId = btn.dataset.expCleanId;
-                const cleaning = cleanId ? calData.find(x => String(x.id) === String(cleanId)) : null;
-                if (cleaning?.extra_equipment) {
-                    sections.push(`<div style="font-size:11px;font-weight:700;color:#a855f7;text-transform:uppercase;letter-spacing:.5px;margin:10px 0 4px;">📦 Доп. комплектация ${cleaning.extra_equipment_done ? '✅' : '⏳'}</div>
-                        <div style="padding:8px 10px;border-radius:6px;background:rgba(168,85,247,.08);font-size:13px;line-height:1.5;white-space:pre-line;">${cleaning.extra_equipment}</div>`);
-                }
-
                 document.getElementById('exp-kit-modal-checklist').innerHTML = sections.join('') || '<div style="opacity:.5;font-size:13px;">Состав не указан</div>';
 
                 // Store pending delivery data
