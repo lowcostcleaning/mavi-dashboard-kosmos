@@ -2545,21 +2545,29 @@
             if (!item || e.target.closest('.apt-gallery-del-btn')) return;
             const ov = document.createElement('div');
             ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;display:flex;align-items:center;justify-content:center;cursor:zoom-out;';
+            const closeOv = () => { const v = ov.querySelector('video'); if (v) v.pause(); ov.remove(); };
+            ov.innerHTML = `<button style="position:absolute;top:16px;right:16px;background:rgba(0,0,0,0.6);border:none;color:#fff;width:40px;height:40px;border-radius:50%;font-size:20px;cursor:pointer;z-index:10;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);"><i class="fa-solid fa-xmark"></i></button>`;
+            ov.querySelector('button').onclick = closeOv;
             const isVideo = item.dataset.mediaType === 'video';
             if (isVideo) {
                 const vid = item.querySelector('video');
                 if (vid) {
-                    ov.innerHTML=`<video src="${vid.src}" controls autoplay style="max-width:90vw;max-height:90vh;border-radius:8px;box-shadow:0 0 60px #000;"></video>`;
-                    ov.onclick = e => { if (e.target === ov) ov.remove(); };
+                    const vEl = document.createElement('video');
+                    vEl.src = vid.src; vEl.controls = true; vEl.autoplay = true; vEl.playsInline = true;
+                    vEl.style.cssText = 'max-width:90vw;max-height:85vh;border-radius:8px;box-shadow:0 0 60px #000;';
+                    ov.appendChild(vEl);
                 }
             } else {
                 const img = item.querySelector('img');
                 if (img) {
-                    ov.innerHTML=`<img src="${img.src}" style="max-width:90vw;max-height:90vh;border-radius:8px;box-shadow:0 0 60px #000;">`;
-                    ov.onclick=()=>ov.remove();
+                    const iEl = document.createElement('img');
+                    iEl.src = img.src;
+                    iEl.style.cssText = 'max-width:90vw;max-height:90vh;border-radius:8px;box-shadow:0 0 60px #000;';
+                    ov.appendChild(iEl);
                 }
             }
-            if (ov.innerHTML) document.body.appendChild(ov);
+            ov.onclick = e => { if (e.target === ov) closeOv(); };
+            if (ov.children.length > 1) document.body.appendChild(ov);
         });
 
         // Event filter pills
