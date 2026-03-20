@@ -2341,6 +2341,24 @@
                     ${aptStatusBadgeHtml(a.status)}
                 </div>
 
+                <!-- Эталон видео -->
+                <div style="margin-bottom:16px;padding:12px;border-radius:10px;background:rgba(99,102,241,0.06);border:1px solid rgba(99,102,241,0.15);">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                        <div style="font-size:13px;font-weight:600;color:var(--text-primary);"><i class="fa-solid fa-video" style="margin-right:6px;color:#6366f1;"></i>Эталон видео</div>
+                        ${a.etalon_video ? `<button class="emp-action-btn" id="apt-etalon-del-${id}" title="Удалить эталон" style="font-size:11px;color:#ef4444;"><i class="fa-solid fa-trash"></i></button>` : ''}
+                    </div>
+                    ${a.etalon_video ? `
+                        <video src="${a.etalon_video.url}" controls playsinline preload="metadata" style="width:100%;border-radius:8px;max-height:220px;background:#000;"></video>
+                        <div style="font-size:10px;color:var(--text-muted);margin-top:4px;">${a.etalon_video.name || 'Видео'}</div>
+                    ` : `
+                        <label style="display:flex;align-items:center;justify-content:center;gap:8px;padding:18px;border:2px dashed rgba(99,102,241,0.3);border-radius:8px;cursor:pointer;color:var(--text-muted);font-size:12px;transition:border-color .2s;" onmouseover="this.style.borderColor='#6366f1'" onmouseout="this.style.borderColor='rgba(99,102,241,0.3)'">
+                            <input type="file" id="apt-etalon-input-${id}" accept="video/*" hidden>
+                            <i class="fa-solid fa-cloud-arrow-up" style="font-size:18px;color:#6366f1;"></i>
+                            Загрузить эталон видео
+                        </label>
+                    `}
+                </div>
+
                 <!-- Info grid -->
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;">
                     <div class="emp-stat-card"><div class="emp-stat-label">Комплекс</div><div class="emp-stat-value" style="font-size:13px;">${a.complex_name||'—'}</div></div>
@@ -2536,6 +2554,66 @@
             if (error) { alert('Ошибка: '+error.message); return; }
             const apt = allApartments.find(x=>x.id===id);
             if (apt) apt.media = currentMedia;
+            openAptProfile(id);
+        });
+
+        // Etalon video upload
+        document.getElementById(`apt-etalon-input-${id}`)?.addEventListener('change', async function() {
+            const file = this.files[0];
+            if (!file) return;
+            if (file.size > 100*1024*1024) { alert('Видео должно быть менее 100 МБ'); return; }
+            const ext = file.name.split('.').pop() || 'mp4';
+            const path = `${id}/etalon_${Date.now()}.${ext}`;
+            let progressEl = document.getElementById('apt-upload-progress');
+            if (!progressEl) {
+                progressEl = document.createElement('div');
+                progressEl.id = 'apt-upload-progress';
+                progressEl.style.cssText = 'position:fixed;top:0;left:0;height:4px;background:linear-gradient(90deg,#6366f1,#00f2ff);z-index:99999;transition:width .2s;width:0;';
+                document.body.appendChild(progressEl);
+            }
+            progressEl.style.width = '0';
+            progressEl.style.display = 'block';
+            try {
+                const publicUrl = await new Promise((resolve, reject) => {
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('POST', `${SUPA_URL}/storage/v1/object/apartment-media/${path}`);
+                    xhr.setRequestHeader('apikey', SUPA_KEY);
+                    xhr.setRequestHeader('Authorization', 'Bearer ' + SUPA_KEY);
+                    xhr.setRequestHeader('Content-Type', file.type);
+                    xhr.upload.onprogress = e => { if (e.lengthComputable) progressEl.style.width = (e.loaded/e.total*100)+'%'; };
+                    xhr.onload = () => {
+                        if (xhr.status >= 200 && xhr.status < 300) {
+                            const { data: urlData } = supa.storage.from('apartment-media').getPublicUrl(path);
+                            resolve(urlData.publicUrl);
+                        } else reject(new Error('Ошибка ' + xhr.status));
+                    };
+                    xhr.onerror = () => reject(new Error('Сетевая ошибка'));
+                    xhr.send(file);
+                });
+                progressEl.style.width = '100%';
+                setTimeout(() => { progressEl.style.display = 'none'; }, 500);
+                const etalonData = { url: publicUrl, storagePath: path, name: file.name };
+                const { error } = await supa.from('apartments').update({ etalon_video: etalonData }).eq('id', id);
+                if (error) { alert('Ошибка: '+error.message); return; }
+                const aptObj = allApartments.find(x=>x.id===id);
+                if (aptObj) aptObj.etalon_video = etalonData;
+                openAptProfile(id);
+            } catch(err) {
+                progressEl.style.display = 'none';
+                alert('Ошибка загрузки: ' + err.message);
+            }
+        });
+
+        // Etalon video delete
+        document.getElementById(`apt-etalon-del-${id}`)?.addEventListener('click', async () => {
+            if (!confirm('Удалить эталон видео?')) return;
+            const aptObj = allApartments.find(x=>x.id===id);
+            if (aptObj?.etalon_video?.storagePath) {
+                await supa.storage.from('apartment-media').remove([aptObj.etalon_video.storagePath]);
+            }
+            const { error } = await supa.from('apartments').update({ etalon_video: null }).eq('id', id);
+            if (error) { alert('Ошибка: '+error.message); return; }
+            if (aptObj) aptObj.etalon_video = null;
             openAptProfile(id);
         });
 
@@ -4405,6 +4483,13 @@
                 </div>` : ''}
 
             </div>
+
+            ${apt?.etalon_video ? `
+            <div style="margin-top:12px;padding:12px;border-radius:10px;background:rgba(99,102,241,0.06);border:1px solid rgba(99,102,241,0.15);">
+                <div style="font-size:12px;font-weight:600;color:var(--text-primary);margin-bottom:8px;"><i class="fa-solid fa-video" style="margin-right:6px;color:#6366f1;"></i>Эталон видео</div>
+                <video src="${apt.etalon_video.url}" controls playsinline preload="metadata" style="width:100%;border-radius:8px;max-height:250px;background:#000;"></video>
+            </div>
+            ` : ''}
 
             <!-- Edit section -->
             ${(window.maviUser?.role === 'cleaner' || window.maviUser?.role === 'intern') ? `
