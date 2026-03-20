@@ -2460,8 +2460,12 @@
                     currentMedia.push({ type:'image', url, name:file.name });
                 } else if (file.type.startsWith('video/')) {
                     if (file.size > 50*1024*1024) { alert('Видео должно быть менее 50 МБ'); continue; }
-                    const url = await new Promise(r => { const fr=new FileReader(); fr.onload=e=>r(e.target.result); fr.readAsDataURL(file); });
-                    currentMedia.push({ type:'video', url, name:file.name });
+                    const ext = file.name.split('.').pop() || 'mp4';
+                    const path = `${id}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+                    const { error: upErr } = await supa.storage.from('apartment-media').upload(path, file, { contentType: file.type, upsert: false });
+                    if (upErr) { alert('Ошибка загрузки видео: ' + upErr.message); continue; }
+                    const { data: urlData } = supa.storage.from('apartment-media').getPublicUrl(path);
+                    currentMedia.push({ type:'video', url: urlData.publicUrl, name:file.name, storagePath: path });
                 }
             }
             const { error } = await supa.from('apartments').update({ media: currentMedia }).eq('id', id);
@@ -2477,6 +2481,9 @@
             if (!btn) return;
             const idx = parseInt(btn.dataset.delIdx);
             const currentMedia = Array.isArray(a.media) ? [...a.media] : [];
+            if (currentMedia[idx]?.storagePath) {
+                await supa.storage.from('apartment-media').remove([currentMedia[idx].storagePath]);
+            }
             currentMedia.splice(idx, 1);
             const { error } = await supa.from('apartments').update({ media: currentMedia }).eq('id', id);
             if (error) { alert('Ошибка: '+error.message); return; }
