@@ -3190,7 +3190,7 @@
         // fetch all cleaning tasks (no date filter — filter client-side for flexibility)
         const { data, error } = await supa
             .from('tasks')
-            .select('id, title, status, type, deadline, started_at, completed_at, assigned_to, cleaner2_id, apartment_id, cost, cleaner_rate, cleaner2_rate, tariff_type, kit_type, long_stay, long_stay_amount, apt_type_auto, comment, rating, sheet_apt_name')
+            .select('id, title, status, type, deadline, started_at, completed_at, assigned_to, cleaner2_id, apartment_id, cost, cleaner_rate, cleaner2_rate, tariff_type, kit_type, long_stay, long_stay_amount, apt_type_auto, comment, rating, sheet_apt_name, extra_equipment, extra_equipment_done')
             .eq('type', 'cleaning')
             .order('deadline', { ascending: true });
 
@@ -4580,7 +4580,10 @@
 
                 <!-- Доп. комплектация -->
                 <div style="margin-bottom:8px;">
-                    <label style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:3px;"><i class="fa-solid fa-box-open" style="margin-right:4px;opacity:.5;"></i>Доп. комплектация</label>
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;">
+                        <label style="font-size:11px;color:var(--text-secondary);"><i class="fa-solid fa-box-open" style="margin-right:4px;opacity:.5;"></i>Доп. комплектация</label>
+                        ${t.extra_equipment ? `<button type="button" onclick="document.getElementById('clean-edit-extra-equip').value='';this.style.display='none';" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:11px;padding:2px 6px;border-radius:4px;display:flex;align-items:center;gap:3px;" title="Очистить"><i class="fa-solid fa-xmark"></i> очистить</button>` : ''}
+                    </div>
                     <textarea id="clean-edit-extra-equip" class="mavi-input" rows="2" placeholder="Чайник, утюг, доп. полотенца..." style="width:100%;resize:vertical;font-size:12px;padding:6px 8px;line-height:1.4;">${t.extra_equipment || ''}</textarea>
                 </div>
 
@@ -5695,7 +5698,7 @@
         // Parallel fetch — all 3 queries at once
         const [{ data: cleanings }, { data: lndAll }, { data: deliveries }] = await Promise.all([
             supa.from('tasks')
-                .select('id, title, deadline, assigned_to, apartment_id, kit_type, apt_type_auto, cleaner2_id, status')
+                .select('id, title, deadline, assigned_to, apartment_id, kit_type, apt_type_auto, cleaner2_id, status, extra_equipment, extra_equipment_done')
                 .eq('type', 'cleaning')
                 .gte('deadline', dateISO + 'T00:00:00Z')
                 .lte('deadline', dateISO + 'T23:59:59Z')
@@ -5844,6 +5847,7 @@
         // Wire "Забрать комплект" — open kit modal
         document.querySelectorAll('.exp-create-delivery-btn').forEach(btn => {
             btn.addEventListener('click', async () => {
+                if (!allKitItems.length) await loadKitItems();
                 const aptId    = btn.dataset.aptId;
                 const restockId = btn.dataset.restockId;
                 const apt = allApartments.find(a => String(a.id) === String(aptId));
@@ -5870,12 +5874,21 @@
                         <span style="font-size:13px;">${linenLabels[i] || 'Позиция ' + (i+1)}</span>
                     </div>`
                 );
-                const guestItems = (meta.kit_guest || []).map((v, i) =>
-                    `<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:6px;background:${v ? 'rgba(99,102,241,.08)' : 'rgba(255,255,255,.03)'};">
+                // Resolve guest kit item names from allKitItems
+                const cleanId_ = btn.dataset.expCleanId;
+                const cleaning_ = cleanId_ ? calData.find(x => String(x.id) === String(cleanId_)) : null;
+                const gKitType = cleaning_?.kit_type || '';
+                const gRoomType = (cleaning_?.apt_type_auto || apt?.apt_type || 'студия').toLowerCase();
+                const guestKitItems = allKitItems.filter(i => i.kit_type === gKitType && i.room_type.toLowerCase() === gRoomType && (i.quantity || 0) > 0);
+
+                const guestItems = (meta.kit_guest || []).map((v, i) => {
+                    const itemInfo = guestKitItems[i];
+                    const label = itemInfo ? `${itemInfo.item_name} — ${itemInfo.quantity} шт` : `Позиция ${i+1}`;
+                    return `<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:6px;background:${v ? 'rgba(99,102,241,.08)' : 'rgba(255,255,255,.03)'};">
                         <i class="fa-solid ${v ? 'fa-square-check' : 'fa-square'}" style="color:${v ? '#6366f1' : '#666'};font-size:14px;"></i>
-                        <span style="font-size:13px;" class="exp-kit-guest-label-${i}">Позиция ${i+1}</span>
-                    </div>`
-                );
+                        <span style="font-size:13px;">${label}</span>
+                    </div>`;
+                });
                 const sections = [];
                 if (linenItems.length) sections.push(`<div style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">🛏 Бельё</div>${linenItems.join('')}`);
                 if (guestItems.length) sections.push(`<div style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px;margin:10px 0 4px;">🎁 Гостевой набор</div>${guestItems.join('')}`);
