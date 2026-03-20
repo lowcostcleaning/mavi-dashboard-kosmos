@@ -1165,6 +1165,7 @@
                                     <label class="lnd-chk-item"><input type="checkbox" class="lnd-kit-linen" data-idx="6"> Для кухни — 1 шт</label>
                                 </div>
                                 <div id="lnd-guest-checklist-block" style="margin-top:8px;"></div>
+                                <div id="lnd-extra-equip-block" style="display:none;margin-top:10px;padding:10px;border-radius:8px;background:rgba(168,85,247,0.08);border:1px solid rgba(168,85,247,0.2);"></div>
                                 <label class="lnd-chk-item" style="margin-top:10px;padding:8px;background:rgba(16,185,129,.08);border-radius:6px;border:1px solid rgba(16,185,129,.2);">
                                     <input type="checkbox" id="lnd-chk-transferred"> <span style="color:#10b981;font-weight:600;">Передано экспедитору</span>
                                 </label>
@@ -5075,6 +5076,7 @@
                                 ${aptType ? `<span style="background:rgba(99,102,241,.15);color:#a5b4fc;padding:2px 7px;border-radius:10px;">${aptType}</span>` : ''}
                                 ${kitType ? `<span style="background:${kitColor}22;color:${kitColor};padding:2px 7px;border-radius:10px;">🎁 ${kitType}</span>` : ''}
                                 ${linen ? `<span style="background:rgba(255,255,255,.07);color:var(--text-secondary);padding:2px 7px;border-radius:10px;"><i class="fa-solid fa-bed" style="margin-right:3px;"></i>${linen}</span>` : ''}
+                                ${c.extra_equipment ? `<span style="background:rgba(168,85,247,.15);color:#c084fc;padding:2px 7px;border-radius:10px;"><i class="fa-solid fa-box-open" style="margin-right:3px;"></i>доп${c.extra_equipment_done ? ' ✓' : ''}</span>` : ''}
                             </div>
                         </div>
                     </div>
@@ -5232,6 +5234,7 @@
                 const kitType  = cleaning?.kit_type || null;
                 const aptType  = cleaning?.apt_type_auto || apt?.apt_type || null;
                 lndRenderGuestChecklist(kitType, aptType, meta?.kit_guest);
+                lndRenderExtraEquip(cleaning);
             }
             if (meta) lndLoadChecklist(meta, stageKey);
             modal.dataset.currentStageKey = stageKey || '';
@@ -5260,6 +5263,7 @@
                 const kitType  = cleaning?.kit_type || null;
                 const aptType  = cleaning?.apt_type_auto || apt?.apt_type || null;
                 lndRenderGuestChecklist(kitType, aptType, null);
+                lndRenderExtraEquip(cleaning);
             }
             saveBtn.innerHTML = '<i class="fa-solid fa-plus" style="margin-right:7px;"></i>Создать задачу';
         }
@@ -5619,6 +5623,20 @@
     }
 
     // Render dynamic guest checklist in комплектация modal
+    function lndRenderExtraEquip(cleaning) {
+        const block = document.getElementById('lnd-extra-equip-block');
+        if (!block) return;
+        if (!cleaning?.extra_equipment) { block.style.display = 'none'; return; }
+        block.style.display = '';
+        block.innerHTML = `
+            <div style="font-size:12px;font-weight:600;color:#a855f7;margin-bottom:6px;"><i class="fa-solid fa-box-open" style="margin-right:6px;"></i>Доп. комплектация</div>
+            <div style="font-size:13px;color:var(--text-primary);line-height:1.5;white-space:pre-line;margin-bottom:8px;">${cleaning.extra_equipment}</div>
+            <label class="lnd-chk-item" style="padding:6px 8px;background:rgba(168,85,247,.08);border-radius:6px;border:1px solid rgba(168,85,247,.15);">
+                <input type="checkbox" id="lnd-chk-extra-equip-done" ${cleaning.extra_equipment_done ? 'checked' : ''} onchange="toggleExtraEquipDone(this.checked,'${cleaning.id}')">
+                <span style="color:#a855f7;font-weight:600;">Укомплектовано</span>
+            </label>`;
+    }
+
     function lndRenderGuestChecklist(kitType, roomType, savedChecks) {
         const container = document.getElementById('lnd-guest-checklist-block');
         if (!container) return;
