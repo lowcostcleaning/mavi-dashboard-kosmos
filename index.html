@@ -2342,7 +2342,7 @@
                 </div>
 
                 <!-- Эталон видео -->
-                <div style="margin-bottom:16px;padding:12px;border-radius:10px;background:rgba(99,102,241,0.06);border:1px solid rgba(99,102,241,0.15);">
+                <div class="etalon-video-block" style="margin-bottom:16px;padding:12px;border-radius:10px;background:rgba(99,102,241,0.06);border:1px solid rgba(99,102,241,0.15);">
                     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
                         <div style="font-size:13px;font-weight:600;color:var(--text-primary);"><i class="fa-solid fa-video" style="margin-right:6px;color:#6366f1;"></i>Эталон видео</div>
                         ${a.etalon_video ? `<button class="emp-action-btn" id="apt-etalon-del-${id}" title="Удалить эталон" style="font-size:11px;color:#ef4444;"><i class="fa-solid fa-trash"></i></button>` : ''}
@@ -2827,6 +2827,7 @@
         f('apt-form-owner-email', a?.owners?.email);
         f('apt-form-bank',        a?.bank_account);
         f('apt-form-notes',       a?.notes);
+        document.getElementById('apt-profile-modal').querySelectorAll('video').forEach(v => { v.pause(); v.currentTime = 0; });
         document.getElementById('apt-profile-modal').hidden = true;
         document.getElementById('apt-form-modal').hidden = false;
     }
@@ -2924,6 +2925,7 @@
             document.getElementById('apt-form-modal').hidden = true; return;
         }
         if (e.target.closest('#apt-profile-close') || e.target.id === 'apt-profile-modal') {
+            document.getElementById('apt-profile-modal').querySelectorAll('video').forEach(v => { v.pause(); v.currentTime = 0; });
             document.getElementById('apt-profile-modal').hidden = true; return;
         }
         if (e.target.id === 'apt-form-modal') {
@@ -4485,7 +4487,7 @@
             </div>
 
             ${apt?.etalon_video ? `
-            <div style="margin-top:12px;padding:12px;border-radius:10px;background:rgba(99,102,241,0.06);border:1px solid rgba(99,102,241,0.15);">
+            <div class="etalon-video-block" style="margin-top:12px;padding:12px;border-radius:10px;background:rgba(99,102,241,0.06);border:1px solid rgba(99,102,241,0.15);">
                 <div style="font-size:12px;font-weight:600;color:var(--text-primary);margin-bottom:8px;"><i class="fa-solid fa-video" style="margin-right:6px;color:#6366f1;"></i>Эталон видео</div>
                 <video src="${apt.etalon_video.url}" controls playsinline preload="metadata" style="width:100%;border-radius:8px;max-height:250px;background:#000;"></video>
             </div>
@@ -4812,11 +4814,14 @@
         btn.innerHTML = '<i class="fa-solid fa-floppy-disk" style="margin-right:6px;"></i>Сохранить изменения';
     }
 
-    document.getElementById('clean-card-close')?.addEventListener('click', () => {
-        document.getElementById('clean-card-overlay').hidden = true;
-    });
+    function closeCleaningCard() {
+        const ov = document.getElementById('clean-card-overlay');
+        ov.querySelectorAll('video').forEach(v => { v.pause(); v.currentTime = 0; });
+        ov.hidden = true;
+    }
+    document.getElementById('clean-card-close')?.addEventListener('click', closeCleaningCard);
     document.getElementById('clean-card-overlay')?.addEventListener('click', e => {
-        if (e.target === e.currentTarget) document.getElementById('clean-card-overlay').hidden = true;
+        if (e.target === e.currentTarget) closeCleaningCard();
     });
 
     document.addEventListener('click', e => {

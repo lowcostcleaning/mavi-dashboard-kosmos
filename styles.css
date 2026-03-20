@@ -3595,6 +3595,27 @@ body.mob-sidebar-open {
     .apt-profile-body-inner {
         padding: 16px;
     }
+    .apt-gallery-del-btn {
+        opacity: 1;
+    }
+}
+
+/* ── Etalon video block (mobile) ─────────────────────────────── */
+@media (max-width: 640px) {
+    .emp-modal .etalon-video-block {
+        padding: 10px;
+        margin-bottom: 12px;
+    }
+    .emp-modal .etalon-video-block video {
+        max-height: 180px;
+    }
+    .clean-card-modal .etalon-video-block {
+        padding: 10px;
+        margin-top: 8px;
+    }
+    .clean-card-modal .etalon-video-block video {
+        max-height: 180px;
+    }
 }
 
 /* ── Pie chart widget ── */
