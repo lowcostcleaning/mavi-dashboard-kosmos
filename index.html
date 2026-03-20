@@ -2462,10 +2462,15 @@
                     if (file.size > 50*1024*1024) { alert('Видео должно быть менее 50 МБ'); continue; }
                     const ext = file.name.split('.').pop() || 'mp4';
                     const path = `${id}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-                    const { error: upErr } = await supa.storage.from('apartment-media').upload(path, file, { contentType: file.type, upsert: false });
-                    if (upErr) { alert('Ошибка загрузки видео: ' + upErr.message); continue; }
-                    const { data: urlData } = supa.storage.from('apartment-media').getPublicUrl(path);
-                    currentMedia.push({ type:'video', url: urlData.publicUrl, name:file.name, storagePath: path });
+                    try {
+                        const { data: upData, error: upErr } = await supa.storage.from('apartment-media').upload(path, file, { contentType: file.type, upsert: false });
+                        if (upErr) { alert('Ошибка загрузки видео: ' + (upErr.message || JSON.stringify(upErr))); continue; }
+                        const { data: urlData } = supa.storage.from('apartment-media').getPublicUrl(path);
+                        currentMedia.push({ type:'video', url: urlData.publicUrl, name:file.name, storagePath: path });
+                    } catch(uploadCatchErr) {
+                        alert('Видео не загружено: ' + uploadCatchErr.message + '\nРазмер: ' + (file.size/1024/1024).toFixed(1) + ' МБ');
+                        continue;
+                    }
                 }
             }
             const { error } = await supa.from('apartments').update({ media: currentMedia }).eq('id', id);
