@@ -667,6 +667,7 @@
                             <div class="cal-mode-toggle">
                                 <button class="cal-mode-btn active" id="cal-mode-calendar" type="button"><i class="fa-regular fa-calendar" style="margin-right:5px;"></i>Календарь</button>
                                 <button class="cal-mode-btn" id="cal-mode-list" type="button"><i class="fa-solid fa-list" style="margin-right:5px;"></i>Список</button>
+                                <button class="cal-mode-btn" id="cal-mode-notes" type="button"><i class="fa-solid fa-clipboard" style="margin-right:5px;"></i>Замечания</button>
                             </div>
                             <button class="cal-mode-btn" id="cleaner-unavail-btn" type="button" style="display:none;" onclick="openUnavailModal()"><i class="fa-solid fa-calendar-xmark" style="margin-right:5px;"></i>Мои выходные</button>
                             <!-- Calendar nav (shown in calendar mode) -->
@@ -789,6 +790,28 @@
                         <!-- Card grid -->
                         <div id="cal-range-list" class="tk-list">
                             <div style="text-align:center;opacity:.3;padding:40px;font-size:13px;grid-column:1/-1;">Выберите диапазон дат</div>
+                        </div>
+                    </div>
+
+                    <!-- Notes/remarks analytics view -->
+                    <div id="cal-notes-view" style="display:none;">
+                        <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap;">
+                            <select class="mavi-input" id="notes-filter-type" style="width:auto;min-width:150px;padding:6px 12px;font-size:13px;margin-top:0;">
+                                <option value="">Все замечания</option>
+                                <option value="manager">Пожелания менеджера</option>
+                                <option value="cleaner">Замечания клинера</option>
+                            </select>
+                            <select class="mavi-input" id="notes-filter-cleaner" style="width:auto;min-width:160px;padding:6px 12px;font-size:13px;margin-top:0;">
+                                <option value="">Все клинеры</option>
+                            </select>
+                            <div class="search-bar" style="width:220px;">
+                                <i class="fa-solid fa-magnifying-glass"></i>
+                                <input type="text" id="notes-search" placeholder="Поиск по тексту...">
+                            </div>
+                            <div id="notes-count" style="font-size:13px;color:var(--text-secondary);margin-left:auto;"></div>
+                        </div>
+                        <div id="notes-list" style="display:flex;flex-direction:column;gap:10px;">
+                            <div style="text-align:center;opacity:.3;padding:40px;font-size:13px;">Загрузка...</div>
                         </div>
                     </div>
                 </section>
@@ -4580,24 +4603,27 @@
     document.getElementById('sched-save')?.addEventListener('click', saveSchedCleaning);
 
     // ── Calendar mode toggle ─────────────────────────────────────────
-    let calViewMode = 'calendar'; // 'calendar' | 'list'
+    let calViewMode = 'calendar'; // 'calendar' | 'list' | 'notes'
 
     function switchCalMode(mode) {
         calViewMode = mode;
-        const isCalendar = mode === 'calendar';
 
-        document.getElementById('cal-mode-calendar').classList.toggle('active', isCalendar);
-        document.getElementById('cal-mode-list').classList.toggle('active', !isCalendar);
-        document.getElementById('cal-nav-controls').style.display = isCalendar ? 'flex' : 'none';
-        document.getElementById('cal-range-controls').style.display = isCalendar ? 'none' : 'flex';
-        document.getElementById('cal-calendar-view').style.display = isCalendar ? '' : 'none';
-        document.getElementById('cal-list-view').style.display = isCalendar ? 'none' : '';
+        document.getElementById('cal-mode-calendar').classList.toggle('active', mode === 'calendar');
+        document.getElementById('cal-mode-list').classList.toggle('active', mode === 'list');
+        document.getElementById('cal-mode-notes').classList.toggle('active', mode === 'notes');
+        document.getElementById('cal-nav-controls').style.display = mode === 'calendar' ? 'flex' : 'none';
+        document.getElementById('cal-range-controls').style.display = mode === 'list' ? 'flex' : (mode === 'notes' ? 'flex' : 'none');
+        document.getElementById('cal-calendar-view').style.display = mode === 'calendar' ? '' : 'none';
+        document.getElementById('cal-list-view').style.display = mode === 'list' ? '' : 'none';
+        document.getElementById('cal-notes-view').style.display = mode === 'notes' ? '' : 'none';
 
-        if (!isCalendar) renderRangeList();
+        if (mode === 'list') renderRangeList();
+        if (mode === 'notes') renderNotesView();
     }
 
     document.getElementById('cal-mode-calendar')?.addEventListener('click', () => switchCalMode('calendar'));
     document.getElementById('cal-mode-list')?.addEventListener('click', () => switchCalMode('list'));
+    document.getElementById('cal-mode-notes')?.addEventListener('click', () => switchCalMode('notes'));
 
     // Default range: current month
     (function initRangePickers() {
@@ -4609,6 +4635,102 @@
     })();
 
     let calListFilter = { status: '', cleaner: '', search: '' };
+
+    // ── Notes / Remarks analytics view ──────────────────────────────────
+    function renderNotesView() {
+        const fromVal = document.getElementById('cal-range-from').value;
+        const toVal   = document.getElementById('cal-range-to').value;
+        if (!fromVal || !toVal) return;
+
+        const from = new Date(fromVal + 'T00:00:00');
+        const to   = new Date(toVal   + 'T23:59:59');
+        const filterType    = document.getElementById('notes-filter-type').value;
+        const filterCleaner = document.getElementById('notes-filter-cleaner').value;
+        const searchQ       = document.getElementById('notes-search').value.toLowerCase().trim();
+
+        // Collect all notes entries from tasks in range
+        let entries = [];
+        calData.forEach(t => {
+            const d = calTaskDate(t);
+            if (!d || d < from || d > to) return;
+            const apt = allApartments.find(a => a.id === t.apartment_id);
+            const aptLabel = apt?.name || t.sheet_apt_name || t.title || '—';
+            const dateStr = d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' });
+
+            if (t.manager_notes && filterType !== 'cleaner') {
+                entries.push({ type: 'manager', text: t.manager_notes, taskId: t.id, aptLabel, dateStr, date: d, cleanerId: t.assigned_to, cleaner2Id: t.cleaner2_id });
+            }
+            if (t.comment && filterType !== 'manager') {
+                entries.push({ type: 'cleaner', text: t.comment, taskId: t.id, aptLabel, dateStr, date: d, cleanerId: t.assigned_to, cleaner2Id: t.cleaner2_id });
+            }
+        });
+
+        // Filter by cleaner
+        if (filterCleaner) {
+            entries = entries.filter(e => e.cleanerId === filterCleaner || e.cleaner2Id === filterCleaner);
+        }
+
+        // Filter by search
+        if (searchQ) {
+            entries = entries.filter(e => e.text.toLowerCase().includes(searchQ) || e.aptLabel.toLowerCase().includes(searchQ));
+        }
+
+        // Sort newest first
+        entries.sort((a, b) => b.date - a.date);
+
+        // Populate cleaner dropdown
+        const cleanerSelect = document.getElementById('notes-filter-cleaner');
+        const prevVal = cleanerSelect.value;
+        const cleanerIds = new Set();
+        calData.forEach(t => {
+            const d = calTaskDate(t);
+            if (d && d >= from && d <= to && (t.comment || t.manager_notes)) {
+                if (t.assigned_to) cleanerIds.add(t.assigned_to);
+                if (t.cleaner2_id) cleanerIds.add(t.cleaner2_id);
+            }
+        });
+        cleanerSelect.innerHTML = '<option value="">Все клинеры</option>' +
+            [...cleanerIds].map(id => {
+                const e = allEmployees.find(x => x.id === id);
+                return e ? `<option value="${id}"${id === prevVal ? ' selected' : ''}>${e.full_name || '—'}</option>` : '';
+            }).filter(Boolean).join('');
+
+        // Count
+        document.getElementById('notes-count').textContent = entries.length ? `${entries.length} записей` : 'Нет замечаний';
+
+        if (!entries.length) {
+            document.getElementById('notes-list').innerHTML = '<div style="text-align:center;opacity:.3;padding:40px;font-size:13px;">Нет замечаний за выбранный период</div>';
+            return;
+        }
+
+        // Render
+        document.getElementById('notes-list').innerHTML = entries.map(e => {
+            const emp = e.cleanerId ? allEmployees.find(x => x.id === e.cleanerId) : null;
+            const empName = emp?.full_name || '—';
+            const isManager = e.type === 'manager';
+            const typeColor = isManager ? '#6366f1' : '#10b981';
+            const typeLabel = isManager ? 'Менеджер' : 'Клинер';
+            const typeIcon  = isManager ? 'fa-clipboard' : 'fa-comment';
+            return `<div style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;padding:14px 16px;border-left:3px solid ${typeColor};" onclick="openCleaningCard('${e.taskId}')" class="notes-entry">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <span style="font-size:11px;padding:2px 8px;border-radius:10px;background:${typeColor}18;color:${typeColor};font-weight:600;"><i class="fa-solid ${typeIcon}" style="margin-right:4px;"></i>${typeLabel}</span>
+                        <span style="font-size:13px;font-weight:600;color:var(--text-primary);">${e.aptLabel}</span>
+                    </div>
+                    <span style="font-size:12px;color:var(--text-secondary);">${e.dateStr}</span>
+                </div>
+                <div style="font-size:13px;color:var(--text-secondary);line-height:1.5;white-space:pre-line;">${e.text}</div>
+                <div style="margin-top:6px;font-size:11px;color:var(--text-secondary);opacity:.6;"><i class="fa-solid fa-user" style="margin-right:4px;"></i>${empName}</div>
+            </div>`;
+        }).join('');
+    }
+
+    document.getElementById('notes-filter-type')?.addEventListener('change', renderNotesView);
+    document.getElementById('notes-filter-cleaner')?.addEventListener('change', renderNotesView);
+    document.getElementById('notes-search')?.addEventListener('input', renderNotesView);
+    // Also re-render notes when date range changes (reuse same inputs as list mode)
+    document.getElementById('cal-range-from')?.addEventListener('change', () => { if (calViewMode === 'notes') renderNotesView(); });
+    document.getElementById('cal-range-to')?.addEventListener('change', () => { if (calViewMode === 'notes') renderNotesView(); });
 
     function renderRangeList() {
         const fromVal = document.getElementById('cal-range-from').value;

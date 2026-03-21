@@ -1962,6 +1962,16 @@ select.mavi-input option {
     color: #00f2ff;
 }
 
+/* Notes entries */
+.notes-entry {
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+}
+.notes-entry:hover {
+    background: rgba(99,102,241,0.06);
+    border-color: rgba(99,102,241,0.3);
+}
+
 /* List mode now reuses .tk-filter-bar, .tk-tabs, .tk-tab, .tk-list, .task-card styles */
 
 /* ── Availability table ── */
