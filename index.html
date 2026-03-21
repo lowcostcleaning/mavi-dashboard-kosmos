@@ -781,7 +781,10 @@
                         <!-- Summary -->
                         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
                             <div id="cal-range-summary" style="font-size:13px;color:var(--text-secondary);"></div>
-                            <div id="cal-range-total" style="font-size:13px;font-weight:600;"></div>
+                            <div style="display:flex;align-items:center;gap:14px;">
+                                <div id="cal-range-salary" style="font-size:14px;font-weight:700;color:#ffcc33;display:none;"></div>
+                                <div id="cal-range-total" style="font-size:13px;font-weight:600;"></div>
+                            </div>
                         </div>
                         <!-- Card grid -->
                         <div id="cal-range-list" class="tk-list">
@@ -4658,6 +4661,34 @@
         const fmtDate = d => d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
         document.getElementById('cal-range-summary').textContent = `${fmtDate(from)} — ${fmtDate(to)}`;
         document.getElementById('cal-range-total').textContent = ranged.length ? `${ranged.length} уборок` : 'Уборок нет';
+
+        // Salary for selected period
+        const salaryEl = document.getElementById('cal-range-salary');
+        if (salaryEl) {
+            const uid = window.maviUser?.emp_id;
+            const isCleaner = window.maviUser?.role === 'cleaner' || window.maviUser?.role === 'intern';
+            if (uid && ranged.length) {
+                let total = 0;
+                ranged.forEach(t => {
+                    if (t.assigned_to === uid) total += parseFloat(t.cleaner_rate) || 0;
+                    if (t.cleaner2_id === uid) total += parseFloat(t.cleaner2_rate) || 0;
+                });
+                if (isCleaner) {
+                    salaryEl.textContent = `💰 ${total} ₾`;
+                    salaryEl.style.display = '';
+                } else {
+                    // For managers: show total of all rates
+                    let allTotal = 0;
+                    ranged.forEach(t => {
+                        allTotal += (parseFloat(t.cleaner_rate) || 0) + (parseFloat(t.cleaner2_rate) || 0);
+                    });
+                    salaryEl.textContent = `💰 ${allTotal} ₾`;
+                    salaryEl.style.display = '';
+                }
+            } else {
+                salaryEl.style.display = 'none';
+            }
+        }
 
         if (!ranged.length) {
             document.getElementById('cal-range-list').innerHTML =
