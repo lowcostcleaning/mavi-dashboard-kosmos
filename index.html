@@ -994,7 +994,7 @@
                             </div>
 
                             <div>
-                                <label style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:5px;"><i class="fa-solid fa-comment" style="margin-right:5px;"></i>Замечания</label>
+                                <label style="font-size:11px;color:#f59e0b;display:block;margin-bottom:5px;"><i class="fa-solid fa-pen" style="margin-right:5px;"></i>Замечания менеджера</label>
                                 <textarea id="sched-comment" class="mavi-input" rows="2" placeholder="Особые пожелания, доступ..." style="width:100%;resize:vertical;font-size:13px;padding:8px 12px;line-height:1.5;"></textarea>
                             </div>
 
@@ -4566,7 +4566,7 @@
             status:            cleaner ? 'assigned' : 'new',
             priority,
             deadline:          dateVal + 'T00:00:00Z',
-            comment,
+            manager_comment:   comment,
             title:             'Уборка — ' + (apt?.name || ''),
             source:            'manual',
             apt_type_auto:     apt?.apt_type || null,
@@ -5238,10 +5238,7 @@
                     </div>
                 </div>
 
-                <div style="margin-bottom:8px;">
-                    <label style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:3px;">Замечания</label>
-                    <textarea id="clean-edit-comment" class="mavi-input" rows="2" placeholder="Замечания..." style="width:100%;resize:vertical;font-size:12px;padding:6px 8px;line-height:1.4;">${t.comment || ''}</textarea>
-                </div>
+                <input type="hidden" id="clean-edit-comment" value="${t.comment || ''}">
 
                 <div style="margin-bottom:8px;">
                     <label style="font-size:11px;color:#a5b4fc;display:block;margin-bottom:3px;"><i class="fa-solid fa-clipboard" style="margin-right:4px;"></i>Пожелания менеджера</label>
