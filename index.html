@@ -2023,7 +2023,7 @@
     }
 
     async function loadAvailabilityGrid() {
-        const cleaners = allEmployees.filter(e => e.role === 'cleaner' || e.role === 'intern');
+        const cleaners = allEmployees.filter(e => (e.role === 'cleaner' || e.role === 'intern') && e.status === 'active');
         if (!cleaners.length) { renderAvailabilityGrid(cleaners, {}); return; }
 
         const weekEnd = new Date(availWeekStart);
