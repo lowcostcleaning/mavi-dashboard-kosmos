@@ -5578,6 +5578,8 @@
     });
 
     document.addEventListener('click', e => {
+        // Don't open cleaning card from expeditor or kit modal
+        if (e.target.closest('#exp-board, #exp-kit-modal')) return;
         const row = e.target.closest('[data-clean-id]');
         if (row) openCleaningCard(row.dataset.cleanId);
     });
@@ -6688,9 +6690,9 @@
                 document.getElementById('exp-kit-modal-checklist').innerHTML = sections.join('') || '<div style="opacity:.5;font-size:13px;">Состав не указан</div>';
 
                 // Store pending delivery data
-                document.getElementById('exp-kit-confirm-btn').dataset.aptId    = aptId;
-                document.getElementById('exp-kit-confirm-btn').dataset.aptName  = apt?.name || '';
-                document.getElementById('exp-kit-confirm-btn').dataset.cleanId  = btn.dataset.expCleanId || '';
+                document.getElementById('exp-kit-confirm-btn').dataset.aptId       = aptId;
+                document.getElementById('exp-kit-confirm-btn').dataset.aptName   = apt?.name || '';
+                document.getElementById('exp-kit-confirm-btn').dataset.expClnId  = btn.dataset.expCleanId || '';
 
                 document.getElementById('exp-kit-modal').hidden = false;
             });
@@ -6758,14 +6760,15 @@
     }
 
     // Kit modal confirm
-    document.getElementById('exp-kit-confirm-btn')?.addEventListener('click', async () => {
+    document.getElementById('exp-kit-confirm-btn')?.addEventListener('click', async (e) => {
+        e.stopPropagation();
         const btn = document.getElementById('exp-kit-confirm-btn');
         const aptId   = btn.dataset.aptId;
         const aptName = btn.dataset.aptName;
         const dateISO = document.getElementById('exp-date')?.value || lndISODate(new Date());
         btn.disabled = true;
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Создаём...';
-        const cleanId = btn.dataset.cleanId || null;
+        const cleanId = btn.dataset.expClnId || null;
         await supa.from('tasks').insert({
             apartment_id:    aptId,
             type:            'delivery',
