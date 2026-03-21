@@ -2088,7 +2088,7 @@
                 const isToday = d.getTime() === today.getTime();
                 html += `<td class="avail-td avail-day${isToday ? ' avail-today' : ''}" style="text-align:center;">`;
                 if (isUnavail) {
-                    html += '<span style="opacity:.15;">—</span>';
+                    html += '<i class="fa-solid fa-xmark" style="color:#ef4444;font-size:14px;"></i>';
                 } else {
                     html += '<i class="fa-solid fa-check" style="color:#10b981;font-size:13px;"></i>';
                 }
@@ -4370,7 +4370,7 @@
     let schedAptId = null;
 
     async function updateCleanerOpts(dateVal) {
-        const cleaners = allEmployees.filter(e => e.role === 'cleaner' || (e.role === 'intern' && e.department === 'cleaner'));
+        const cleaners = allEmployees.filter(e => (e.role === 'cleaner' || (e.role === 'intern' && e.department === 'cleaner')) && e.status === 'active');
         let unavailIds = new Set();
         if (dateVal && cleaners.length) {
             const { data } = await supa.from('employee_unavailability')
@@ -4776,7 +4776,7 @@
             durationStr = mins >= 60 ? `${Math.floor(mins/60)}ч ${mins%60}м` : `${mins}м`;
         }
 
-        const isCleanerRole = e => e.role === 'cleaner' || (e.role === 'intern' && e.department === 'cleaner');
+        const isCleanerRole = e => (e.role === 'cleaner' || (e.role === 'intern' && e.department === 'cleaner')) && e.status === 'active';
         // Exclude cleaners unavailable on this task's date
         const taskDate = t.deadline ? t.deadline.slice(0, 10) : null;
         let unavailIds = new Set();
