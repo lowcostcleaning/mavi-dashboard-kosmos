@@ -4443,8 +4443,8 @@
                 </div>`;
             }).join('');
 
-            return `<div style="margin-bottom:20px;">
-                <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+            return `<div style="margin-bottom:12px;">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
                     <div style="font-size:13px;font-weight:600;color:${isToday ? '#00f2ff' : 'var(--text-primary)'};">${dateLabel}${isToday ? ' <span style="font-size:11px;background:#00f2ff22;color:#00f2ff;padding:1px 7px;border-radius:10px;border:1px solid #00f2ff44;">сегодня</span>' : ''}</div>
                     <div style="flex:1;height:1px;background:var(--border);opacity:.3;"></div>
                     <div style="font-size:12px;color:var(--text-secondary);">${tasks.length} уб.</div>

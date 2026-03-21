@@ -1712,7 +1712,7 @@ select.mavi-input option {
     align-items: center;
     justify-content: space-between;
     gap: 10px;
-    padding: 10px 0;
+    padding: 6px 0;
     border-bottom: 1px solid #2a2e36;
 }
 .cal-task-row:last-child { border-bottom: none; }
@@ -1721,7 +1721,7 @@ select.mavi-input option {
     font-size: 13px;
     font-weight: 600;
     color: var(--text-primary);
-    margin-bottom: 3px;
+    margin-bottom: 1px;
 }
 .cal-task-emp {
     font-size: 11px;
