@@ -994,8 +994,8 @@
                             </div>
 
                             <div>
-                                <label style="font-size:11px;color:#f59e0b;display:block;margin-bottom:5px;"><i class="fa-solid fa-pen" style="margin-right:5px;"></i>Замечания менеджера</label>
-                                <textarea id="sched-comment" class="mavi-input" rows="2" placeholder="Особые пожелания, доступ..." style="width:100%;resize:vertical;font-size:13px;padding:8px 12px;line-height:1.5;"></textarea>
+                                <label style="font-size:11px;color:#a5b4fc;display:block;margin-bottom:5px;"><i class="fa-solid fa-clipboard" style="margin-right:5px;"></i>Пожелания менеджера</label>
+                                <textarea id="sched-comment" class="mavi-input" rows="2" placeholder="Пожелания для клинера..." style="width:100%;resize:vertical;font-size:13px;padding:8px 12px;line-height:1.5;"></textarea>
                             </div>
 
                         </div>
@@ -4566,7 +4566,7 @@
             status:            cleaner ? 'assigned' : 'new',
             priority,
             deadline:          dateVal + 'T00:00:00Z',
-            manager_comment:   comment,
+            manager_notes:     comment,
             title:             'Уборка — ' + (apt?.name || ''),
             source:            'manual',
             apt_type_auto:     apt?.apt_type || null,
