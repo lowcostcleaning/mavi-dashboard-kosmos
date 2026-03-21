@@ -1954,6 +1954,45 @@ select.mavi-input option {
 
 /* List mode now reuses .tk-filter-bar, .tk-tabs, .tk-tab, .tk-list, .task-card styles */
 
+/* ── Availability table ── */
+.avail-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.avail-th {
+    padding: 8px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+    text-align: center;
+    white-space: nowrap;
+}
+.avail-td {
+    padding: 10px 10px;
+    font-size: 13px;
+    color: var(--text-primary);
+    border-bottom: 1px solid rgba(255,255,255,.04);
+}
+.avail-day {
+    width: 44px;
+    min-width: 44px;
+}
+.avail-today {
+    background: rgba(0, 242, 255, 0.05);
+}
+.avail-wishes {
+    font-size: 11px;
+    color: var(--text-secondary);
+    max-width: 200px;
+    line-height: 1.4;
+}
+.avail-table tbody tr:hover {
+    background: rgba(255,255,255,0.03);
+}
+
 /* Textarea inside mavi-input */
 textarea.mavi-input {
     font-family: var(--font-body);

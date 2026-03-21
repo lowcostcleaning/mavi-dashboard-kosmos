@@ -432,6 +432,7 @@
                     <div style="display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid rgba(255,255,255,.07);padding-bottom:0;">
                         <button class="emp-subtab active" data-subtab="list" style="padding:8px 18px;font-size:13px;font-weight:600;border:none;background:none;cursor:pointer;color:var(--text-primary);border-bottom:2px solid #6366f1;margin-bottom:-1px;">Список</button>
                         <button class="emp-subtab" data-subtab="salary" style="padding:8px 18px;font-size:13px;font-weight:600;border:none;background:none;cursor:pointer;color:var(--text-secondary);border-bottom:2px solid transparent;margin-bottom:-1px;"><i class="fa-solid fa-calculator" style="margin-right:6px;font-size:11px;"></i>Расчёт зарплаты</button>
+                        <button class="emp-subtab" data-subtab="availability" style="padding:8px 18px;font-size:13px;font-weight:600;border:none;background:none;cursor:pointer;color:var(--text-secondary);border-bottom:2px solid transparent;margin-bottom:-1px;"><i class="fa-solid fa-calendar-check" style="margin-right:6px;font-size:11px;"></i>Доступность</button>
                     </div>
 
                     <!-- Sub-tab: Список -->
@@ -478,6 +479,25 @@
                         </div>
 
                     </div>
+
+                    <!-- Sub-tab: Доступность -->
+                    <div id="emp-subtab-availability" style="display:none;">
+                        <div class="chart-card" style="padding:16px;">
+                            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+                                <div style="display:flex;align-items:center;gap:8px;">
+                                    <button class="date-btn" type="button" id="avail-prev"><i class="fa-solid fa-chevron-left"></i></button>
+                                    <span id="avail-week-label" style="font-size:14px;font-weight:600;min-width:200px;text-align:center;"></span>
+                                    <button class="date-btn" type="button" id="avail-next"><i class="fa-solid fa-chevron-right"></i></button>
+                                    <button class="date-btn" type="button" id="avail-today" style="margin-left:6px;">Текущая</button>
+                                </div>
+                            </div>
+                            <div style="overflow-x:auto;">
+                                <table class="avail-table" id="avail-grid">
+                                    <thead><tr><th>Загрузка...</th></tr></thead>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
                 </section>
 
                 <!-- Employee Profile Modal -->
@@ -523,6 +543,13 @@
                                     <option value="expeditor">Экспедитор</option>
                                     <option value="complector">Комплектовщик</option>
                                     <option value="mbip">Менеджер</option>
+                                </select>
+                            </div>
+                            <div id="emp-form-cleaner-status-wrap" style="display:none;">
+                                <label class="emp-label">Статус стажера</label>
+                                <select class="mavi-input" id="emp-form-cleaner-status">
+                                    <option value="0_cleaning">Нулевая уборка</option>
+                                    <option value="adapting">На адаптации</option>
                                 </select>
                             </div>
                             <div>
@@ -1776,6 +1803,21 @@
     let activeRoleFilter = 'all';
     let searchQuery = '';
 
+    // ── Cleaner status helper ─────────────────────────────────────────
+    function getCleanerStatus(emp) {
+        if (emp.role === 'intern') {
+            return emp.cleaner_status === 'adapting'
+                ? { label: 'на адаптации', color: '#f59e0b', bonus: 0 }
+                : { label: '0 уборка', color: '#ef4444', bonus: 0 };
+        }
+        if (emp.role === 'cleaner') {
+            return (emp.rating && emp.rating >= 4)
+                ? { label: 'опытный', color: '#10b981', bonus: 10 }
+                : { label: 'стандартный', color: '#64748b', bonus: 0 };
+        }
+        return null;
+    }
+
     // ── Render cards ────────────────────────────────────────────────
     function renderEmployees(list) {
         const grid = document.getElementById('employees-grid');
@@ -1805,6 +1847,9 @@
                 ? `<span style="font-size:10px;color:#ffcc33;margin-left:4px;">★ ${e.rating}</span>` : '';
             const tariffBadge = (e.role === 'cleaner' && e.default_tariff)
                 ? `<span style="font-size:10px;color:#10b981;margin-left:4px;">${e.default_tariff}₾</span>` : '';
+            const cs = getCleanerStatus(e);
+            const statusBadge = cs
+                ? `<span style="font-size:10px;color:${cs.color};margin-left:4px;background:${cs.color}18;padding:1px 6px;border-radius:8px;border:1px solid ${cs.color}44;">${cs.label}</span>` : '';
             const deptBadge = (e.role === 'intern' && e.department)
                 ? `<span style="font-size:10px;color:${ROLE_COLORS[e.department]||'#888'};margin-left:4px;">${ROLE_LABELS[e.department]||e.department}</span>` : '';
             return `<div class="emp-card" data-id="${e.id}" style="--emp-color:${color};">
@@ -1815,7 +1860,7 @@
                     <div class="emp-avatar" style="border-color:${color};box-shadow:0 0 16px ${color}55;">${e.photo_url ? `<img src="${e.photo_url}" onerror="this.replaceWith(document.createTextNode('${initials}'))" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">` : initials}</div>
                     <div class="emp-card-info">
                         <div class="emp-card-name">${e.full_name}</div>
-                        <div class="emp-card-role" style="color:${color};display:flex;align-items:center;flex-wrap:wrap;gap:2px;">${role}${deptBadge}${ratingBadge}${tariffBadge}</div>
+                        <div class="emp-card-role" style="color:${color};display:flex;align-items:center;flex-wrap:wrap;gap:2px;">${role}${deptBadge}${statusBadge}${ratingBadge}${tariffBadge}</div>
                     </div>
                 </div>
                 <div class="emp-card-btns">
@@ -1856,9 +1901,11 @@
             btn.style.borderBottomColor = '#6366f1';
             btn.classList.add('active');
             const tab = btn.dataset.subtab;
-            document.getElementById('emp-subtab-list').style.display   = tab === 'list'   ? '' : 'none';
-            document.getElementById('emp-subtab-salary').style.display = tab === 'salary' ? '' : 'none';
+            document.getElementById('emp-subtab-list').style.display         = tab === 'list'         ? '' : 'none';
+            document.getElementById('emp-subtab-salary').style.display       = tab === 'salary'       ? '' : 'none';
+            document.getElementById('emp-subtab-availability').style.display = tab === 'availability' ? '' : 'none';
             if (tab === 'salary') { loadTariffRates(); }
+            if (tab === 'availability') { loadAvailabilityGrid(); }
         });
     });
 
@@ -1930,6 +1977,114 @@
             });
         });
     }
+
+    // ── Availability grid ────────────────────────────────────────────
+    let availWeekStart = (() => {
+        const d = new Date(); d.setHours(0,0,0,0);
+        const day = d.getDay(); // 0=Sun
+        d.setDate(d.getDate() - (day === 0 ? 6 : day - 1)); // Monday
+        return d;
+    })();
+
+    function fmtAvailDate(d) { return d.toISOString().slice(0, 10); }
+
+    async function loadAvailabilityGrid() {
+        const cleaners = allEmployees.filter(e => e.role === 'cleaner' || e.role === 'intern');
+        if (!cleaners.length) { renderAvailabilityGrid(cleaners, {}); return; }
+
+        const weekEnd = new Date(availWeekStart);
+        weekEnd.setDate(weekEnd.getDate() + 6);
+
+        const { data } = await supa.from('employee_unavailability')
+            .select('employee_id, unavailable_date')
+            .in('employee_id', cleaners.map(e => e.id))
+            .gte('unavailable_date', fmtAvailDate(availWeekStart))
+            .lte('unavailable_date', fmtAvailDate(weekEnd));
+
+        // Build map: empId -> Set of date strings
+        const unavailMap = {};
+        (data || []).forEach(r => {
+            if (!unavailMap[r.employee_id]) unavailMap[r.employee_id] = new Set();
+            unavailMap[r.employee_id].add(r.unavailable_date);
+        });
+
+        renderAvailabilityGrid(cleaners, unavailMap);
+    }
+
+    function renderAvailabilityGrid(cleaners, unavailMap) {
+        const table = document.getElementById('avail-grid');
+        const dayNames = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+        const days = [];
+        for (let i = 0; i < 7; i++) {
+            const d = new Date(availWeekStart);
+            d.setDate(d.getDate() + i);
+            days.push(d);
+        }
+        const today = new Date(); today.setHours(0,0,0,0);
+
+        // Week label
+        const fmtShort = d => d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+        document.getElementById('avail-week-label').textContent =
+            `${fmtShort(days[0])} — ${fmtShort(days[6])}`;
+
+        // Header
+        let html = '<thead><tr>';
+        html += '<th class="avail-th" style="text-align:left;min-width:130px;">Клинер</th>';
+        html += '<th class="avail-th" style="min-width:100px;">Статус</th>';
+        days.forEach((d, i) => {
+            const isToday = d.getTime() === today.getTime();
+            const isWeekend = i >= 5;
+            html += `<th class="avail-th${isToday ? ' avail-today' : ''}" style="${isWeekend ? 'color:#f59e0b;' : ''}">${dayNames[i]}<br><span style="font-size:10px;opacity:.6;">${d.getDate()}</span></th>`;
+        });
+        html += '<th class="avail-th" style="text-align:left;min-width:180px;">Стандартные пожелания</th>';
+        html += '<th class="avail-th" style="text-align:left;min-width:150px;">В текущем месяце</th>';
+        html += '</tr></thead>';
+
+        // Body
+        html += '<tbody>';
+        cleaners.forEach(emp => {
+            const cs = getCleanerStatus(emp);
+            const unavail = unavailMap[emp.id] || new Set();
+            html += '<tr>';
+            html += `<td class="avail-td" style="font-weight:600;font-size:13px;">${emp.full_name}</td>`;
+            html += `<td class="avail-td" style="text-align:center;"><span style="font-size:11px;color:${cs?.color || '#888'};background:${cs?.color || '#888'}18;padding:2px 8px;border-radius:8px;border:1px solid ${cs?.color || '#888'}44;">${cs?.label || '—'}</span></td>`;
+            days.forEach((d, i) => {
+                const dateStr = fmtAvailDate(d);
+                const isUnavail = unavail.has(dateStr);
+                const isToday = d.getTime() === today.getTime();
+                html += `<td class="avail-td avail-day${isToday ? ' avail-today' : ''}" style="text-align:center;">`;
+                if (isUnavail) {
+                    html += '<span style="opacity:.15;">—</span>';
+                } else {
+                    html += '<i class="fa-solid fa-check" style="color:#10b981;font-size:13px;"></i>';
+                }
+                html += '</td>';
+            });
+            html += `<td class="avail-td avail-wishes">${emp.preferences || '<span style="opacity:.2;">—</span>'}</td>`;
+            html += `<td class="avail-td avail-wishes">${emp.current_month_wishes || '<span style="opacity:.2;">—</span>'}</td>`;
+            html += '</tr>';
+        });
+        html += '</tbody>';
+
+        table.innerHTML = html;
+    }
+
+    // Week navigation
+    document.getElementById('avail-prev')?.addEventListener('click', () => {
+        availWeekStart.setDate(availWeekStart.getDate() - 7);
+        loadAvailabilityGrid();
+    });
+    document.getElementById('avail-next')?.addEventListener('click', () => {
+        availWeekStart.setDate(availWeekStart.getDate() + 7);
+        loadAvailabilityGrid();
+    });
+    document.getElementById('avail-today')?.addEventListener('click', () => {
+        const d = new Date(); d.setHours(0,0,0,0);
+        const day = d.getDay();
+        d.setDate(d.getDate() - (day === 0 ? 6 : day - 1));
+        availWeekStart = d;
+        loadAvailabilityGrid();
+    });
 
     // ── Profile modal ───────────────────────────────────────────────
     async function openProfile(id) {
@@ -2085,17 +2240,24 @@
             preview.innerHTML = '—';
             removeBtn.style.display = 'none';
         }
-        // Show department only for intern
+        // Show department + cleaner status only for intern
+        const isIntern = (e?.role === 'intern') || (!e && document.getElementById('emp-form-role').value === 'intern');
         const deptWrap = document.getElementById('emp-form-dept-wrap');
-        if (deptWrap) deptWrap.style.display = (e?.role === 'intern') ? '' : 'none';
+        if (deptWrap) deptWrap.style.display = isIntern ? '' : 'none';
+        const csWrap = document.getElementById('emp-form-cleaner-status-wrap');
+        if (csWrap) csWrap.style.display = isIntern ? '' : 'none';
+        document.getElementById('emp-form-cleaner-status').value = e?.cleaner_status || '0_cleaning';
         document.getElementById('emp-profile-modal').hidden = true;
         document.getElementById('emp-form-modal').hidden = false;
     }
 
-    // Toggle department visibility when role changes
+    // Toggle department + cleaner status visibility when role changes
     document.getElementById('emp-form-role')?.addEventListener('change', function() {
+        const isIntern = this.value === 'intern';
         const deptWrap = document.getElementById('emp-form-dept-wrap');
-        if (deptWrap) deptWrap.style.display = this.value === 'intern' ? '' : 'none';
+        if (deptWrap) deptWrap.style.display = isIntern ? '' : 'none';
+        const csWrap = document.getElementById('emp-form-cleaner-status-wrap');
+        if (csWrap) csWrap.style.display = isIntern ? '' : 'none';
     });
 
     // Photo file picker
@@ -2133,6 +2295,8 @@
                 default_tariff:  parseFloat(document.getElementById('emp-form-tariff').value) || null,
                 notes:           document.getElementById('emp-form-notes').value.trim() || null,
                 department:      document.getElementById('emp-form-department')?.value || null,
+                cleaner_status:  document.getElementById('emp-form-role').value === 'intern'
+                    ? (document.getElementById('emp-form-cleaner-status')?.value || '0_cleaning') : null,
             };
             if (!payload.full_name) { alert('Введите имя'); return; }
 
@@ -4222,12 +4386,20 @@
         // Auto-fill тариф клинера on cleaner select
         document.getElementById('sched-cleaner').onchange = function() {
             const opt = this.options[this.selectedIndex];
-            if (opt.value && opt.dataset.tariff) document.getElementById('sched-cleaner-rate').value = opt.dataset.tariff;
+            if (opt.value && opt.dataset.tariff) {
+                const emp = allEmployees.find(e => e.id === opt.value);
+                const bonus = emp ? (getCleanerStatus(emp)?.bonus || 0) : 0;
+                document.getElementById('sched-cleaner-rate').value = parseFloat(opt.dataset.tariff) + bonus;
+            }
             schedRecompute();
         };
         document.getElementById('sched-cleaner2').onchange = function() {
             const opt = this.options[this.selectedIndex];
-            if (opt.value && opt.dataset.tariff) document.getElementById('sched-cleaner2-rate').value = opt.dataset.tariff;
+            if (opt.value && opt.dataset.tariff) {
+                const emp = allEmployees.find(e => e.id === opt.value);
+                const bonus = emp ? (getCleanerStatus(emp)?.bonus || 0) : 0;
+                document.getElementById('sched-cleaner2-rate').value = parseFloat(opt.dataset.tariff) + bonus;
+            }
             schedRecompute();
         };
 
@@ -4982,19 +5154,25 @@
             cardRecompute();
         });
 
-        // Cleaner 1 select → auto-fill bonus from employee profile
+        // Cleaner 1 select → auto-fill bonus from employee profile + status bonus
         document.getElementById('clean-edit-cleaner')?.addEventListener('change', function() {
             const emp = allEmployees.find(e => String(e.id) === String(this.value));
             const rateEl = document.getElementById('clean-edit-rate');
-            if (rateEl) rateEl.value = (emp && emp.default_tariff != null) ? emp.default_tariff : '';
+            if (rateEl && emp && emp.default_tariff != null) {
+                const bonus = getCleanerStatus(emp)?.bonus || 0;
+                rateEl.value = parseFloat(emp.default_tariff) + bonus;
+            } else if (rateEl) { rateEl.value = ''; }
             cardRecompute();
         });
 
-        // Cleaner 2 select → auto-fill bonus from employee profile
+        // Cleaner 2 select → auto-fill bonus from employee profile + status bonus
         document.getElementById('clean-edit-cleaner2')?.addEventListener('change', function() {
             const emp = allEmployees.find(e => String(e.id) === String(this.value));
             const rateEl = document.getElementById('clean-edit-rate2');
-            if (rateEl) rateEl.value = (emp && emp.default_tariff != null) ? emp.default_tariff : '';
+            if (rateEl && emp && emp.default_tariff != null) {
+                const bonus = getCleanerStatus(emp)?.bonus || 0;
+                rateEl.value = parseFloat(emp.default_tariff) + bonus;
+            } else if (rateEl) { rateEl.value = ''; }
             cardRecompute();
         });
 
@@ -7227,6 +7405,14 @@
                     <button class="action-btn" onclick="addUnavailDay()" style="white-space:nowrap;"><i class="fa-solid fa-plus"></i></button>
                 </div>
                 <div id="unavail-list" style="max-height:300px;overflow-y:auto;display:grid;gap:6px;"></div>
+                <div style="margin-top:16px;border-top:1px solid rgba(255,255,255,.07);padding-top:14px;">
+                    <label class="emp-label">Стандартные пожелания</label>
+                    <textarea class="mavi-input" id="unavail-preferences" rows="2" placeholder="Объёмы уборок, выходные в неделю..." style="width:100%;resize:vertical;"></textarea>
+                </div>
+                <div style="margin-top:10px;">
+                    <label class="emp-label">Пожелания на текущий месяц</label>
+                    <textarea class="mavi-input" id="unavail-month-wishes" rows="2" placeholder="Конкретные даты, ограничения..." style="width:100%;resize:vertical;"></textarea>
+                </div>
             </div>
         </div>
     </div>
@@ -7255,6 +7441,10 @@
         const tom = new Date(); tom.setDate(tom.getDate() + 1);
         document.getElementById('unavail-date').value = tom.toISOString().slice(0,10);
         document.getElementById('unavail-reason').value = '';
+        // Load preferences
+        const emp = allEmployees.find(e => e.id === empId);
+        document.getElementById('unavail-preferences').value = emp?.preferences || '';
+        document.getElementById('unavail-month-wishes').value = emp?.current_month_wishes || '';
         await loadUnavailDays(empId);
     }
 
@@ -7301,6 +7491,22 @@
         await supa.from('employee_unavailability').delete().eq('id', id);
         await loadUnavailDays(window.maviUser?.emp_id);
     }
+
+    // Auto-save preferences on blur
+    document.getElementById('unavail-preferences')?.addEventListener('blur', async function() {
+        const empId = window.maviUser?.emp_id;
+        if (!empId) return;
+        await supa.from('employees').update({ preferences: this.value.trim() || null }).eq('id', empId);
+        const emp = allEmployees.find(e => e.id === empId);
+        if (emp) emp.preferences = this.value.trim() || null;
+    });
+    document.getElementById('unavail-month-wishes')?.addEventListener('blur', async function() {
+        const empId = window.maviUser?.emp_id;
+        if (!empId) return;
+        await supa.from('employees').update({ current_month_wishes: this.value.trim() || null }).eq('id', empId);
+        const emp = allEmployees.find(e => e.id === empId);
+        if (emp) emp.current_month_wishes = this.value.trim() || null;
+    });
     </script>
 
     <!-- ════════════ VISIBILITY SETTINGS ════════════ -->
