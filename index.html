@@ -5308,19 +5308,29 @@
                 }).join('');
         })();
 
-        // Async: load kit + delivery status for this apartment (same date as cleaning)
-        if (t.apartment_id && t.deadline) {
+        // Async: load kit + delivery status linked to this cleaning
+        if (t.apartment_id) {
             (async () => {
-                const cleanDate = t.deadline.slice(0, 10);
-                const dayStart = cleanDate + 'T00:00:00Z';
-                const dayEnd   = cleanDate + 'T23:59:59Z';
-
-                const [{ data: lndTasks2 }, { data: delTasks }] = await Promise.all([
-                    supa.from('tasks').select('id,title,status,deadline').eq('type','laundry').eq('apartment_id', t.apartment_id).gte('deadline', dayStart).lte('deadline', dayEnd).order('deadline', {ascending:false}),
-                    supa.from('tasks').select('id,title,status,deadline').eq('type','delivery').eq('apartment_id', t.apartment_id).gte('deadline', dayStart).lte('deadline', dayEnd).order('deadline', {ascending:false}),
+                // First try: tasks linked by parent_task_id
+                const [{ data: linked }, { data: linkedDel }] = await Promise.all([
+                    supa.from('tasks').select('id,title,status,deadline').eq('type','laundry').eq('parent_task_id', taskId),
+                    supa.from('tasks').select('id,title,status,deadline').eq('type','delivery').eq('parent_task_id', taskId),
                 ]);
-                const restockTask2 = (lndTasks2 || []).find(x => x.title?.startsWith('Комплектация'));
-                const delivery2    = (delTasks  || [])[0] || null;
+                let restockTask2 = (linked || []).find(x => x.title?.startsWith('Комплектация'));
+                let delivery2    = (linkedDel || [])[0] || null;
+
+                // Fallback: search by apartment + same date
+                if (!restockTask2 && !delivery2 && t.deadline) {
+                    const cleanDate = t.deadline.slice(0, 10);
+                    const dayStart = cleanDate + 'T00:00:00Z';
+                    const dayEnd   = cleanDate + 'T23:59:59Z';
+                    const [{ data: lndFb }, { data: delFb }] = await Promise.all([
+                        supa.from('tasks').select('id,title,status,deadline').eq('type','laundry').eq('apartment_id', t.apartment_id).gte('deadline', dayStart).lte('deadline', dayEnd),
+                        supa.from('tasks').select('id,title,status,deadline').eq('type','delivery').eq('apartment_id', t.apartment_id).gte('deadline', dayStart).lte('deadline', dayEnd),
+                    ]);
+                    restockTask2 = (lndFb || []).find(x => x.title?.startsWith('Комплектация'));
+                    delivery2    = (delFb || [])[0] || null;
+                }
                 const el = document.getElementById('clean-kit-delivery-status');
                 if (!el) return;
                 if (!restockTask2 && !delivery2) { el.innerHTML = ''; return; }
@@ -5959,6 +5969,7 @@
             modal.dataset.createAptId     = aptId;
             modal.dataset.createDate      = date;
             modal.dataset.createPrefix    = titlePrefix;
+            modal.dataset.createCleanId   = cleanId || '';
             modal.dataset.currentStageKey = stageKey || '';
 
             document.getElementById('lnd-complector').innerHTML = complectorOpts;
@@ -6033,15 +6044,17 @@
             const prefix = modal.dataset.createPrefix || 'Стирка';
             const apt    = allApartments.find(a => String(a.id) === String(aptId));
 
+            const parentCleanId = modal.dataset.createCleanId || null;
             const { error } = await supa.from('tasks').insert({
-                apartment_id: aptId,
-                assigned_to:  complector,
-                type:         'laundry',
+                apartment_id:    aptId,
+                assigned_to:     complector,
+                type:            'laundry',
                 status,
-                deadline:     dateVal ? dateVal + 'T00:00:00Z' : null,
-                comment:      commentVal,
-                title:        `${prefix} — ${apt?.name || ''}`,
-                source:       'manual',
+                deadline:        dateVal ? dateVal + 'T00:00:00Z' : null,
+                comment:         commentVal,
+                title:           `${prefix} — ${apt?.name || ''}`,
+                source:          'manual',
+                parent_task_id:  parentCleanId,
             });
 
             if (error) {
@@ -6602,8 +6615,9 @@
                 document.getElementById('exp-kit-modal-checklist').innerHTML = sections.join('') || '<div style="opacity:.5;font-size:13px;">Состав не указан</div>';
 
                 // Store pending delivery data
-                document.getElementById('exp-kit-confirm-btn').dataset.aptId  = aptId;
-                document.getElementById('exp-kit-confirm-btn').dataset.aptName = apt?.name || '';
+                document.getElementById('exp-kit-confirm-btn').dataset.aptId    = aptId;
+                document.getElementById('exp-kit-confirm-btn').dataset.aptName  = apt?.name || '';
+                document.getElementById('exp-kit-confirm-btn').dataset.cleanId  = btn.dataset.expCleanId || '';
 
                 document.getElementById('exp-kit-modal').hidden = false;
             });
@@ -6678,13 +6692,15 @@
         const dateISO = document.getElementById('exp-date')?.value || lndISODate(new Date());
         btn.disabled = true;
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Создаём...';
+        const cleanId = btn.dataset.cleanId || null;
         await supa.from('tasks').insert({
-            apartment_id: aptId,
-            type:         'delivery',
-            status:       'in_progress',
-            deadline:     dateISO + 'T00:00:00Z',
-            title:        'Доставка — ' + aptName,
-            source:       'manual',
+            apartment_id:    aptId,
+            type:            'delivery',
+            status:          'in_progress',
+            deadline:        dateISO + 'T00:00:00Z',
+            title:           'Доставка — ' + aptName,
+            source:          'manual',
+            parent_task_id:  cleanId,
         });
         document.getElementById('exp-kit-modal').hidden = true;
         btn.disabled = false;
