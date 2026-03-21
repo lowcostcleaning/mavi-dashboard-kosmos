@@ -734,9 +734,23 @@
                     <!-- List mode -->
                     <div id="cal-list-view" style="display:none;">
                         <div class="chart-card" style="padding:16px;">
-                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
                                 <div id="cal-range-summary" style="font-size:13px;color:var(--text-secondary);"></div>
                                 <div id="cal-range-total" style="font-size:13px;font-weight:600;"></div>
+                            </div>
+                            <div class="cal-filter-bar">
+                                <select id="cal-filter-cleaner" class="mavi-input" style="width:180px;padding:5px 10px;font-size:12px;">
+                                    <option value="">Все клинеры</option>
+                                </select>
+                                <select id="cal-filter-status" class="mavi-input" style="width:150px;padding:5px 10px;font-size:12px;">
+                                    <option value="">Все статусы</option>
+                                    <option value="new">Новая</option>
+                                    <option value="assigned">Назначена</option>
+                                    <option value="confirmed">Подтверждена</option>
+                                    <option value="in_progress">В процессе</option>
+                                    <option value="done">Завершена</option>
+                                    <option value="cancelled">Отменена</option>
+                                </select>
                             </div>
                             <div id="cal-range-list">
                                 <div style="text-align:center;opacity:.3;padding:40px;font-size:13px;">Выберите диапазон дат</div>
@@ -4389,13 +4403,35 @@
         const from = new Date(fromVal + 'T00:00:00');
         const to   = new Date(toVal   + 'T23:59:59');
 
-        const ranged = calData.filter(t => {
+        // Apply filters
+        const filterCleaner = document.getElementById('cal-filter-cleaner').value;
+        const filterStatus  = document.getElementById('cal-filter-status').value;
+
+        let ranged = calData.filter(t => {
             const d = calTaskDate(t);
-            return d && d >= from && d <= to;
-        }).sort((a, b) => {
-            const da = calTaskDate(a), db = calTaskDate(b);
-            return da - db;
+            if (!d || d < from || d > to) return false;
+            if (filterCleaner && t.assigned_to !== filterCleaner && t.cleaner2_id !== filterCleaner) return false;
+            if (filterStatus && t.status !== filterStatus) return false;
+            return true;
+        }).sort((a, b) => calTaskDate(a) - calTaskDate(b));
+
+        // Populate cleaner dropdown (from all tasks in range, ignoring cleaner filter)
+        const cleanerSelect = document.getElementById('cal-filter-cleaner');
+        const prevCleaner = cleanerSelect.value;
+        const cleanerIds = new Set();
+        calData.forEach(t => {
+            const d = calTaskDate(t);
+            if (d && d >= from && d <= to) {
+                if (t.assigned_to) cleanerIds.add(t.assigned_to);
+                if (t.cleaner2_id) cleanerIds.add(t.cleaner2_id);
+            }
         });
+        const cleanerOptions = '<option value="">Все клинеры</option>' +
+            [...cleanerIds].map(id => {
+                const e = allEmployees.find(x => x.id === id);
+                return e ? `<option value="${id}"${id === prevCleaner ? ' selected' : ''}>${e.full_name || e.name || '—'}</option>` : '';
+            }).filter(Boolean).join('');
+        cleanerSelect.innerHTML = cleanerOptions;
 
         // Format date range label
         const fmtDate = d => d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
@@ -4416,48 +4452,93 @@
             (byDate[key] = byDate[key] || []).push(t);
         });
 
+        const today = new Date();
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const todayStr = today.toISOString().slice(0, 10);
+        const tomorrowStr = tomorrow.toISOString().slice(0, 10);
+
         const html = Object.keys(byDate).sort().map(dateKey => {
             const tasks = byDate[dateKey];
             const d = new Date(dateKey + 'T12:00:00');
-            const today = new Date();
-            const isToday = d.toDateString() === today.toDateString();
+            const isToday = dateKey === todayStr;
+            const isTomorrow = dateKey === tomorrowStr;
+            const isExpanded = isToday || isTomorrow;
             const dateLabel = d.toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric', month: 'long' });
+            const totalCost = tasks.reduce((s, t) => s + (Number(t.cost) || 0), 0);
+
+            const dayBadge = isToday
+                ? ' <span class="cal-day-badge cal-day-today">сегодня</span>'
+                : isTomorrow
+                    ? ' <span class="cal-day-badge cal-day-tomorrow">завтра</span>'
+                    : '';
 
             const rowsHtml = tasks.map(t => {
                 const st  = CLEAN_STATUS[t.status] || { label: t.status || '—', color: '#a0a4cc' };
                 const emp = allEmployees.find(e => e.id === t.assigned_to);
+                const emp2 = t.cleaner2_id ? allEmployees.find(e => e.id === t.cleaner2_id) : null;
                 const apt = allApartments.find(a => a.id === t.apartment_id);
                 const unmatched = !t.apartment_id && t.sheet_apt_name;
                 const aptLabel = apt?.name || t.sheet_apt_name || t.title || '—';
+                const aptAddr = apt?.address || '';
                 const costStr = t.cost ? `<span style="color:#ffcc33;margin-left:6px;">${t.cost} ₾</span>` : '';
+
+                // Extract time from deadline
+                const dl = t.deadline ? new Date(t.deadline) : null;
+                const timeStr = dl ? dl.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : '';
+
                 const matchBtn = unmatched
                     ? `<button class="cal-match-btn" data-task-id="${t.id}" data-sheet-name="${(t.sheet_apt_name || '').replace(/"/g, '&quot;')}" title="Сопоставить"><i class="fa-solid fa-link" style="margin-right:4px;"></i>Сопоставить</button>`
                     : '';
+
+                const emp2Html = emp2
+                    ? `<span style="margin-left:8px;opacity:.6;"><i class="fa-solid fa-user-plus" style="margin-right:3px;font-size:9px;"></i>${emp2.full_name || emp2.name || '—'}</span>`
+                    : '';
+
                 return `<div class="cal-task-row${unmatched ? ' cal-task-unmatched' : ''}" data-clean-id="${t.id}" style="cursor:pointer;">
-                    <div>
+                    <div class="cal-task-time">${timeStr}</div>
+                    <div style="flex:1;min-width:0;">
                         <div class="cal-task-apt">${unmatched ? '<i class="fa-solid fa-triangle-exclamation" style="color:#f59e0b;margin-right:5px;font-size:10px;"></i>' : ''}${aptLabel}</div>
-                        <div class="cal-task-emp"><i class="fa-solid fa-user" style="margin-right:4px;opacity:.5;font-size:10px;"></i>${emp?.full_name || '—'}${costStr}</div>
+                        ${aptAddr ? `<div class="cal-task-addr">${aptAddr}</div>` : ''}
+                        <div class="cal-task-emp"><i class="fa-solid fa-user" style="margin-right:4px;opacity:.5;font-size:10px;"></i>${emp?.full_name || '—'}${emp2Html}${costStr}</div>
                         ${matchBtn}
                     </div>
                     <span class="cal-status-badge" style="background:${st.color}22;border-color:${st.color}55;color:${st.color};">${st.label}</span>
                 </div>`;
             }).join('');
 
-            return `<div style="margin-bottom:12px;">
-                <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
-                    <div style="font-size:13px;font-weight:600;color:${isToday ? '#00f2ff' : 'var(--text-primary)'};">${dateLabel}${isToday ? ' <span style="font-size:11px;background:#00f2ff22;color:#00f2ff;padding:1px 7px;border-radius:10px;border:1px solid #00f2ff44;">сегодня</span>' : ''}</div>
-                    <div style="flex:1;height:1px;background:var(--border);opacity:.3;"></div>
-                    <div style="font-size:12px;color:var(--text-secondary);">${tasks.length} уб.</div>
+            return `<div class="cal-date-group">
+                <div class="cal-date-header" data-date="${dateKey}">
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <i class="fa-solid fa-chevron-right cal-date-chevron${isExpanded ? ' expanded' : ''}"></i>
+                        <span class="cal-date-label${isToday ? ' today' : ''}">${dateLabel}${dayBadge}</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:10px;">
+                        ${totalCost ? `<span style="font-size:11px;color:#ffcc33;">${totalCost} ₾</span>` : ''}
+                        <span class="cal-date-count">${tasks.length} уб.</span>
+                    </div>
                 </div>
-                ${rowsHtml}
+                <div class="cal-date-tasks${isExpanded ? '' : ' collapsed'}">${rowsHtml}</div>
             </div>`;
         }).join('');
 
         document.getElementById('cal-range-list').innerHTML = html;
+
+        // Attach toggle handlers
+        document.querySelectorAll('#cal-range-list .cal-date-header').forEach(hdr => {
+            hdr.addEventListener('click', () => {
+                const tasks = hdr.nextElementSibling;
+                const chevron = hdr.querySelector('.cal-date-chevron');
+                tasks.classList.toggle('collapsed');
+                chevron.classList.toggle('expanded');
+            });
+        });
     }
 
     document.getElementById('cal-range-from')?.addEventListener('change', renderRangeList);
     document.getElementById('cal-range-to')?.addEventListener('change', renderRangeList);
+    document.getElementById('cal-filter-cleaner')?.addEventListener('change', renderRangeList);
+    document.getElementById('cal-filter-status')?.addEventListener('change', renderRangeList);
 
     // ── Cleaning Task Card ───────────────────────────────────────────
     let currentCleanTaskId = null;
