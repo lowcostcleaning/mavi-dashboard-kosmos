@@ -6477,7 +6477,7 @@
                 .lte('deadline', dateISO + 'T23:59:59Z')
                 .order('deadline'),
             supa.from('tasks')
-                .select('id, title, status, deadline, assigned_to, apartment_id, comment')
+                .select('id, title, status, deadline, assigned_to, apartment_id, comment, parent_task_id')
                 .eq('type', 'laundry')
                 .gte('deadline', fromISO + 'T00:00:00Z')
                 .lte('deadline', toISO   + 'T23:59:59Z'),
@@ -6488,7 +6488,21 @@
                 .lte('deadline', dateISO + 'T23:59:59Z'),
         ]);
 
-        renderExpeditor(dateISO, cleanings || [], lndAll || [], deliveries || []);
+        // Also fetch laundry tasks linked by parent_task_id
+        const expCleanIds = (cleanings || []).map(c => c.id).filter(Boolean);
+        let expLndAll = lndAll || [];
+        if (expCleanIds.length) {
+            const { data: linkedExp } = await supa.from('tasks')
+                .select('id, title, status, deadline, assigned_to, apartment_id, comment, parent_task_id')
+                .eq('type', 'laundry')
+                .in('parent_task_id', expCleanIds);
+            if (linkedExp?.length) {
+                const existIds = new Set(expLndAll.map(t => t.id));
+                linkedExp.forEach(t => { if (!existIds.has(t.id)) expLndAll.push(t); });
+            }
+        }
+
+        renderExpeditor(dateISO, cleanings || [], expLndAll, deliveries || []);
     }
 
     function renderExpeditor(dateISO, cleanings, lndAll, deliveries) {
@@ -6502,10 +6516,15 @@
             const aptType = c.apt_type_auto || apt?.apt_type || '';
             const kitColor = KIT_COLORS[kitType] || '#a0a4cc';
 
-            // Restocking task (комплектация) for this cleaning — match by apartment only
-            const restockTask = lndAll
-                .filter(t => t.apartment_id === c.apartment_id && t.title?.startsWith('Комплектация'))
-                .sort((a, b) => (b.deadline || '').localeCompare(a.deadline || ''))[0] || null;
+            // Restocking task — prefer parent_task_id match, fallback to apartment_id
+            let restockTask = lndAll.find(t =>
+                t.parent_task_id === c.id && t.title?.startsWith('Комплектация')
+            );
+            if (!restockTask) {
+                restockTask = lndAll
+                    .filter(t => !t.parent_task_id && t.apartment_id === c.apartment_id && t.title?.startsWith('Комплектация'))
+                    .sort((a, b) => (b.deadline || '').localeCompare(a.deadline || ''))[0] || null;
+            }
             const kitReady = restockTask?.status === 'done';
 
             // Delivery task for this apartment on this date
