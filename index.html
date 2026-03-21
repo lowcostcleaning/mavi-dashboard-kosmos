@@ -1818,6 +1818,37 @@
         return null;
     }
 
+    // ── Compute cleaner rate based on apt type + employee status ──────
+    // Returns { rate, longStay, breakdown }
+    function computeCleanerRate(empId, tariffType, isLongStay) {
+        const emp = allEmployees.find(e => e.id === empId);
+        if (!emp) return { rate: 0, longStay: 0, breakdown: '' };
+
+        const cs = getCleanerStatus(emp);
+
+        // Intern with "0 уборка" → zero for everything
+        if (emp.role === 'intern' && emp.cleaner_status !== 'adapting') {
+            const zeroTariff = allTariffRates.find(r => r.tariff_type === 'нулевая уборка');
+            return {
+                rate: zeroTariff?.cleaning_price || 0,
+                longStay: 0,
+                breakdown: '0 уборка'
+            };
+        }
+
+        // Normal rate from apartment type tariff
+        const tariff = allTariffRates.find(r => r.tariff_type === tariffType);
+        const baseRate = tariff?.cleaning_price || 0;
+        const longStayRate = (isLongStay && tariff?.long_stay_rate) ? tariff.long_stay_rate : 0;
+        const bonus = cs?.bonus || 0;
+        const total = baseRate + longStayRate + bonus;
+
+        const parts = [baseRate + '₾'];
+        if (longStayRate) parts.push('+' + longStayRate + ' долг.срок');
+        if (bonus) parts.push('+' + bonus + ' опытный');
+        return { rate: total, longStay: longStayRate, breakdown: parts.join(' ') };
+    }
+
     // ── Render cards ────────────────────────────────────────────────
     function renderEmployees(list) {
         const grid = document.getElementById('employees-grid');
@@ -4370,38 +4401,31 @@
         // Populate cleaner dropdowns (excluding unavailable on selected date)
         await updateCleanerOpts(dateVal);
 
-        // Helper: recompute total
+        // Helper: recompute total (long stay is already included in each cleaner's rate)
         function schedRecompute() {
-            const base     = parseFloat(document.getElementById('sched-cost').value) || 0;
             const rate1    = parseFloat(document.getElementById('sched-cleaner-rate').value) || 0;
             const rate2    = parseFloat(document.getElementById('sched-cleaner2-rate').value) || 0;
-            const lsAmt    = parseFloat(document.getElementById('sched-long-stay-amount').value) || 0;
-            const total    = base + rate1 + rate2 + lsAmt;
+            const total    = rate1 + rate2;
             document.getElementById('sched-total').textContent = total > 0 ? total + ' ₾' : '— ₾';
         }
         ['sched-cost','sched-cleaner-rate','sched-cleaner2-rate','sched-long-stay-amount'].forEach(id => {
             document.getElementById(id)?.addEventListener('input', schedRecompute);
         });
 
-        // Auto-fill тариф клинера on cleaner select
-        document.getElementById('sched-cleaner').onchange = function() {
-            const opt = this.options[this.selectedIndex];
-            if (opt.value && opt.dataset.tariff) {
-                const emp = allEmployees.find(e => e.id === opt.value);
-                const bonus = emp ? (getCleanerStatus(emp)?.bonus || 0) : 0;
-                document.getElementById('sched-cleaner-rate').value = parseFloat(opt.dataset.tariff) + bonus;
-            }
+        // Auto-fill cleaner rate from tariff table + status
+        function schedUpdateCleanerRate(cleanerSelectId, rateInputId) {
+            const sel = document.getElementById(cleanerSelectId);
+            const empId = sel.value;
+            const rateEl = document.getElementById(rateInputId);
+            if (!empId) { rateEl.value = ''; schedRecompute(); return; }
+            const tariffType = document.getElementById('sched-tariff-type').value;
+            const isLongStay = document.getElementById('sched-long-stay').checked;
+            const cr = computeCleanerRate(empId, tariffType, isLongStay);
+            rateEl.value = cr.rate;
             schedRecompute();
-        };
-        document.getElementById('sched-cleaner2').onchange = function() {
-            const opt = this.options[this.selectedIndex];
-            if (opt.value && opt.dataset.tariff) {
-                const emp = allEmployees.find(e => e.id === opt.value);
-                const bonus = emp ? (getCleanerStatus(emp)?.bonus || 0) : 0;
-                document.getElementById('sched-cleaner2-rate').value = parseFloat(opt.dataset.tariff) + bonus;
-            }
-            schedRecompute();
-        };
+        }
+        document.getElementById('sched-cleaner').onchange = () => schedUpdateCleanerRate('sched-cleaner', 'sched-cleaner-rate');
+        document.getElementById('sched-cleaner2').onchange = () => schedUpdateCleanerRate('sched-cleaner2', 'sched-cleaner2-rate');
 
         // Refresh cleaner list when date changes (excludes unavailable cleaners)
         document.getElementById('sched-date').onchange = function() {
@@ -4412,20 +4436,26 @@
         document.getElementById('sched-long-stay').onchange = function() {
             const amtEl = document.getElementById('sched-long-stay-amount');
             amtEl.disabled = !this.checked;
-            if (!this.checked) { amtEl.value = ''; schedRecompute(); }
+            if (!this.checked) { amtEl.value = ''; }
+            schedRecalcBothRates();
         };
+
+        // Recalculate both cleaner rates (call after tariff type or long_stay change)
+        function schedRecalcBothRates() {
+            schedUpdateCleanerRate('sched-cleaner', 'sched-cleaner-rate');
+            schedUpdateCleanerRate('sched-cleaner2', 'sched-cleaner2-rate');
+        }
 
         // Auto-fill тариф (base) when tariff type changes
         document.getElementById('sched-tariff-type').onchange = function() {
             const rate = allTariffRates.find(r => r.tariff_type === this.value);
             if (rate) {
                 document.getElementById('sched-cost').value = rate.cleaning_price || '';
-                // Also pre-fill долгий срок amount from table
                 if (rate.long_stay_rate) document.getElementById('sched-long-stay-amount').value = rate.long_stay_rate;
             } else {
                 document.getElementById('sched-cost').value = '';
             }
-            schedRecompute();
+            schedRecalcBothRates();
         };
 
         // Show apt type from DB
@@ -5119,14 +5149,12 @@
             cardRecompute();
         }
 
-        // Recalculate Итого and update bonus info badge
+        // Recalculate Итого (long stay is already included in each cleaner's rate)
         function cardRecompute() {
-            const base  = parseFloat(document.getElementById('clean-edit-cost')?.value) || 0;
             const r1    = parseFloat(document.getElementById('clean-edit-rate')?.value) || 0;
             const r2    = parseFloat(document.getElementById('clean-edit-rate2')?.value) || 0;
             const ls    = document.getElementById('clean-edit-long-stay')?.checked;
-            const lsAmt = ls ? (parseFloat(document.getElementById('clean-edit-long-stay-amount')?.value) || 0) : 0;
-            const total = base + r1 + r2 + lsAmt;
+            const total = r1 + r2;
             const totalEl = document.getElementById('clean-live-total');
             if (totalEl) totalEl.textContent = total > 0 ? total + ' ₾' : '—';
             // Update bonus badge
@@ -5135,46 +5163,28 @@
             if (infoBonus) infoBonus.textContent = bonusParts.length ? bonusParts.join(' + ') : '—';
             // Update долгий срок badge
             const lsWrap = document.getElementById('clean-info-ls-wrap');
-            const lsInfo = document.getElementById('clean-info-ls');
             if (lsWrap) lsWrap.style.display = ls ? '' : 'none';
-            if (lsInfo) lsInfo.textContent = lsAmt > 0 ? lsAmt + ' ₾' : '—';
         }
 
-        // Долгий срок toggle: auto-fill amount from tariff_rates.long_stay_rate
+        // Долгий срок toggle: recalculate both cleaner rates (long stay included in rate)
         document.getElementById('clean-edit-long-stay')?.addEventListener('change', function() {
-            const amtEl = document.getElementById('clean-edit-long-stay-amount');
-            if (this.checked) {
-                if (amtEl && !amtEl.value) {
-                    const rate = allTariffRates.find(r => r.tariff_type === (document.getElementById('clean-edit-tariff')?.value || aptType));
-                    if (rate?.long_stay_rate) amtEl.value = rate.long_stay_rate;
-                }
-            } else {
-                if (amtEl) amtEl.value = '';
-            }
-            cardRecompute();
+            cardUpdateCleanerRate('clean-edit-cleaner', 'clean-edit-rate');
+            cardUpdateCleanerRate('clean-edit-cleaner2', 'clean-edit-rate2');
         });
 
-        // Cleaner 1 select → auto-fill bonus from employee profile + status bonus
-        document.getElementById('clean-edit-cleaner')?.addEventListener('change', function() {
-            const emp = allEmployees.find(e => String(e.id) === String(this.value));
-            const rateEl = document.getElementById('clean-edit-rate');
-            if (rateEl && emp && emp.default_tariff != null) {
-                const bonus = getCleanerStatus(emp)?.bonus || 0;
-                rateEl.value = parseFloat(emp.default_tariff) + bonus;
-            } else if (rateEl) { rateEl.value = ''; }
+        // Cleaner 1 select → auto-fill rate from tariff table + status
+        function cardUpdateCleanerRate(selectId, rateInputId) {
+            const empId = document.getElementById(selectId)?.value;
+            const rateEl = document.getElementById(rateInputId);
+            if (!empId) { if (rateEl) rateEl.value = ''; cardRecompute(); return; }
+            const tariffType = document.getElementById('clean-edit-tariff')?.value || '';
+            const isLongStay = document.getElementById('clean-edit-long-stay')?.checked;
+            const cr = computeCleanerRate(empId, tariffType, isLongStay);
+            if (rateEl) rateEl.value = cr.rate;
             cardRecompute();
-        });
-
-        // Cleaner 2 select → auto-fill bonus from employee profile + status bonus
-        document.getElementById('clean-edit-cleaner2')?.addEventListener('change', function() {
-            const emp = allEmployees.find(e => String(e.id) === String(this.value));
-            const rateEl = document.getElementById('clean-edit-rate2');
-            if (rateEl && emp && emp.default_tariff != null) {
-                const bonus = getCleanerStatus(emp)?.bonus || 0;
-                rateEl.value = parseFloat(emp.default_tariff) + bonus;
-            } else if (rateEl) { rateEl.value = ''; }
-            cardRecompute();
-        });
+        }
+        document.getElementById('clean-edit-cleaner')?.addEventListener('change', () => cardUpdateCleanerRate('clean-edit-cleaner', 'clean-edit-rate'));
+        document.getElementById('clean-edit-cleaner2')?.addEventListener('change', () => cardUpdateCleanerRate('clean-edit-cleaner2', 'clean-edit-rate2'));
 
         // On open: always apply apt type from apartment card
         if (aptType) applyAptType(aptType);
