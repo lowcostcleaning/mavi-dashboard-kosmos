@@ -5308,16 +5308,16 @@
                 }).join('');
         })();
 
-        // Async: load kit + delivery status for this apartment
-        if (t.apartment_id) {
+        // Async: load kit + delivery status for this apartment (same date as cleaning)
+        if (t.apartment_id && t.deadline) {
             (async () => {
-                const today = lndISODate(new Date());
-                const from30 = lndISODate(new Date(Date.now() - 30*86400000));
-                const to30   = lndISODate(new Date(Date.now() + 30*86400000));
+                const cleanDate = t.deadline.slice(0, 10);
+                const dayStart = cleanDate + 'T00:00:00Z';
+                const dayEnd   = cleanDate + 'T23:59:59Z';
 
                 const [{ data: lndTasks2 }, { data: delTasks }] = await Promise.all([
-                    supa.from('tasks').select('id,title,status,deadline').eq('type','laundry').eq('apartment_id', t.apartment_id).gte('deadline', from30+'T00:00:00Z').lte('deadline', to30+'T23:59:59Z').order('deadline', {ascending:false}),
-                    supa.from('tasks').select('id,title,status,deadline').eq('type','delivery').eq('apartment_id', t.apartment_id).gte('deadline', from30+'T00:00:00Z').lte('deadline', to30+'T23:59:59Z').order('deadline', {ascending:false}),
+                    supa.from('tasks').select('id,title,status,deadline').eq('type','laundry').eq('apartment_id', t.apartment_id).gte('deadline', dayStart).lte('deadline', dayEnd).order('deadline', {ascending:false}),
+                    supa.from('tasks').select('id,title,status,deadline').eq('type','delivery').eq('apartment_id', t.apartment_id).gte('deadline', dayStart).lte('deadline', dayEnd).order('deadline', {ascending:false}),
                 ]);
                 const restockTask2 = (lndTasks2 || []).find(x => x.title?.startsWith('Комплектация'));
                 const delivery2    = (delTasks  || [])[0] || null;
