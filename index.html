@@ -3455,7 +3455,7 @@
         // fetch all cleaning tasks (no date filter — filter client-side for flexibility)
         const { data, error } = await supa
             .from('tasks')
-            .select('id, title, status, type, deadline, started_at, completed_at, assigned_to, cleaner2_id, apartment_id, cost, cleaner_rate, cleaner2_rate, tariff_type, kit_type, long_stay, long_stay_amount, apt_type_auto, comment, rating, sheet_apt_name, extra_equipment, extra_equipment_done')
+            .select('id, title, status, type, deadline, started_at, completed_at, assigned_to, cleaner2_id, apartment_id, cost, cleaner_rate, cleaner2_rate, tariff_type, kit_type, long_stay, long_stay_amount, apt_type_auto, comment, manager_notes, rating, sheet_apt_name, extra_equipment, extra_equipment_done')
             .eq('type', 'cleaning')
             .order('deadline', { ascending: true });
 
@@ -4945,6 +4945,11 @@
                     <span class="clean-detail-value"><span class="clean-code-badge">${apt.locker_code}</span></span>
                 </div>` : ''}
 
+                ${t.manager_notes ? `<div style="margin-top:8px;padding:10px 12px;border-radius:10px;background:rgba(99,102,241,0.06);border:1px solid rgba(99,102,241,0.15);">
+                    <div style="font-size:11px;font-weight:600;color:#a5b4fc;margin-bottom:4px;"><i class="fa-solid fa-clipboard" style="margin-right:5px;"></i>Пожелания менеджера</div>
+                    <div style="font-size:13px;color:var(--text-secondary);line-height:1.5;white-space:pre-line;">${t.manager_notes}</div>
+                </div>` : ''}
+
             </div>
 
             ${apt?.etalon_video ? `
@@ -5075,6 +5080,11 @@
                 <div style="margin-bottom:8px;">
                     <label style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:3px;">Замечания</label>
                     <textarea id="clean-edit-comment" class="mavi-input" rows="2" placeholder="Замечания..." style="width:100%;resize:vertical;font-size:12px;padding:6px 8px;line-height:1.4;">${t.comment || ''}</textarea>
+                </div>
+
+                <div style="margin-bottom:8px;">
+                    <label style="font-size:11px;color:#a5b4fc;display:block;margin-bottom:3px;"><i class="fa-solid fa-clipboard" style="margin-right:4px;"></i>Пожелания менеджера</label>
+                    <textarea id="clean-edit-manager-notes" class="mavi-input" rows="2" placeholder="Пожелания для клинера..." style="width:100%;resize:vertical;font-size:12px;padding:6px 8px;line-height:1.4;">${t.manager_notes || ''}</textarea>
                 </div>
 
                 <div style="background:rgba(255,204,51,0.08);border:1px solid rgba(255,204,51,0.2);border-radius:8px;padding:8px 12px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
@@ -5242,6 +5252,7 @@
         const newLsAmt     = parseFloat(document.getElementById('clean-edit-long-stay-amount').value) || null;
         const newComment   = document.getElementById('clean-edit-comment').value.trim() || null;
         const newExtraEquip = document.getElementById('clean-edit-extra-equip')?.value?.trim() || null;
+        const newManagerNotes = document.getElementById('clean-edit-manager-notes')?.value?.trim() || null;
         const newRating    = rating || null;
 
         const btn = document.getElementById('clean-save-btn');
@@ -5262,6 +5273,7 @@
             long_stay_amount: newLsAmt,
             comment:          newComment,
             extra_equipment:  newExtraEquip,
+            manager_notes:    newManagerNotes,
             rating:           newRating,
         }).eq('id', taskId);
 
@@ -5281,6 +5293,7 @@
             t.long_stay_amount = newLsAmt;
             t.comment          = newComment;
             t.extra_equipment  = newExtraEquip;
+            t.manager_notes    = newManagerNotes;
             t.rating           = newRating;
             msg.textContent = 'Сохранено ✓';
             msg.style.color = '#10b981';
