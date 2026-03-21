@@ -5646,7 +5646,7 @@
         // Fetch cleanings in window
         const { data: cleanData } = await supa
             .from('tasks')
-            .select('id, title, status, deadline, assigned_to, apartment_id, cost, comment')
+            .select('id, title, status, deadline, assigned_to, apartment_id, cost, comment, kit_type, apt_type_auto, cleaner2_id, extra_equipment, extra_equipment_done')
             .eq('type', 'cleaning')
             .gte('deadline', fromISO + 'T00:00:00Z')
             .lte('deadline', toISO   + 'T23:59:59Z')
@@ -5656,12 +5656,26 @@
         // Fetch laundry tasks (extended window for комплектация)
         const { data: lndData2 } = await supa
             .from('tasks')
-            .select('id, title, status, deadline, assigned_to, apartment_id, comment')
+            .select('id, title, status, deadline, assigned_to, apartment_id, comment, parent_task_id')
             .eq('type', 'laundry')
             .gte('deadline', fromISO + 'T00:00:00Z')
             .lte('deadline', toExtISO + 'T23:59:59Z')
             .order('deadline', { ascending: true });
         lndTasks = lndData2 || [];
+
+        // Also fetch laundry tasks linked by parent_task_id (may have different deadline)
+        const cleanIds = lndCleanings.map(c => c.id).filter(Boolean);
+        if (cleanIds.length) {
+            const { data: linkedData } = await supa
+                .from('tasks')
+                .select('id, title, status, deadline, assigned_to, apartment_id, comment, parent_task_id')
+                .eq('type', 'laundry')
+                .in('parent_task_id', cleanIds);
+            if (linkedData?.length) {
+                const existIds = new Set(lndTasks.map(t => t.id));
+                linkedData.forEach(t => { if (!existIds.has(t.id)) lndTasks.push(t); });
+            }
+        }
 
         // Fetch daily log entries for this week
         const { data: logData } = await supa
@@ -5679,13 +5693,20 @@
         if (ld) renderLndLogStages(ld);
     }
 
-    // Find a laundry task for a given cleaning + stage (match by apartment + title prefix only)
+    // Find a laundry task for a given cleaning + stage
     function findLndTask(cleaning, stage) {
+        // First try exact match by parent_task_id
+        const byParent = lndTasks.find(t =>
+            t.parent_task_id === cleaning.id &&
+            t.title?.startsWith(stage.prefix)
+        );
+        if (byParent) return byParent;
+        // Fallback: match by apartment_id + title prefix (legacy tasks without parent_task_id)
         const matches = lndTasks.filter(t =>
+            !t.parent_task_id &&
             t.apartment_id === cleaning.apartment_id &&
             t.title?.startsWith(stage.prefix)
         );
-        // Return most recent by deadline
         return matches.sort((a, b) => (b.deadline || '').localeCompare(a.deadline || ''))[0] || null;
     }
 
@@ -5973,7 +5994,7 @@
             modal.dataset.currentStageKey = stageKey || '';
 
             document.getElementById('lnd-complector').innerHTML = complectorOpts;
-            document.getElementById('lnd-date').value    = lndISODate(new Date()); // всегда сегодня
+            document.getElementById('lnd-date').value    = date || lndISODate(new Date());
             document.getElementById('lnd-linen').value   = apt?.bed_linen_size || '';
             document.getElementById('lnd-comment').value = '';
 
@@ -6043,19 +6064,52 @@
             const aptId  = modal.dataset.createAptId;
             const prefix = modal.dataset.createPrefix || 'Стирка';
             const apt    = allApartments.find(a => String(a.id) === String(aptId));
-
             const parentCleanId = modal.dataset.createCleanId || null;
-            const { error } = await supa.from('tasks').insert({
-                apartment_id:    aptId,
-                assigned_to:     complector,
-                type:            'laundry',
-                status,
-                deadline:        dateVal ? dateVal + 'T00:00:00Z' : null,
-                comment:         commentVal,
-                title:           `${prefix} — ${apt?.name || ''}`,
-                source:          'manual',
-                parent_task_id:  parentCleanId,
-            });
+
+            // Check if a task already exists for this cleaning+stage (prevent duplicates)
+            let existingId = null;
+            if (parentCleanId) {
+                const { data: existing } = await supa.from('tasks')
+                    .select('id').eq('type', 'laundry')
+                    .eq('parent_task_id', parentCleanId)
+                    .ilike('title', prefix + '%')
+                    .limit(1);
+                if (existing?.length) existingId = existing[0].id;
+            }
+            if (!existingId && aptId) {
+                const { data: existing } = await supa.from('tasks')
+                    .select('id').eq('type', 'laundry')
+                    .eq('apartment_id', aptId)
+                    .ilike('title', prefix + '%')
+                    .gte('deadline', (dateVal || lndISODate(new Date())) + 'T00:00:00Z')
+                    .lte('deadline', (dateVal || lndISODate(new Date())) + 'T23:59:59Z')
+                    .limit(1);
+                if (existing?.length) existingId = existing[0].id;
+            }
+
+            let error;
+            if (existingId) {
+                // Update existing task instead of creating duplicate
+                ({ error } = await supa.from('tasks').update({
+                    assigned_to: complector,
+                    status,
+                    deadline:    dateVal ? dateVal + 'T00:00:00Z' : null,
+                    comment:     commentVal,
+                    parent_task_id: parentCleanId,
+                }).eq('id', existingId));
+            } else {
+                ({ error } = await supa.from('tasks').insert({
+                    apartment_id:    aptId,
+                    assigned_to:     complector,
+                    type:            'laundry',
+                    status,
+                    deadline:        dateVal ? dateVal + 'T00:00:00Z' : null,
+                    comment:         commentVal,
+                    title:           `${prefix} — ${apt?.name || ''}`,
+                    source:          'manual',
+                    parent_task_id:  parentCleanId,
+                }));
+            }
 
             if (error) {
                 msg.textContent = 'Ошибка: ' + error.message;
