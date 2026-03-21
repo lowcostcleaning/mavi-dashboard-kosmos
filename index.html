@@ -7539,8 +7539,10 @@
                 document.querySelectorAll('.view').forEach(v => {
                     v.classList.toggle('active', v.dataset.view === btn.dataset.view);
                 });
-                // Trigger data load if needed
+                // Save to localStorage
                 const view = btn.dataset.view;
+                localStorage.setItem('mavi_active_view', view);
+                // Trigger data load if needed
                 if (view === 'tasks') loadTasks();
                 if (view === 'cleanings') loadCleanings?.();
                 if (view === 'bookings') loadBookings?.();
@@ -7569,6 +7571,8 @@
                 document.querySelectorAll('.mob-nav-item').forEach(b => {
                     b.classList.toggle('active', b.dataset.view === view);
                 });
+                // Save to localStorage
+                localStorage.setItem('mavi_active_view', view);
                 // Trigger data load
                 if (view === 'dashboard') loadDashboard?.();
                 if (view === 'tasks') loadTasks?.();
@@ -7583,6 +7587,13 @@
                 if (view === 'expeditor') loadExpeditor?.();
             });
         });
+
+        // Restore last view from localStorage
+        const savedView = localStorage.getItem('mavi_active_view');
+        if (savedView) {
+            const navItem = document.querySelector(`.nav-item[data-view="${savedView}"]:not([style*="display: none"])`);
+            if (navItem) navItem.click();
+        }
     })();
     </script>
 
