@@ -743,6 +743,10 @@
                                 <button class="tk-tab" data-cl-status="in_progress">В работе</button>
                                 <button class="tk-tab" data-cl-status="done">Завершено</button>
                             </div>
+                            <div class="search-bar" style="width:220px;">
+                                <i class="fa-solid fa-magnifying-glass"></i>
+                                <input type="text" id="cal-search" placeholder="Поиск...">
+                            </div>
                             <select class="mavi-input" id="cal-filter-cleaner" style="min-width:160px;padding:6px 12px;font-size:13px;">
                                 <option value="">Все сотрудники</option>
                             </select>
@@ -4395,7 +4399,7 @@
         document.getElementById('cal-range-to').value   = `${y}-${m}-${String(lastDay).padStart(2, '0')}`;
     })();
 
-    let calListFilter = { status: '', cleaner: '' };
+    let calListFilter = { status: '', cleaner: '', search: '' };
 
     function renderRangeList() {
         const fromVal = document.getElementById('cal-range-from').value;
@@ -4407,12 +4411,22 @@
 
         const filterCleaner = calListFilter.cleaner;
         const filterStatus  = calListFilter.status;
+        const searchQ       = calListFilter.search.toLowerCase();
 
         let ranged = calData.filter(t => {
             const d = calTaskDate(t);
             if (!d || d < from || d > to) return false;
             if (filterCleaner && t.assigned_to !== filterCleaner && t.cleaner2_id !== filterCleaner) return false;
             if (filterStatus && t.status !== filterStatus) return false;
+            if (searchQ) {
+                const apt = allApartments.find(a => a.id === t.apartment_id);
+                const emp = allEmployees.find(e => e.id === t.assigned_to);
+                const haystack = [
+                    apt?.name, apt?.address, t.sheet_apt_name, t.title,
+                    emp?.full_name
+                ].filter(Boolean).join(' ').toLowerCase();
+                if (!haystack.includes(searchQ)) return false;
+            }
             return true;
         }).sort((a, b) => calTaskDate(b) - calTaskDate(a));
 
@@ -4517,6 +4531,10 @@
     document.getElementById('cal-range-to')?.addEventListener('change', renderRangeList);
     document.getElementById('cal-filter-cleaner')?.addEventListener('change', () => {
         calListFilter.cleaner = document.getElementById('cal-filter-cleaner').value;
+        renderRangeList();
+    });
+    document.getElementById('cal-search')?.addEventListener('input', e => {
+        calListFilter.search = e.target.value;
         renderRangeList();
     });
 
