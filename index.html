@@ -2017,7 +2017,10 @@
         return d;
     })();
 
-    function fmtAvailDate(d) { return d.toISOString().slice(0, 10); }
+    function fmtAvailDate(d) {
+        const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), day = String(d.getDate()).padStart(2,'0');
+        return `${y}-${m}-${day}`;
+    }
 
     async function loadAvailabilityGrid() {
         const cleaners = allEmployees.filter(e => e.role === 'cleaner' || e.role === 'intern');
@@ -3587,7 +3590,8 @@
             const time = t.started_at
                 ? new Date(t.started_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
                 : '';
-            const costStr = t.cost ? `${t.cost} ₾` : '';
+            const totalRate = (parseFloat(t.cleaner_rate) || 0) + (parseFloat(t.cleaner2_rate) || 0);
+            const costStr = totalRate > 0 ? `${totalRate} ₾` : (t.cost ? `${t.cost} ₾` : '');
             const matchBtn = unmatched
                 ? `<button class="cal-match-btn" data-task-id="${t.id}" data-sheet-name="${(t.sheet_apt_name || '').replace(/"/g, '&quot;')}" title="Сопоставить с апартаментом"><i class="fa-solid fa-link" style="margin-right:4px;"></i>Сопоставить</button>`
                 : '';
@@ -4676,7 +4680,8 @@
             const dl = t.deadline ? new Date(t.deadline) : null;
             const dateStr = dl ? dl.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) : '';
             const timeStr = dl ? dl.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : '';
-            const costStr = t.cost ? `${t.cost} ₾` : '';
+            const totalRate = (parseFloat(t.cleaner_rate) || 0) + (parseFloat(t.cleaner2_rate) || 0);
+            const costStr = totalRate > 0 ? `${totalRate} ₾` : (t.cost ? `${t.cost} ₾` : '');
 
             const matchBtn = unmatched
                 ? `<div style="margin-top:8px;"><button class="cal-match-btn" data-task-id="${t.id}" data-sheet-name="${(t.sheet_apt_name || '').replace(/"/g, '&quot;')}" title="Сопоставить"><i class="fa-solid fa-link" style="margin-right:4px;"></i>Сопоставить</button></div>`
