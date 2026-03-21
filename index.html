@@ -7958,6 +7958,7 @@
             if (emp) {
                 saveSession({ login: emp.email, name: emp.full_name, role: emp.role, emp_id: emp.id });
                 hideLogin();
+                loadCleanings();
                 authBtnLoading(btn, false, 'Войти в систему');
                 return;
             }
@@ -8087,7 +8088,7 @@
     (function() {
         try {
             const s = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null');
-            if (s && s.login) { window.maviUser = s; hideLogin(); }
+            if (s && s.login) { window.maviUser = s; hideLogin(); loadCleanings(); }
         } catch(e) {}
 
         window.maviLogout = function() { localStorage.removeItem(SESSION_KEY); location.reload(); };
