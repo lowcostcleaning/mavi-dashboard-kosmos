@@ -797,8 +797,9 @@
                     <div id="cal-notes-view" style="display:none;">
                         <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap;">
                             <select class="mavi-input" id="notes-filter-type" style="width:auto;min-width:150px;padding:6px 12px;font-size:13px;margin-top:0;">
-                                <option value="">Все замечания</option>
-                                <option value="manager">Пожелания менеджера</option>
+                                <option value="">Все</option>
+                                <option value="manager_notes">Пожелания менеджера</option>
+                                <option value="manager_comment">Замечания менеджера</option>
                                 <option value="cleaner">Замечания клинера</option>
                             </select>
                             <select class="mavi-input" id="notes-filter-cleaner" style="width:auto;min-width:160px;padding:6px 12px;font-size:13px;margin-top:0;">
@@ -3478,7 +3479,7 @@
         // fetch all cleaning tasks (no date filter — filter client-side for flexibility)
         const { data, error } = await supa
             .from('tasks')
-            .select('id, title, status, type, deadline, started_at, completed_at, assigned_to, cleaner2_id, apartment_id, cost, cleaner_rate, cleaner2_rate, tariff_type, kit_type, long_stay, long_stay_amount, apt_type_auto, comment, manager_notes, rating, sheet_apt_name, extra_equipment, extra_equipment_done')
+            .select('id, title, status, type, deadline, started_at, completed_at, assigned_to, cleaner2_id, apartment_id, cost, cleaner_rate, cleaner2_rate, tariff_type, kit_type, long_stay, long_stay_amount, apt_type_auto, comment, manager_notes, manager_comment, rating, sheet_apt_name, extra_equipment, extra_equipment_done')
             .eq('type', 'cleaning')
             .order('deadline', { ascending: true });
 
@@ -4657,10 +4658,13 @@
             const aptLabel = apt?.name || t.sheet_apt_name || t.title || '—';
             const dateStr = d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' });
 
-            if (t.manager_notes && filterType !== 'cleaner') {
-                entries.push({ type: 'manager', text: t.manager_notes, taskId: t.id, aptLabel, dateStr, date: d, cleanerId: t.assigned_to, cleaner2Id: t.cleaner2_id });
+            if (t.manager_notes && (!filterType || filterType === 'manager_notes')) {
+                entries.push({ type: 'manager_notes', text: t.manager_notes, taskId: t.id, aptLabel, dateStr, date: d, cleanerId: t.assigned_to, cleaner2Id: t.cleaner2_id });
             }
-            if (t.comment && filterType !== 'manager') {
+            if (t.manager_comment && (!filterType || filterType === 'manager_comment')) {
+                entries.push({ type: 'manager_comment', text: t.manager_comment, taskId: t.id, aptLabel, dateStr, date: d, cleanerId: t.assigned_to, cleaner2Id: t.cleaner2_id });
+            }
+            if (t.comment && (!filterType || filterType === 'cleaner')) {
                 entries.push({ type: 'cleaner', text: t.comment, taskId: t.id, aptLabel, dateStr, date: d, cleanerId: t.assigned_to, cleaner2Id: t.cleaner2_id });
             }
         });
@@ -4684,7 +4688,7 @@
         const cleanerIds = new Set();
         calData.forEach(t => {
             const d = calTaskDate(t);
-            if (d && d >= from && d <= to && (t.comment || t.manager_notes)) {
+            if (d && d >= from && d <= to && (t.comment || t.manager_notes || t.manager_comment)) {
                 if (t.assigned_to) cleanerIds.add(t.assigned_to);
                 if (t.cleaner2_id) cleanerIds.add(t.cleaner2_id);
             }
@@ -4707,10 +4711,9 @@
         document.getElementById('notes-list').innerHTML = entries.map(e => {
             const emp = e.cleanerId ? allEmployees.find(x => x.id === e.cleanerId) : null;
             const empName = emp?.full_name || '—';
-            const isManager = e.type === 'manager';
-            const typeColor = isManager ? '#6366f1' : '#10b981';
-            const typeLabel = isManager ? 'Менеджер' : 'Клинер';
-            const typeIcon  = isManager ? 'fa-clipboard' : 'fa-comment';
+            const typeColor = e.type === 'manager_notes' ? '#6366f1' : e.type === 'manager_comment' ? '#f59e0b' : '#10b981';
+            const typeLabel = e.type === 'manager_notes' ? 'Пожелание' : e.type === 'manager_comment' ? 'Замечание менеджера' : 'Замечание клинера';
+            const typeIcon  = e.type === 'manager_notes' ? 'fa-clipboard' : e.type === 'manager_comment' ? 'fa-pen' : 'fa-comment';
             return `<div style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;padding:14px 16px;border-left:3px solid ${typeColor};" onclick="openCleaningCard('${e.taskId}')" class="notes-entry">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
                     <div style="display:flex;align-items:center;gap:8px;">
@@ -5072,6 +5075,11 @@
                     <div style="font-size:13px;color:var(--text-secondary);line-height:1.5;white-space:pre-line;">${t.manager_notes}</div>
                 </div>` : ''}
 
+                ${t.manager_comment ? `<div style="margin-top:8px;padding:10px 12px;border-radius:10px;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.15);">
+                    <div style="font-size:11px;font-weight:600;color:#f59e0b;margin-bottom:4px;"><i class="fa-solid fa-pen" style="margin-right:5px;"></i>Замечания менеджера</div>
+                    <div style="font-size:13px;color:var(--text-secondary);line-height:1.5;white-space:pre-line;">${t.manager_comment}</div>
+                </div>` : ''}
+
             </div>
 
             ${apt?.etalon_video ? `
@@ -5207,6 +5215,11 @@
                 <div style="margin-bottom:8px;">
                     <label style="font-size:11px;color:#a5b4fc;display:block;margin-bottom:3px;"><i class="fa-solid fa-clipboard" style="margin-right:4px;"></i>Пожелания менеджера</label>
                     <textarea id="clean-edit-manager-notes" class="mavi-input" rows="2" placeholder="Пожелания для клинера..." style="width:100%;resize:vertical;font-size:12px;padding:6px 8px;line-height:1.4;">${t.manager_notes || ''}</textarea>
+                </div>
+
+                <div style="margin-bottom:8px;">
+                    <label style="font-size:11px;color:#f59e0b;display:block;margin-bottom:3px;"><i class="fa-solid fa-pen" style="margin-right:4px;"></i>Замечания менеджера</label>
+                    <textarea id="clean-edit-manager-comment" class="mavi-input" rows="2" placeholder="Замечания по уборке..." style="width:100%;resize:vertical;font-size:12px;padding:6px 8px;line-height:1.4;">${t.manager_comment || ''}</textarea>
                 </div>
 
                 <div style="background:rgba(255,204,51,0.08);border:1px solid rgba(255,204,51,0.2);border-radius:8px;padding:8px 12px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
@@ -5375,6 +5388,7 @@
         const newComment   = document.getElementById('clean-edit-comment').value.trim() || null;
         const newExtraEquip = document.getElementById('clean-edit-extra-equip')?.value?.trim() || null;
         const newManagerNotes = document.getElementById('clean-edit-manager-notes')?.value?.trim() || null;
+        const newManagerComment = document.getElementById('clean-edit-manager-comment')?.value?.trim() || null;
         const newRating    = rating || null;
 
         const btn = document.getElementById('clean-save-btn');
@@ -5396,6 +5410,7 @@
             comment:          newComment,
             extra_equipment:  newExtraEquip,
             manager_notes:    newManagerNotes,
+            manager_comment:  newManagerComment,
             rating:           newRating,
         }).eq('id', taskId);
 
@@ -5416,6 +5431,7 @@
             t.comment          = newComment;
             t.extra_equipment  = newExtraEquip;
             t.manager_notes    = newManagerNotes;
+            t.manager_comment  = newManagerComment;
             t.rating           = newRating;
             msg.textContent = 'Сохранено ✓';
             msg.style.color = '#10b981';
